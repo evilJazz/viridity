@@ -1,0 +1,17 @@
+<html>
+  <head>
+    <title>QGraphicsScene Web Controller</title>
+    <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
+    <script src="https://raw.github.com/brandonaaron/jquery-mousewheel/master/jquery.mousewheel.js"></script>
+    <script src="displayRenderer.js"></script>
+  </head>
+  <body onload="displayRenderer.init()">
+    <div>
+        <button onclick="displayRenderer.debugClearCanvas()">Clear Canvas</button>
+        <button onclick="displayRenderer.requestFullUpdate()">Request full frame</button>
+        <span id="connectionId"></span>
+    </div>
+    <canvas id="canvas">
+    </canvas>
+  </body>
+</html>

@@ -1,0 +1,6 @@
+<RCC>
+    <qresource prefix="/webcontrol">
+        <file>index.html</file>
+        <file>displayRenderer.js</file>
+    </qresource>
+</RCC>
