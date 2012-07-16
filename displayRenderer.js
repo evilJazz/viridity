@@ -53,11 +53,36 @@ var Base64Binary = {
 }
 
 var DisplayRenderer = function() {
+
+    var debugEnabled = false;
+
     var dr =
     {
         socket: 0,
         canvas: 0,
         ctx: 0,
+
+        moveLastFrame: 0,
+        frameImageCount: 0,
+
+        moveCanvas: 0,
+        moveCtx: 0,
+
+        _imageDone: function()
+        {
+            --dr.frameImageCount;
+            dr._determineReadyState();
+        },
+
+        _determineReadyState: function()
+        {
+            if (debugEnabled) console.log("_imageDone: " + dr.frameImageCount)
+            if (dr.frameImageCount === 0)
+            {
+                if (debugEnabled) console.log("Sending ready...");
+                dr.socket.send("ready()");
+            }
+        },
 
         requestFullUpdate: function()
         {
@@ -83,10 +108,13 @@ var DisplayRenderer = function() {
             dr.canvas = document.getElementById('canvas');
             dr.ctx = dr.canvas.getContext("2d");
 
+            dr.moveCanvas = document.getElementById('canvasBack');
+            dr.moveCtx = dr.moveCanvas.getContext("2d");
+
             var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
             var URL = window.URL || window.webKitURL;
-            //var useBlobBuilder = BlobBuilder && URL;
-            var useBlobBuilder = false;
+            var useBlobBuilder = BlobBuilder && URL;
+            //var useBlobBuilder = false;
 
             if (dr.canvas.width != 1024 || dr.canvas.height != 768)
             {
@@ -166,27 +194,48 @@ var DisplayRenderer = function() {
 
                         var command = msg.data.substring(0, paramStartIndex);
                         var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
-                        //console.log("command: " + command);
-                        //console.log("params: " + params);
-
                         var inputParams = params.split(/[\s,]+/);
-
-                        //console.log("split params: " + JSON.stringify(inputParams));
 
                         var frame = inputParams[0];
 
-                        if (command === "drawImage")
+                        if (dr.moveLastFrame !== frame)
                         {
+                            if (debugEnabled) console.log("NEW FRAME: " + dr.moveLastFrame + " -> " + frame);
+                            dr.moveCanvas.width = dr.canvas.width;
+                            dr.moveCanvas.height = dr.canvas.height;
+                            dr.moveCtx.drawImage(dr.canvas, 0, 0);
+                            dr.moveLastFrame = frame;
+                        }
+
+                        if (debugEnabled) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
+
+                        if (command === "moveImage")
+                        {
+                            dr.ctx.drawImage(
+                                dr.moveCanvas,
+                                inputParams[1], inputParams[2], inputParams[3], inputParams[4],
+                                inputParams[5], inputParams[6], inputParams[3], inputParams[4]
+                            );
+                        }
+                        else if (command === "drawImage")
+                        {
+                            ++dr.frameImageCount;
+
                             var img = new Image;
                             img.onload = function()
                                     {
+                                        if (frame !== dr.moveLastFrame)
+                                            console.log("ASYNCHRONOUS IMAGE!!!!!");
+
+                                        if (debugEnabled) console.log("frame: " + frame + " img.src: " + img.src);
+
                                         dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
                                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
 
-                                        console.log("frame: " + frame + " img.src: " + img.src);
-
                                         if (useBlobBuilder)
                                             URL.revokeObjectURL(img.src);
+
+                                        dr._imageDone();
                                     };
 
                             var imageData = msg.data.slice(paramEndIndex + 2);
@@ -229,6 +278,11 @@ var DisplayRenderer = function() {
                         else if (command === "info")
                         {
                             $("#connectionId").text(inputParams[0]);
+                        }
+                        else if (command === "end")
+                        {
+                            if (debugEnabled) console.log("Frame end " + frame + " received...");
+                            dr._determineReadyState();
                         }
                     };
         }

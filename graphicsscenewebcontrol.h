@@ -41,6 +41,7 @@ private:
 
     QString id_;
     bool urlMode_;
+    int updateCheckInterval_;
 
     int frame_;
 

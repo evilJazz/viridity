@@ -1,6 +1,6 @@
 #include "graphicsscenewebcontrol.h"
 
-#undef DEBUG
+#define DEBUG
 #include "debug.h"
 
 #include "WebSocket"
@@ -13,7 +13,7 @@
 #include <QUuid>
 #include <QCryptographicHash>
 
-QString getUniqueID()
+QString createUniqueID()
 {
     QString uuid = QUuid::createUuid().toString();
     return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
@@ -40,13 +40,14 @@ GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(GraphicsScene
     renderer_(NULL),
     frame_(0),
     clientReady_(true),
-    urlMode_(true)
+    urlMode_(true),
+    updateCheckInterval_(10)
 {
     socket_ = new Tufao::WebSocket(this);
     socket_->startServerHandshake(request, head);
     socket_->setMessagesType(Tufao::WebSocket::TEXT_MESSAGE);
 
-    id_ = getUniqueID();
+    id_ = createUniqueID();
 
     connect(socket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
     connect(socket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
@@ -79,8 +80,8 @@ void GraphicsSceneWebServerConnection::clientConnected()
     QString info = "info(" + id_ + ")";
     socket_->sendMessage(info.toUtf8().constData());
 
-    timer_.setSingleShot(true);
-    timer_.start(10);
+    timer_.setSingleShot(false);
+    timer_.start(updateCheckInterval_);
 }
 
 void GraphicsSceneWebServerConnection::clientMessageReceived(QByteArray data)
@@ -95,24 +96,31 @@ void GraphicsSceneWebServerConnection::clientMessageReceived(QByteArray data)
 
     QStringList params = rawParams.split(",", QString::KeepEmptyParts);
 
-    DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", socket_, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
+    //DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", socket_, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
 
-    commandInterpreter_.sendCommand(command, params);
+    if (command == "ready")
+    {
+        clientReady_ = true;
+        if (renderer_->updatesAvailable())
+        {
+            qDebug("Updates are available, triggering again...");
+            timer_.start(updateCheckInterval_);
+        }
+    }
+    else
+        commandInterpreter_.sendCommand(command, params);
 }
 
 void GraphicsSceneWebServerConnection::sceneDamagedRegionsAvailable()
 {
-    if (clientReady_ && patches_.count() == 0)
-    {
-        timer_.start(5);
-    }
+    timer_.start(updateCheckInterval_);
 }
 
 Patch *GraphicsSceneWebServerConnection::createPatch(const QRect &rect, bool createBase64)
 {
     Patch *patch = new Patch;
 
-    patch->id = getUniqueID();
+    patch->id = createUniqueID();
     patch->rect = rect;
 
     QImage image(rect.size(), QImage::Format_RGB888);
@@ -155,47 +163,89 @@ void GraphicsSceneWebServerConnection::sendUpdate()
 {
     DGUARDMETHODTIMED;
 
-    ++frame_;
-
-    clientReady_ = false;
-
-    QRegion damagedRegion = renderer_->updateBuffer();
-    QVector<QRect> rects = damagedRegion.rects();
-
-    for (int i = 0; i < rects.count(); ++i)
+    DPRINTF("clientReady_: %d  patches_.count(): %d", clientReady_, patches_.count());
+    timer_.stop();
+    if (clientReady_ && patches_.count() == 0)
     {
-        const QRect &rect = rects.at(i);
+        QList<UpdateOperation> ops = renderer_->updateBufferExt();
 
-        if (urlMode_)
+        DPRINTF("Updates available: %d", ops.count());
+
+        if (ops.count() > 0)
         {
-            Patch *patch = createPatch(rect, true);
-
-            QString framePatchId = QString::number(frame_) + "_" + QString::number(i);
-
-            QString cmd = QString().sprintf(
-                "drawImage(%d,%d,%d,%d,%d,%s):%s",
-                frame_, rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
-                QString("fb:" + id() + "/" + framePatchId).toLatin1().constData()
-            );
-
-            patches_.insert(framePatchId, patch);
-            socket_->sendMessage(cmd.toLatin1());
+            clientReady_ = false;
+            ++frame_;
+            DPRINTF("New Frame Number: %d", frame_);
         }
-        else
+
+        for (int i = 0; i < ops.count(); ++i)
         {
-            Patch *patch = createPatch(rect, true);
+            const UpdateOperation &op = ops.at(i);
 
-            QString format = patch->mimeType + ";base64";
-            QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):", frame_, rect.x(), rect.y(), rect.width(), rect.height(), format.toLatin1().constData());
+            if (op.type == uotUpdate)
+            {
+                const QRect &rect = op.srcRect;
 
-            socket_->sendMessage(cmd.toLatin1() + patch->dataBase64);
-            delete patch;
+                if (urlMode_)
+                {
+                    Patch *patch = createPatch(rect, true);
+
+                    QString framePatchId = QString::number(frame_) + "_" + QString::number(i);
+
+                    QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
+                        frame_,
+                        rect.x(), rect.y(), rect.width(), rect.height(),
+                        patch->mimeType.toLatin1().constData(),
+                        QString("fb:" + id() + "/" + framePatchId).toLatin1().constData()
+                    );
+
+                    patches_.insert(framePatchId, patch);
+                    socket_->sendMessage(cmd.toLatin1());
+                }
+                else
+                {
+                    Patch *patch = createPatch(rect, true);
+
+                    QString format = patch->mimeType + ";base64";
+                    QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):",
+                        frame_,
+                        rect.x(), rect.y(), rect.width(), rect.height(),
+                        format.toLatin1().constData()
+                    );
+
+                    socket_->sendMessage(cmd.toLatin1() + patch->dataBase64);
+                    delete patch;
+                }
+            }
+            else if (op.type == uotMove)
+            {
+                const QRect &rect = op.srcRect;
+
+                QString cmd = QString().sprintf("moveImage(%d,%d,%d,%d,%d,%d,%d):",
+                    frame_,
+                    rect.x(), rect.y(), rect.width(), rect.height(),
+                    op.dstPoint.x(), op.dstPoint.y()
+                );
+
+                socket_->sendMessage(cmd.toLatin1());
+            }
+            else if (op.type == uotFill)
+            {
+                const QRect &rect = op.srcRect;
+
+                QString cmd = QString().sprintf("fillRect(%d,%d,%d,%d,%d,%s):",
+                    frame_,
+                    rect.x(), rect.y(), rect.width(), rect.height(),
+                    op.fillColor.name().toLatin1().constData()
+                );
+
+                socket_->sendMessage(cmd.toLatin1());
+            }
         }
+
+        if (ops.count() > 0)
+            socket_->sendMessage(QString().sprintf("end(%d):", frame_).toLatin1().constData());
     }
-
-    clientReady_ = true;
-    if (renderer_->updatesAvailable())
-        timer_.start(10);
 }
 
 void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)

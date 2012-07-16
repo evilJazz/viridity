@@ -11,20 +11,6 @@
 
 #include "qtestspontaneevent.h"
 
-void forceActiveFocusOnItem(QGraphicsItem *item)
-{
-    if (!item) return;
-
-    item->setFocus(Qt::OtherFocusReason);
-    QGraphicsItem *parent = item->parentItem();
-    while (parent)
-    {
-        if (parent->flags() & QGraphicsItem::ItemIsFocusScope)
-            parent->setFocus(Qt::OtherFocusReason);
-        parent = parent->parentItem();
-    }
-}
-
 /* GraphicsSceneWebControlCommandInterpreter */
 
 GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpreter(QObject *parent) :
@@ -137,17 +123,14 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEnter(const QString &
     QInputMethodEvent enterFocus;
     sendEvent(enterFocus);
 
-    if (scene_->focusItem())
-        forceActiveFocusOnItem(scene_->focusItem());
-
     return true;
 }
 
 bool GraphicsSceneWebControlCommandInterpreter::handleMouseExit(const QString &command, const QStringList &params)
 {
-    sendEvent(QEvent::Leave, true);
-    scene_->clearFocus();
-    sendEvent(QEvent::WindowDeactivate, false);
+    //sendEvent(QEvent::Leave);
+    //scene_->clearFocus();
+    //sendEvent(QEvent::WindowDeactivate, false);
     return true;
 }
 
@@ -285,7 +268,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
         case 13 : key = Qt::Key_Return; break;
         case 19 : key = Qt::Key_Pause; break;
         case 27 : key = Qt::Key_Escape; break;
-        case 32 : key = Qt::Key_Space; break;
+        //case 32 : key = Qt::Key_Space; break;
         case 33 : key = Qt::Key_PageUp; break;
         case 34 : key = Qt::Key_PageDown; break;
         case 35 : key = Qt::Key_End; break;

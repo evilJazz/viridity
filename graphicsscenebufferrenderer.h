@@ -7,6 +7,16 @@
 
 #include "graphicssceneobserver.h"
 
+enum UpdateOperationType { uotUpdate, uotMove, uotFill };
+
+struct UpdateOperation
+{
+    UpdateOperationType type;
+    QRect srcRect;
+    QPoint dstPoint;
+    QColor fillColor;
+};
+
 class GraphicsSceneBufferRenderer : public GraphicsSceneObserver
 {
     Q_OBJECT
@@ -18,6 +28,7 @@ public:
     bool minimizeDamageRegion() { return minimizeDamageRegion_; }
 
     QRegion updateBuffer();
+    QList<UpdateOperation> updateBufferExt();
     QImage buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
 
