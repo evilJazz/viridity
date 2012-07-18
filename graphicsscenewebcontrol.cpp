@@ -1,6 +1,6 @@
 #include "graphicsscenewebcontrol.h"
 
-#define DEBUG
+#undef DEBUG
 #include "debug.h"
 
 #include "WebSocket"
@@ -105,7 +105,8 @@ void GraphicsSceneWebServerConnection::clientMessageReceived(QByteArray data)
         if (renderer_->updatesAvailable())
         {
             DPRINTF("Updates are available, triggering again...");
-            timer_.start(updateCheckInterval_);
+            if (!timer_.isActive())
+                timer_.start(updateCheckInterval_);
         }
     }
     else
@@ -114,7 +115,8 @@ void GraphicsSceneWebServerConnection::clientMessageReceived(QByteArray data)
 
 void GraphicsSceneWebServerConnection::sceneDamagedRegionsAvailable()
 {
-    timer_.start(updateCheckInterval_);
+    if (!timer_.isActive())
+        timer_.start(updateCheckInterval_);
 }
 
 Patch *GraphicsSceneWebServerConnection::createPatch(const QRect &rect, bool createBase64)

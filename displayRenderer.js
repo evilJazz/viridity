@@ -62,11 +62,11 @@ var DisplayRenderer = function() {
         canvas: 0,
         ctx: 0,
 
-        moveLastFrame: 0,
+        lastFrame: 0,
         frameImageCount: 0,
 
-        moveCanvas: 0,
-        moveCtx: 0,
+        frontCanvas: 0,
+        frontCtx: 0,
 
         _imageDone: function()
         {
@@ -79,9 +79,17 @@ var DisplayRenderer = function() {
             if (debugEnabled) console.log("_imageDone: " + dr.frameImageCount)
             if (dr.frameImageCount === 0)
             {
+                dr._flipToFront();
                 if (debugEnabled) console.log("Sending ready...");
                 dr.socket.send("ready()");
             }
+        },
+
+        _flipToFront: function()
+        {
+            dr.frontCanvas.width = dr.canvas.width;
+            dr.frontCanvas.height = dr.canvas.height;
+            dr.frontCtx.drawImage(dr.canvas, 0, 0);
         },
 
         requestFullUpdate: function()
@@ -105,11 +113,12 @@ var DisplayRenderer = function() {
         init: function()
         {
             dr.socket = new WebSocket('ws://192.168.1.1:8080/display');
-            dr.canvas = document.getElementById('canvas');
+
+            dr.canvas = document.getElementById('canvasBack');
             dr.ctx = dr.canvas.getContext("2d");
 
-            dr.moveCanvas = document.getElementById('canvasBack');
-            dr.moveCtx = dr.moveCanvas.getContext("2d");
+            dr.frontCanvas = document.getElementById('canvas');
+            dr.frontCtx = dr.frontCanvas.getContext("2d");
 
             var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
             var URL = window.URL || window.webKitURL;
@@ -118,13 +127,13 @@ var DisplayRenderer = function() {
 
             if (dr.canvas.width != 1024 || dr.canvas.height != 768)
             {
-                dr.canvas.width = 1024;
-                dr.canvas.height = 768;
+                dr.frontCanvas.width = dr.canvas.width = 1024;
+                dr.frontCanvas.height = dr.canvas.height = 768;
             }
 
             function getCanvasPos(event)
             {
-                var offset = $(dr.canvas).offset();
+                var offset = $(dr.frontCanvas).offset();
                 var posX = event.pageX - offset.left;
                 var posY = event.pageY - offset.top;
                 return { x: posX, y: posY };
@@ -173,15 +182,15 @@ var DisplayRenderer = function() {
                 event.preventDefault();
             }
 
-            $(dr.canvas).mousedown(function(event)  { sendMouseEvent("mouseDown", event) });
-            $(dr.canvas).mouseup(function(event)    { sendMouseEvent("mouseUp", event) });
-            $(dr.canvas).mousemove(function(event)  { sendMouseEvent("mouseMove", event) });
-            $(dr.canvas).mouseover(function(event)  { sendMouseEvent("mouseEnter", event) });
-            $(dr.canvas).mouseout(function(event)   { sendMouseEvent("mouseExit", event) });
-            $(dr.canvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event) });
-            $(dr.canvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event) });
+            $(dr.frontCanvas).mousedown(function(event)  { sendMouseEvent("mouseDown", event) });
+            $(dr.frontCanvas).mouseup(function(event)    { sendMouseEvent("mouseUp", event) });
+            $(dr.frontCanvas).mousemove(function(event)  { sendMouseEvent("mouseMove", event) });
+            $(dr.frontCanvas).mouseover(function(event)  { sendMouseEvent("mouseEnter", event) });
+            $(dr.frontCanvas).mouseout(function(event)   { sendMouseEvent("mouseExit", event) });
+            $(dr.frontCanvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event) });
+            $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event) });
 
-            $(dr.canvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
+            $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
 
             $(document).keydown(function(event)    { sendKeyEvent("keyDown", event) });
             $(document).keypress(function(event)   { sendKeyEvent("keyPress", event) });
@@ -198,21 +207,25 @@ var DisplayRenderer = function() {
 
                         var frame = inputParams[0];
 
-                        if (dr.moveLastFrame !== frame)
+                        if (dr.lastFrame !== frame)
                         {
-                            if (debugEnabled) console.log("NEW FRAME: " + dr.moveLastFrame + " -> " + frame);
-                            dr.moveCanvas.width = dr.canvas.width;
-                            dr.moveCanvas.height = dr.canvas.height;
-                            dr.moveCtx.drawImage(dr.canvas, 0, 0);
-                            dr.moveLastFrame = frame;
+                            if (debugEnabled) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
+                            dr.lastFrame = frame;
                         }
 
                         if (debugEnabled) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
 
-                        if (command === "moveImage")
+                        if (command === "fillRect")
+                        {
+                            dr.ctx.fillStyle = inputParams[5]
+                            dr.ctx.fillRect(
+                                inputParams[1], inputParams[2], inputParams[3], inputParams[4]
+                            );
+                        }
+                        else if (command === "moveImage")
                         {
                             dr.ctx.drawImage(
-                                dr.moveCanvas,
+                                dr.frontCanvas,
                                 inputParams[1], inputParams[2], inputParams[3], inputParams[4],
                                 inputParams[5], inputParams[6], inputParams[3], inputParams[4]
                             );
@@ -224,7 +237,7 @@ var DisplayRenderer = function() {
                             var img = new Image;
                             img.onload = function()
                                     {
-                                        if (frame !== dr.moveLastFrame)
+                                        if (frame !== dr.lastFrame)
                                             console.log("ASYNCHRONOUS IMAGE!!!!!");
 
                                         if (debugEnabled) console.log("frame: " + frame + " img.src: " + img.src);
