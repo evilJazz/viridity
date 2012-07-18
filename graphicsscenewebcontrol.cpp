@@ -9,6 +9,7 @@
 #include <QByteArray>
 #include <QBuffer>
 #include <QFile>
+#include <QThread>
 
 #include <QUuid>
 #include <QCryptographicHash>
@@ -103,7 +104,7 @@ void GraphicsSceneWebServerConnection::clientMessageReceived(QByteArray data)
         clientReady_ = true;
         if (renderer_->updatesAvailable())
         {
-            qDebug("Updates are available, triggering again...");
+            DPRINTF("Updates are available, triggering again...");
             timer_.start(updateCheckInterval_);
         }
     }
@@ -163,7 +164,7 @@ void GraphicsSceneWebServerConnection::sendUpdate()
 {
     DGUARDMETHODTIMED;
 
-    DPRINTF("clientReady_: %d  patches_.count(): %d", clientReady_, patches_.count());
+    DPRINTF("connection: %p  thread: %p  clientReady_: %d  patches_.count(): %d", this, QThread::currentThread(), clientReady_, patches_.count());
     timer_.stop();
     if (clientReady_ && patches_.count() == 0)
     {

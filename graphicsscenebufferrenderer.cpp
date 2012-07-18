@@ -143,10 +143,10 @@ QList<QRect> findUpdateRects(QImage *buffer1, QImage *buffer2, const QRect &sear
     return result;
 }
 
-bool contentMatches(QImage *buffer1, QImage *buffer2, const QRect &rect, const QPoint &point)
+inline bool contentMatches(QImage *buffer1, QImage *buffer2, const QPoint &point, const QRect &rect)
 {
-    QRect rect1 = rect.intersected(buffer1->rect());
-    QRect rect2 = QRect(point, rect.size()).intersected(buffer2->rect());
+    QRect rect1 = QRect(point, rect.size()).intersected(buffer1->rect());
+    QRect rect2 = rect.intersected(buffer2->rect());
 
     if (rect1.size() != rect.size() || rect2.size() != rect.size())
         return false;
@@ -171,13 +171,46 @@ bool contentMatches(QImage *buffer1, QImage *buffer2, const QRect &rect, const Q
     return true;
 }
 
+inline bool fastContentMatches(QImage *buffer1, QImage *buffer2, const QPoint &point, const QRect &rect)
+{
+    QRect rect1 = QRect(point, rect.size()).intersected(buffer1->rect());
+    QRect rect2 = rect.intersected(buffer2->rect());
+
+    if (rect1.size() != rect.size() || rect2.size() != rect.size())
+        return false;
+
+    QRgb *pBuf1, *pBuf2;
+
+    const int stepWidth = 5;
+
+    for (int s = 0; s < stepWidth; ++s)
+    {
+        for (int y = s; y < rect1.height(); y += stepWidth)
+        {
+            pBuf1 = (QRgb *)buffer1->scanLine(rect1.top() + y) + rect1.left();
+            pBuf2 = (QRgb *)buffer2->scanLine(rect2.top() + y) + rect2.left();
+
+            for (int x = s; x < rect1.width(); x += stepWidth)
+            {
+                if (*pBuf1 != *pBuf2)
+                    return false;
+
+                pBuf1 += stepWidth;
+                pBuf2 += stepWidth;
+            }
+        }
+    }
+
+    return true;
+}
+
 QRect findMovedRect(QImage *imageBefore, QImage *imageAfter, const QRect &searchArea, const QRect &templateRect)
 {
     DGUARDMETHODTIMED;
     QRect roi = searchArea.intersected(imageBefore->rect()).intersected(imageAfter->rect());
 
-    int roiBottom = roi.top() + roi.height() - templateRect.height();
-    int roiRight = roi.left() + roi.width() - templateRect.width();
+    int roiBottom = roi.top() + roi.height() - templateRect.height() + 1;
+    int roiRight = roi.left() + roi.width() - templateRect.width() + 1;
 
     QPoint srcPoint;
 
@@ -189,7 +222,7 @@ QRect findMovedRect(QImage *imageBefore, QImage *imageAfter, const QRect &search
         {
             srcPoint.setX(x);
 
-            if (contentMatches(imageBefore, imageAfter, QRect(srcPoint, templateRect.size()), templateRect.topLeft()))
+            if (contentMatches(imageBefore, imageAfter, srcPoint, templateRect))
                 return QRect(srcPoint, templateRect.size());
         }
     }
@@ -201,12 +234,14 @@ QList<UpdateOperation> findUpdateOperations(QImage *imageBefore, QImage *imageAf
 {
     DGUARDMETHODTIMED;
 
-    QList<QRect> tiles = splitRectIntoTiles(searchArea, 64, 64);
+    QList<QRect> tiles = splitRectIntoTiles(searchArea, 20, 20);
 
     QList<UpdateOperation> result;
     UpdateOperation op;
 
-    QPoint lastMoveVector;
+    QList<QPoint> lastSuccessfulMoveVectors;
+    int movedRectSearchMisses = 0;
+    bool movedRectSearchEnabled = true;
 
     foreach (const QRect &rect, tiles)
     {
@@ -223,41 +258,64 @@ QList<UpdateOperation> findUpdateOperations(QImage *imageBefore, QImage *imageAf
             */
 
             //*
-            //QRect movedRectSearchArea = searchArea;
 
-            QRect movedRectSearchArea;
             QRect srcRect;
 
-            if (lastMoveVector.isNull())
-                movedRectSearchArea = minRect.adjusted(-123, -123, 123, 123);
-            else
+            if (movedRectSearchEnabled)
             {
-                movedRectSearchArea = minRect;
-                movedRectSearchArea.translate(lastMoveVector);
-                //movedRectSearchArea.adjust(-5, -5, 5, 5);
-                srcRect = findMovedRect(imageBefore, imageAfter, movedRectSearchArea, minRect);
-
-                if (srcRect.isEmpty())
-                    movedRectSearchArea = minRect.adjusted(-123, -123, 123, 123);
+                QRect movedRectSearchArea;
+                if (lastSuccessfulMoveVectors.count() == 0)
+                    movedRectSearchArea = minRect.adjusted(-100, -100, 100, 100);
                 else
-                    qDebug("Hit move area on first try with vector %d x %d", lastMoveVector.x(), lastMoveVector.y());
-            }
+                {
+                    foreach (const QPoint &moveVector, lastSuccessfulMoveVectors)
+                    {
+                        movedRectSearchArea = minRect;
+                        movedRectSearchArea.translate(-moveVector);
+                        //movedRectSearchArea.adjust(-5, -5, 5, 5);
+                        srcRect = findMovedRect(imageBefore, imageAfter, movedRectSearchArea, minRect);
 
-            if (srcRect.isNull())
-                srcRect = findMovedRect(imageBefore, imageAfter, movedRectSearchArea, minRect);
+                        if (!srcRect.isEmpty())
+                        {
+                            DPRINTF("Found move area with existing vector %d x %d", moveVector.x(), moveVector.y());
+                            break;
+                        }
+                    }
+
+                    if (srcRect.isEmpty())
+                        movedRectSearchArea = minRect.adjusted(-100, -100, 100, 100);
+                }
+
+                if (srcRect.isNull())
+                    srcRect = findMovedRect(imageBefore, imageAfter, movedRectSearchArea, minRect);
+
+                if (srcRect.isNull())
+                {
+                    ++movedRectSearchMisses;
+                    if (movedRectSearchMisses == 10)
+                        movedRectSearchEnabled = false;
+                }
+            }
 
             if (!srcRect.isEmpty())
             {
-                lastMoveVector = minRect.topLeft() - srcRect.topLeft();
+                QPoint currentMoveVector = minRect.topLeft() - srcRect.topLeft();
+
+                int index = lastSuccessfulMoveVectors.indexOf(currentMoveVector);
+
+                if (index == -1)
+                    lastSuccessfulMoveVectors.prepend(currentMoveVector);
+                else
+                    lastSuccessfulMoveVectors.move(index, 0);
 
                 op.type = uotMove;
                 op.srcRect = srcRect;
                 op.dstPoint = minRect.topLeft();
 
-                qDebug("Move  %d, %d + %d x %d  ->  %d, %d + %d x %d  (vec %d %d)",
+                DPRINTF("Move  %d, %d + %d x %d  ->  %d, %d + %d x %d  (vec %d %d)",
                         srcRect.left(), srcRect.top(), minRect.width(), minRect.height(),
                         minRect.left(), minRect.top(), minRect.width(), minRect.height(),
-                        lastMoveVector.x(), lastMoveVector.y()
+                        currentMoveVector.x(), currentMoveVector.y()
                         );
 
                 result.append(op);
@@ -329,17 +387,14 @@ QList<UpdateOperation> GraphicsSceneBufferRenderer::updateBufferExt()
 
         if (minimizeDamageRegion_)
         {
-            ops = findUpdateOperations(otherBuffer_, workBuffer_, rect);
+            QList<UpdateOperation> newOps = findUpdateOperations(otherBuffer_, workBuffer_, rect);
 
-            for (int i = ops.count() - 1; i > -1; --i)
+            foreach (const UpdateOperation &op, newOps)
             {
-                const UpdateOperation &op = ops.at(i);
-
                 if (op.type == uotUpdate)
-                {
                     updateRegion += QRect(op.dstPoint, op.srcRect.size());
-                    ops.removeAt(i);
-                }
+                else
+                    ops.append(op);
             }
         }
     }
@@ -425,8 +480,8 @@ void GraphicsSceneBufferRenderer::sceneSceneRectChanged(const QRectF &newRect)
 static int updateNo = 0;
 void GraphicsSceneBufferRenderer::sceneChanged(const QList<QRectF> &rects)
 {
-    qDebug("UpDaTe %d", updateNo++);
     DGUARDMETHODTIMED;
+    DPRINTF("UpDaTe %d", updateNo++);
 
     QString rectString;
 
@@ -435,7 +490,7 @@ void GraphicsSceneBufferRenderer::sceneChanged(const QList<QRectF> &rects)
         QRect newRect = rect.toAlignedRect();
         newRect.adjust(-2, -2, 2, 2); // similar to void QGraphicsView::updateScene(const QList<QRectF> &rects)
         region_ += newRect.intersected(workBuffer_->rect());
-        DOP(rectString += QString().sprintf(" %.2f,%.2f+%.2fx%.2f", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
+        DOP(rectString += QString().sprintf(" %4d,%4d+%4dx%4d", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
     }
 
     DPRINTF("rects: %s", rectString.toUtf8().constData());
