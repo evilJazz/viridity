@@ -2,6 +2,7 @@
 #define IMAGECOMPARER_H
 
 #include <QRegion>
+#include <QVector>
 #include <QList>
 #include <QHash>
 #include <QHashIterator>
@@ -29,6 +30,8 @@ typedef QHashIterator<QColor, UpdateOperationList> ColorHashUpdateOperationListI
 
 QList<QRect> splitRectIntoTiles(const QRect &rect, int tileWidth, int tileHeight);
 QList<QRect> findUpdateRects(QImage *buffer1, QImage *buffer2, const QRect &searchArea);
+
+bool contentMatches(QImage *buffer1, QImage *buffer2, const QPoint &point, const QRect &rect);
 
 QRect findMovedRect(QImage *imageBefore, QImage *imageAfter, const QRect &searchArea, const QRect &templateRect);
 UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps);

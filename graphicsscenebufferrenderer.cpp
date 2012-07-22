@@ -1,6 +1,6 @@
 #include "graphicsscenebufferrenderer.h"
 
-#undef DEBUG
+#define DEBUG
 #include "debug.h"
 
 /* GraphicsSceneBufferRenderer */
@@ -69,7 +69,7 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
 
 QRegion GraphicsSceneBufferRenderer::updateBuffer()
 {
-    DGUARDMETHODTIMED;
+    //DGUARDMETHODTIMED;
 
     QRegion result;
     if (minimizeDamageRegion_)
@@ -131,8 +131,8 @@ void GraphicsSceneBufferRenderer::sceneSceneRectChanged(const QRectF &newRect)
 static int updateNo = 0;
 void GraphicsSceneBufferRenderer::sceneChanged(const QList<QRectF> &rects)
 {
-    DGUARDMETHODTIMED;
-    DPRINTF("UpDaTe %d", updateNo++);
+    //DGUARDMETHODTIMED;
+    //DPRINTF("UpDaTe %d", updateNo++);
 
     QString rectString;
 
@@ -144,7 +144,7 @@ void GraphicsSceneBufferRenderer::sceneChanged(const QList<QRectF> &rects)
         DOP(rectString += QString().sprintf(" %4d,%4d+%4dx%4d", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
     }
 
-    DPRINTF("rects: %s", rectString.toUtf8().constData());
+    //DPRINTF("rects: %s", rectString.toUtf8().constData());
 
     emitUpdatesAvailable();
 }
@@ -158,7 +158,7 @@ void GraphicsSceneBufferRenderer::sceneDetached()
 
 void GraphicsSceneBufferRenderer::swapWorkBuffer()
 {
-    DGUARDMETHODTIMED;
+    //DGUARDMETHODTIMED;
 
     if (workBuffer_ == &buffer1_)
     {
