@@ -1,6 +1,6 @@
 #include "graphicsscenebufferrenderer.h"
 
-#define DEBUG
+#undef DEBUG
 #include "debug.h"
 
 /* GraphicsSceneBufferRenderer */

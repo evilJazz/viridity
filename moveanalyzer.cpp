@@ -1,221 +1,121 @@
 #include "moveanalyzer.h"
 #include "imagecomparer.h"
 
+#include <QtConcurrentFilter>
+
 #define DEBUG
 #include "debug.h"
 
-AreaFingerPrint getAreaFingerPrint(QImage *image, const QRect &area)
-{
-    QRect rect = area.intersected(image->rect());
-
-    AreaFingerPrint result;
-    result.reserve(rect.height());
-
-    QRgb *pBuf;
-
-    for (int y = 0; y < rect.height(); ++y)
-    {
-        pBuf = (QRgb *)image->scanLine(rect.top() + y) + rect.left();
-
-        quint32 hash = 0;
-
-        for (int x = 0; x < rect.width(); ++x)
-        {
-            hash += (*pBuf);
-            ++pBuf;
-        }
-
-        result.append(hash);
-    }
-
-    return result;
-}
-
-AreaFingerPrints getAreaFingerPrintsSlow(QImage *image, const QRect &area, int templateWidth)
-{
-    QRect rect = area.intersected(image->rect());
-    int resultWidth = qMax(0, rect.width() - templateWidth + 1);
-
-    AreaFingerPrints result;
-    result.reserve(resultWidth);
-
-    QSize size(templateWidth, rect.height());
-
-    int rightLimit = rect.left() + resultWidth;
-    for (int x = rect.left(); x < rightLimit; ++x)
-    {
-        AreaFingerPrint column = getAreaFingerPrint(image, QRect(QPoint(x, rect.top()), size));
-        result.append(column);
-    }
-
-    return result;
-}
-
 #define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))
+#define OPTIMIZE_UNROLL_LOOPS
+#define OPTIMIZE_CONDITIONAL_OPT
 
-AreaFingerPrints getAreaFingerPrintsFast(QImage *image, const QRect &area, int templateWidth)
+/* AreaFingerPrint */
+
+AreaFingerPrint::AreaFingerPrint() :
+    size_(0),
+    data_(NULL)
+{
+}
+
+AreaFingerPrint::AreaFingerPrint(QImage *image, const QRect &area) :
+    size_(0),
+    data_(NULL)
 {
     DGUARDMETHODPROFILED;
+    initFromImage(image, area);
+}
 
+AreaFingerPrint::AreaFingerPrint(int height) :
+    size_(0),
+    data_(NULL)
+{
+    initFromSize(height);
+}
+
+AreaFingerPrint::~AreaFingerPrint()
+{
+    clear();
+}
+
+void AreaFingerPrint::clear()
+{
+    if (data_)
+        delete data_;
+
+    data_ = 0;
+    size_ = 0;
+}
+
+void AreaFingerPrint::initFromSize(int height)
+{
+    if (height != size_)
+    {
+        clear();
+        size_ = height;
+        data_ = new quint32[height];
+    }
+}
+
+void AreaFingerPrint::initFromImage(QImage *image, const QRect &area)
+{
     QRect rect = area.intersected(image->rect());
-    int resultWidth = qMax(0, rect.width() - templateWidth + 1);
+    initFromSize(rect.height());
 
-    AreaFingerPrints result(resultWidth, AreaFingerPrint(rect.height(), 0));
-
-    int startIndex;
     quint32 *pBuf;
-
-#define OPTIMIZE_CONDITIONAL_OPT
-#define OPTIMIZE_UNROLL_LOOPS
-//#define OPTIMIZE_LARGER_INT
-//#define OPTIMIZE_ARRAY_OFFSET
-
-#ifndef OPTIMIZE_CONDITIONAL_OPT
-    QVector<quint32> lineVector(rect.width(), 0);
-#else
-    QVector<quint32> lineVector(rect.width() + templateWidth, 0);
+#ifdef OPTIMIZE_UNROLL_LOOPS
+    int lim = roundDownToMultipleOf(rect.width(), 16);
 #endif
-    quint32 *line = lineVector.data();
-    //int lineSize = lineVector.size();
-
-    AreaFingerPrint *resultRows = result.data();
 
     for (int y = 0; y < rect.height(); ++y)
     {
         pBuf = (quint32 *)image->scanLine(rect.top() + y) + rect.left();
 
-#ifndef OPTIMIZE_CONDITIONAL_OPT
-        for (int index = 0; index < lineVector.size(); ++index)
-        {
-            startIndex = qMax(0, index + 1 - templateWidth);
+        quint32 hash = 0;
+        int x = 0;
 
-            for (int xw = startIndex; xw <= index; ++xw)
-                line[xw] += (*pBuf);
-
-            ++pBuf;
-        }
-
-        for (int index = 0; index < resultWidth; ++index)
-            result[index][y] = line[index];
-#else
 #ifdef OPTIMIZE_UNROLL_LOOPS
-        for (int index = templateWidth - 1; index < lineVector.size(); ++index)
+        for (; x < lim; x += 16)
         {
-            quint32 pixelValue = (*pBuf);
-            int xw = index + 1 - templateWidth;
+            hash += pBuf[x + 0];
+            hash += pBuf[x + 1];
+            hash += pBuf[x + 2];
+            hash += pBuf[x + 3];
+            hash += pBuf[x + 4];
+            hash += pBuf[x + 5];
+            hash += pBuf[x + 6];
+            hash += pBuf[x + 7];
+            hash += pBuf[x + 8];
+            hash += pBuf[x + 9];
+            hash += pBuf[x + 10];
+            hash += pBuf[x + 11];
+            hash += pBuf[x + 12];
+            hash += pBuf[x + 13];
+            hash += pBuf[x + 14];
+            hash += pBuf[x + 15];
+        }
 
-#ifdef OPTIMIZE_LARGER_INT
-            int lim = roundDownToMultipleOf(index, 16);
-            quint64 pixelDoubleValue = (quint64)pixelValue << 32 | (quint64)pixelValue;
-            for (; xw < lim; xw += 16)
-            {
-                quint64 *dline = (quint64 *)&line[xw];
-                dline[0] += pixelDoubleValue;
-                dline[1] += pixelDoubleValue;
-                dline[2] += pixelDoubleValue;
-                dline[3] += pixelDoubleValue;
-                dline[4] += pixelDoubleValue;
-                dline[5] += pixelDoubleValue;
-                dline[6] += pixelDoubleValue;
-                dline[7] += pixelDoubleValue;
-            }
-#else
-            int lim = roundDownToMultipleOf(index, 16);
-            for (; xw < lim; xw += 16)
-            {
-#ifdef OPTIMIZE_ARRAY_OFFSET
-                quint32 *sline = &line[xw];
-                sline[0] += pixelValue;
-                sline[1] += pixelValue;
-                sline[2] += pixelValue;
-                sline[3] += pixelValue;
-                sline[4] += pixelValue;
-                sline[5] += pixelValue;
-                sline[6] += pixelValue;
-                sline[7] += pixelValue;
-                sline[8] += pixelValue;
-                sline[9] += pixelValue;
-                sline[10] += pixelValue;
-                sline[11] += pixelValue;
-                sline[12] += pixelValue;
-                sline[13] += pixelValue;
-                sline[14] += pixelValue;
-                sline[15] += pixelValue;
-#else
-                line[xw] += pixelValue;
-                line[xw + 1] += pixelValue;
-                line[xw + 2] += pixelValue;
-                line[xw + 3] += pixelValue;
-                line[xw + 4] += pixelValue;
-                line[xw + 5] += pixelValue;
-                line[xw + 6] += pixelValue;
-                line[xw + 7] += pixelValue;
-                line[xw + 8] += pixelValue;
-                line[xw + 9] += pixelValue;
-                line[xw + 10] += pixelValue;
-                line[xw + 11] += pixelValue;
-                line[xw + 12] += pixelValue;
-                line[xw + 13] += pixelValue;
-                line[xw + 14] += pixelValue;
-                line[xw + 15] += pixelValue;
+        pBuf += x;
 #endif
-            }
-#endif
-
-            for (; xw <= index; ++xw)
-                line[xw] += pixelValue;
-
+        for (; x < rect.width(); ++x)
+        {
+            hash += (*pBuf);
             ++pBuf;
         }
-#else
-        for (int index = templateWidth - 1; index < lineVector.size(); ++index)
-        {
-            for (int xw = index + 1 - templateWidth; xw <= index; ++xw)
-                line[xw] += (*pBuf);
 
-            ++pBuf;
-        }
-#endif
-
-        for (int index = 0; index < resultWidth; ++index)
-        {
-            AreaFingerPrint &fp = resultRows[index];
-            fp[y] = line[templateWidth - 1 + index];
-        }
-#endif
-
-        lineVector.fill(0);
+        data_[y] = hash;
     }
-
-    return result;
 }
 
-bool fingerPrintsEqual(const AreaFingerPrints &prints1, const AreaFingerPrints &prints2)
+int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int endIndex)
 {
-    if (prints1.size() != prints2.size())
-        return false;
-
-    for (int y = 0; y < prints1.size(); ++y)
-    {
-        if (prints1.at(y).size() != prints2.at(y).size())
-            return false;
-
-        if (memcmp(prints1[y].data(), prints2[y].data(), prints1[y].size() * sizeof(quint32)) != 0)
-            return false;
-    }
-
-    return true;
-}
-
-int indexOfFingerPrintInFingerPrint(const AreaFingerPrint &haystack, const AreaFingerPrint &needle)
-{
-    int haystackSize = haystack.size();
+    int haystackSize = size();
     int needleSize = needle.size();
 
     if (needleSize > haystackSize)
         return -1;
 
-    const quint32 *y = haystack.constData();
+    const quint32 *y = constData();
     const quint32 *x = needle.constData();
 
     quint32 j, k, l;
@@ -231,8 +131,12 @@ int indexOfFingerPrintInFingerPrint(const AreaFingerPrint &haystack, const AreaF
         l = 2;
     }
 
-    j = 0;
-    while (j <= haystackSize - needleSize)
+    int maxIndex = haystackSize - needleSize;
+    if (endIndex <= 0 || endIndex > maxIndex)
+        endIndex == maxIndex;
+
+    j = startIndex;
+    while (j <= endIndex)
     {
         if (x[1] != y[j + 1])
         {
@@ -250,13 +154,212 @@ int indexOfFingerPrintInFingerPrint(const AreaFingerPrint &haystack, const AreaF
     return -1;
 }
 
-bool findFingerPrintPosition(const AreaFingerPrints &prints, const AreaFingerPrint &print, QPoint &result)
-{
-    //DGUARDMETHODTIMED;
 
-    for (int line = 0; line < prints.size(); ++line)
+/* AreaFingerPrints */
+
+AreaFingerPrints::AreaFingerPrints() :
+    width_(0),
+    height_(0),
+    fingerPrints_(NULL)
+{
+}
+
+AreaFingerPrints::~AreaFingerPrints()
+{
+    clear();
+}
+
+void AreaFingerPrints::clear()
+{
+    if (fingerPrints_)
     {
-        int index = indexOfFingerPrintInFingerPrint(prints[line], print);
+        for (int i = 0; i < width_; ++i)
+            delete fingerPrints_[i];
+
+        delete fingerPrints_;
+        fingerPrints_ = 0;
+    }
+
+    width_ = 0;
+    height_ = 0;
+}
+
+void AreaFingerPrints::initFromSize(int width, int height, int templateWidth)
+{
+    int newWidth = qMax(0, width - templateWidth + 1);
+
+    if (newWidth != width_ && height != height_)
+    {
+        clear();
+        height_ = height;
+        width_ = newWidth;
+        hashedArea_ = QRect(0, 0, width, height);
+        fingerPrints_ = new AreaFingerPrint*[width_];
+
+        for (int i = 0; i < width_; ++i)
+            fingerPrints_[i] = new AreaFingerPrint(height_);
+    }
+}
+
+void AreaFingerPrints::initFromImageSlow(QImage *image, const QRect &area, int templateWidth)
+{
+    DGUARDMETHODPROFILED;
+
+    QRect rect = area.intersected(image->rect());
+    initFromSize(rect.width(), rect.height(), templateWidth);
+
+    hashedArea_ = rect;
+
+    QSize size(templateWidth, rect.height());
+    int rightLimit = rect.left() + width_;
+
+    int column = 0;
+    for (int x = rect.left(); x < rightLimit; ++x)
+    {
+        fingerPrints_[column]->initFromImage(image, QRect(QPoint(x, rect.top()), size));
+        ++column;
+    }
+}
+
+void AreaFingerPrints::initFromImageFast(QImage *image, const QRect &area, int templateWidth)
+{
+    DGUARDMETHODPROFILED;
+
+    QRect rect = area.intersected(image->rect());
+    initFromSize(rect.width(), rect.height(), templateWidth);
+
+    hashedArea_ = rect;
+    updateFromImage(image, rect);
+}
+
+void AreaFingerPrints::updateFromImage(QImage *image, const QRect &area)
+{
+    QRect rect = hashedArea_.intersected(area.intersected(image->rect()));
+
+    quint32 *pBuf;
+    const int templateWidthM1 = templateWidth() - 1;
+
+#ifdef OPTIMIZE_CONDITIONAL_OPT
+    QVector<quint32> lineVector(rect.width() + templateWidth(), 0);
+#else
+    QVector<quint32> lineVector(rect.width(), 0);
+#endif
+    quint32 *line = lineVector.data();
+
+    for (int y = rect.top(); y < rect.bottom() + 1; ++y)
+    {
+        pBuf = (quint32 *)image->scanLine(y) + rect.left();
+
+#ifdef OPTIMIZE_CONDITIONAL_OPT
+        for (int index = templateWidthM1; index < lineVector.size(); ++index)
+        {
+            int xw = index - templateWidthM1;
+#else
+        for (int index = 0; index < lineVector.size(); ++index)
+        {
+            int xw = qMax(0, index - templateWidthM1);
+#endif
+            quint32 pixelValue = (*pBuf);
+
+#ifdef OPTIMIZE_UNROLL_LOOPS
+            int lim = xw + roundDownToMultipleOf(index - xw, 16);
+            for (; xw < lim; xw += 16)
+            {
+                line[xw] += pixelValue;
+                line[xw + 1] += pixelValue;
+                line[xw + 2] += pixelValue;
+                line[xw + 3] += pixelValue;
+                line[xw + 4] += pixelValue;
+                line[xw + 5] += pixelValue;
+                line[xw + 6] += pixelValue;
+                line[xw + 7] += pixelValue;
+                line[xw + 8] += pixelValue;
+                line[xw + 9] += pixelValue;
+                line[xw + 10] += pixelValue;
+                line[xw + 11] += pixelValue;
+                line[xw + 12] += pixelValue;
+                line[xw + 13] += pixelValue;
+                line[xw + 14] += pixelValue;
+                line[xw + 15] += pixelValue;
+            }
+#endif
+
+            for (; xw <= index; ++xw)
+                line[xw] += pixelValue;
+
+            ++pBuf;
+        }
+
+#ifdef OPTIMIZE_CONDITIONAL_OPT
+        for (int index = 0; index < width_; ++index)
+            fingerPrints_[index]->data()[y - hashedArea().top()] = line[templateWidthM1 + index];
+#else
+        for (int index = 0; index < width_; ++index)
+            fingerPrints_[index]->data()[y - hashedArea().top()] = line[index];
+#endif
+
+        lineVector.fill(0);
+    }
+}
+
+struct AreaFingerPrintsThreadedUpdateFromImage
+{
+    AreaFingerPrintsThreadedUpdateFromImage(QImage *image, AreaFingerPrints *target) :
+        image(image), target(target)
+    {}
+
+    QImage *image;
+    AreaFingerPrints *target;
+
+    bool operator()(const QRect &rect)
+    {
+        target->updateFromImage(image, rect);
+        return true;
+    }
+};
+
+void AreaFingerPrints::initFromImageThreaded(QImage *image, const QRect &area, int templateWidth)
+{
+    DGUARDMETHODPROFILED;
+
+    QRect rect = area.intersected(image->rect());
+    initFromSize(rect.width(), rect.height(), templateWidth);
+
+    hashedArea_ = rect;
+
+    const int partHeight = 20;
+    int parts = rect.height() / partHeight;
+
+    if (parts == 0)
+        updateFromImage(image, rect);
+    else
+    {
+        QVector<QRect> rects;
+
+        for (int i = 0; i < parts; ++i)
+            rects.append(QRect(rect.x(), rect.y() + i * partHeight, rect.width(), partHeight));
+
+        int partsTotalHeight = parts * partHeight;
+        int remainingHeight = rect.height() - partsTotalHeight;
+        if (remainingHeight > 0)
+            rects.append(QRect(rect.x(), rect.y() + partsTotalHeight, rect.width(), remainingHeight));
+
+        /*
+        foreach (const QRect &partRect, rects)
+            updateFromImage(image, partRect);
+        */
+
+        QtConcurrent::blockingFilter(rects, AreaFingerPrintsThreadedUpdateFromImage(image, this));
+    }
+}
+
+bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, QPoint &result)
+{
+    DGUARDMETHODPROFILED;
+
+    for (int line = 0; line < width_; ++line)
+    {
+        int index = fingerPrints_[line]->indexOf(needle);
 
         if (index > -1)
         {
@@ -268,6 +371,48 @@ bool findFingerPrintPosition(const AreaFingerPrints &prints, const AreaFingerPri
     return false;
 }
 
+bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &searchArea, QPoint &result)
+{
+    DGUARDMETHODPROFILED;
+
+    QRect rect = hashedArea_.intersected(searchArea);
+    int tempWidth = templateWidth();
+    rect.setWidth(rect.width() - tempWidth + 1);
+    rect.moveTo(rect.topLeft() - hashedArea_.topLeft());
+
+    //for (int line = 0; line < width_; ++line)
+    for (int line = rect.left(); line < rect.right() + 1; ++line)
+    {
+        int index = fingerPrints_[line]->indexOf(needle, rect.top(), rect.bottom() + 1 - needle.size());
+
+        if (index > -1)
+        {
+            result = QPoint(line, index);
+            return true;
+        }
+    }
+
+    return false;
+}
+
+bool AreaFingerPrints::isEqual(const AreaFingerPrints &other)
+{
+    if (width() != other.width())
+        return false;
+
+    for (int y = 0; y < width(); ++y)
+    {
+        if (fingerPrints_[y]->size() != other.fingerPrints_[y]->size())
+            return false;
+
+        if (memcmp(fingerPrints_[y]->data(), other.fingerPrints_[y]->data(), fingerPrints_[y]->size() * sizeof(quint32)) != 0)
+            return false;
+    }
+
+    return true;
+}
+
+
 /* MoveAnalyzer */
 
 MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth) :
@@ -276,8 +421,8 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
     hashArea_(hashArea),
     templateWidth_(templateWidth)
 {
-    hashArea_ = imageBefore_->rect();
-    searchAreaFingerPrints_ = getAreaFingerPrintsFast(imageBefore_, hashArea_, templateWidth);
+    //hashArea_ = imageBefore_->rect();
+    searchAreaFingerPrints_.initFromImageThreaded(imageBefore_, hashArea_, templateWidth);
 }
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
@@ -285,11 +430,11 @@ QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &template
     //DGUARDMETHODTIMED;
     //return findMovedRectNaive(searchArea, templateRect);
 
-    AreaFingerPrint templateFingerPrint = getAreaFingerPrint(imageAfter_, templateRect);
+    AreaFingerPrint templateFingerPrint(imageAfter_, templateRect);
 
     QPoint result;
 
-    if (findFingerPrintPosition(searchAreaFingerPrints_, templateFingerPrint, result))
+    if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result))
         return QRect(hashArea_.topLeft() + result, templateRect.size());
     else
         return QRect();

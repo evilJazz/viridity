@@ -8,13 +8,15 @@
 void testFingerPrints(QImage *image, int templateWidth)
 {
     qDebug("Getting fingerprints from %p using safe version...", image);
-    AreaFingerPrints fingerPrintsSafe = getAreaFingerPrintsSlow(image, image->rect(), templateWidth);
+    AreaFingerPrints fingerPrintsSafe;
+    fingerPrintsSafe.initFromImageSlow(image, image->rect(), templateWidth);
 
     qDebug("Getting fingerprints from %p using optimized version...", image);
-    AreaFingerPrints fingerPrintsOptimized = getAreaFingerPrintsFast(image, image->rect(), templateWidth);
+    AreaFingerPrints fingerPrintsOptimized;
+    fingerPrintsOptimized.initFromImageFast(image, image->rect(), templateWidth);
 
     qDebug("Comparing fingerprints...");
-    if (!fingerPrintsEqual(fingerPrintsSafe, fingerPrintsOptimized))
+    if (!fingerPrintsSafe.isEqual(fingerPrintsOptimized))
         qFatal("BUGGY OPTIMIZATION!!!");
     else
         qDebug("OPTIMIZATION IS OKAY.");
@@ -39,11 +41,38 @@ int main(int argc, char *argv[])
 
     AreaFingerPrints fingerPrints;
 
+    const int testWidth = 128;
+
+    QRect testRect1 = QRect(imageBefore.width() / 2, imageBefore.height() / 2, imageBefore.width(), imageBefore.height());
+    QRect testRect2 = QRect(imageBefore.width() - testWidth, imageBefore.height() - testWidth, testWidth, testWidth);
+
+    AreaFingerPrint templateFP;
+
+/*
+    for (int i = 0; i < 500; ++i)
+        templateFP.initFromImage(&imageBefore, testRect2);
+
+    for (int i = 0; i < 2; ++i)
+        fingerPrints.initFromImageFast(&imageBefore, QRect(imageBefore.width() / 2, imageBefore.height() / 2, imageBefore.width(), imageBefore.height()), testWidth);
+*/
+
     for (int i = 0; i < 50; ++i)
-        fingerPrints = getAreaFingerPrintsFast(&imageBefore, imageBefore.rect(), 128);
+        fingerPrints.initFromImageThreaded(&imageBefore, imageBefore.rect(), testWidth);
 
+    for (int i = 0; i < 50; ++i)
+        fingerPrints.initFromImageFast(&imageBefore, imageBefore.rect(), testWidth);
 
-        //MoveAnalyzer moveAnalyzer(&imageBefore, &imageAfter, imageBefore.rect(), 128);
+    for (int i = 0; i < 50; ++i)
+        fingerPrints.initFromImageSlow(&imageBefore, imageBefore.rect(), testWidth);
+
+/*
+    for (int i = 0; i < 10; ++i)
+    {
+        QPoint result;
+        fingerPrints.findPosition(templateFP, testRect2, result);
+    }
+*/
+    //MoveAnalyzer moveAnalyzer(&imageBefore, &imageAfter);
 
     DPROFILEPRINTSTAT;
 

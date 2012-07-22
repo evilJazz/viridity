@@ -5,17 +5,61 @@
 #include <QRect>
 #include <QImage>
 
-typedef QVector<quint32> AreaFingerPrint;
-typedef QVector<AreaFingerPrint> AreaFingerPrints;
+class AreaFingerPrint
+{
+public:
+    explicit AreaFingerPrint();
+    explicit AreaFingerPrint(QImage *image, const QRect &area);
+    explicit AreaFingerPrint(int height);
+    virtual ~AreaFingerPrint();
 
-AreaFingerPrint getAreaFingerPrint(QImage *image, const QRect &area);
-AreaFingerPrints getAreaFingerPrintsSlow(QImage *image, const QRect &area, int templateWidth);
-AreaFingerPrints getAreaFingerPrintsFast(QImage *image, const QRect &area, int templateWidth);
+    void clear();
 
-bool fingerPrintsEqual(const AreaFingerPrints &prints1, const AreaFingerPrints &prints2);
+    void initFromSize(int height);
+    void initFromImage(QImage *image, const QRect &area);
 
-int indexOfFingerPrintInFingerPrint(const AreaFingerPrint &haystack, const AreaFingerPrint &needle);
-bool findFingerPrintPosition(const AreaFingerPrints &prints, const AreaFingerPrint &print, QPoint &result);
+    int size() const { return size_; }
+    int indexOf(const AreaFingerPrint &needle, int startIndex = 0, int endIndex = -1);
+
+    inline quint32 *data() { return data_; }
+    inline const quint32 *constData() const { return data_; }
+
+private:
+    int size_;
+    quint32 *data_;
+};
+
+class AreaFingerPrints
+{
+public:
+    explicit AreaFingerPrints();
+    virtual ~AreaFingerPrints();
+
+    void clear();
+
+    void initFromSize(int width, int height, int templateWidth);
+    void initFromImageSlow(QImage *image, const QRect &area, int templateWidth);
+    void initFromImageFast(QImage *image, const QRect &area, int templateWidth);
+
+    void updateFromImage(QImage *image, const QRect &area);
+    void initFromImageThreaded(QImage *image, const QRect &area, int templateWidth);
+
+    int width() const { return width_; }
+    int height() const { return height_; }
+    const QRect &hashedArea() const { return hashedArea_; }
+    bool isEqual(const AreaFingerPrints &other);
+
+    int templateWidth() const { return hashedArea_.width() - width_ + 1; }
+
+    bool findPosition(const AreaFingerPrint &needle, QPoint &result);
+    bool findPosition(const AreaFingerPrint &needle, const QRect &searchArea, QPoint &result);
+
+private:
+    int width_;
+    int height_;
+    AreaFingerPrint **fingerPrints_;
+    QRect hashedArea_;
+};
 
 class MoveAnalyzer
 {

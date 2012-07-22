@@ -76,7 +76,7 @@ var DisplayRenderer = function() {
 
         _determineReadyState: function()
         {
-            if (debugEnabled) console.log("_imageDone: " + dr.frameImageCount)
+            //if (debugEnabled) console.log("_imageDone: " + dr.frameImageCount)
             if (dr.frameImageCount === 0)
             {
                 dr._flipToFront();
@@ -113,7 +113,6 @@ var DisplayRenderer = function() {
         init: function()
         {
             dr.socket = new WebSocket('ws://192.168.1.1:8080/display');
-
             dr.canvas = document.getElementById('canvasBack');
             dr.ctx = dr.canvas.getContext("2d");
 
@@ -240,7 +239,7 @@ var DisplayRenderer = function() {
                                         if (frame !== dr.lastFrame)
                                             console.log("ASYNCHRONOUS IMAGE!!!!!");
 
-                                        if (debugEnabled) console.log("frame: " + frame + " img.src: " + img.src);
+                                        //if (debugEnabled) console.log("frame: " + frame + " img.src: " + img.src);
 
                                         dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
                                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
