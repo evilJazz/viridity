@@ -1,6 +1,8 @@
 #include "imagecomparer.h"
 #include "moveanalyzer.h"
 
+#include <QtConcurrentMap>
+
 #undef DEBUG
 #include "debug.h"
 
@@ -165,18 +167,22 @@ QList<QRect> findUpdateRects(QImage *buffer1, QImage *buffer2, const QRect &sear
         if (!minRect.isEmpty())
         {
             if (minRect != rect)
+            {
                 DPRINTF("Minimized rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
                         rect.left(), rect.top(), rect.width(), rect.height(),
                         minRect.left(), minRect.top(), minRect.width(), minRect.height()
                         );
+            }
 
             result += minRect;
         }
         else
+        {
             DPRINTF("Removed rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
                     rect.left(), rect.top(), rect.width(), rect.height(),
                     minRect.left(), minRect.top(), minRect.width(), minRect.height()
                     );
+        }
     }
 
     return result;
@@ -367,8 +373,59 @@ UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops)
 
 ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     imageBefore_(imageBefore),
-    imageAfter_(imageAfter)
+    imageAfter_(imageAfter),
+    mutex_(QMutex::Recursive),
+    moveAnalyzer_(NULL),
+    movedRectSearchMisses_(0),
+    movedRectSearchEnabled_(true),
+    tileWidth_(20)
 {
+
+}
+
+struct MapProcessRect
+{
+    MapProcessRect(ImageComparer *comparer) :
+        comparer(comparer)
+    {
+    }
+
+    typedef UpdateOperation result_type;
+
+    UpdateOperation operator()(const QRect &rect)
+    {
+        UpdateOperation op;
+        if (!comparer->processRect(rect, op))
+            op.type = uotNoOp;
+
+        return op;
+    }
+
+    ImageComparer *comparer;
+};
+
+struct ReduceProcessRect
+{
+    ReduceProcessRect(ImageComparer *comparer) :
+        comparer(comparer)
+    {
+    }
+
+    typedef UpdateOperationList result_type;
+
+    void operator()(UpdateOperationList &list, const UpdateOperation &op)
+    {
+        if (op.type != uotNoOp)
+            list.append(op);
+    }
+
+    ImageComparer *comparer;
+};
+
+void reduceProcessRectToList(UpdateOperationList &list, const UpdateOperation &op)
+{
+    if (op.type != uotNoOp)
+        list.append(op);
 }
 
 UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
@@ -379,121 +436,141 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
     UpdateOperationList result;
     UpdateOperation op;
 
-    const int tileWidth = 40;
-
-//#define USE_MOVE_ANALYZER
+#define USE_MOVE_ANALYZER
+#define USE_FILL_ANALYZER
 
 #ifdef USE_MOVE_ANALYZER
-    QRect movedSrcRect;
-    int movedRectSearchMisses = 0;
-    bool movedRectSearchEnabled = true;
-    MoveAnalyzer moveAnalyzer(imageBefore_, imageAfter_, searchArea, tileWidth);
+    movedRectSearchMisses_ = 0;
+    movedRectSearchEnabled_ = true;
+
+    if (moveAnalyzer_)
+        delete moveAnalyzer_;
+
+    moveAnalyzer_ = new MoveAnalyzer(imageBefore_, imageAfter_, searchArea, tileWidth_);
 #endif
 
-    QList<QRect> tiles = splitRectIntoTiles(searchArea, tileWidth, tileWidth);
+    QList<QRect> tiles = splitRectIntoTiles(searchArea, tileWidth_, tileWidth_);
 
+    /*
     foreach (const QRect &rect, tiles)
     {
-        QRect minRect = fastFindChangedRect32(imageBefore_, imageAfter_, rect);
-        if (minRect.isEmpty())
-            continue;
-
-#ifdef USE_MOVE_ANALYZER
-
-        if (movedRectSearchEnabled && rect.width() == tileWidth)
-        {
-            QRect movedRectSearchArea;
-            if (lastSuccessfulMoveVectors_.count() == 0)
-                movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
-            else
-            {
-                foreach (const QPoint &moveVector, lastSuccessfulMoveVectors_)
-                {
-                    movedRectSearchArea = rect;
-                    movedRectSearchArea.translate(-moveVector);
-                    //movedRectSearchArea.adjust(-5, -5, 5, 5);
-                    movedSrcRect = moveAnalyzer.findMovedRect(movedRectSearchArea, rect);
-
-                    if (!movedSrcRect.isEmpty())
-                    {
-                        DPRINTF("Found move area with existing vector %d x %d", moveVector.x(), moveVector.y());
-                        break;
-                    }
-                }
-
-                if (movedSrcRect.isEmpty())
-                    movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
-            }
-
-            if (movedSrcRect.isNull())
-                movedSrcRect = moveAnalyzer.findMovedRect(movedRectSearchArea, rect);
-
-            if (movedSrcRect.isNull())
-            {
-                ++movedRectSearchMisses;
-                //if (movedRectSearchMisses == 10)
-                //    movedRectSearchEnabled = false;
-            }
-
-            if (!movedSrcRect.isEmpty())
-            {
-                QPoint currentMoveVector = rect.topLeft() - movedSrcRect.topLeft();
-
-                int index = lastSuccessfulMoveVectors_.indexOf(currentMoveVector);
-
-                if (index == -1)
-                    lastSuccessfulMoveVectors_.prepend(currentMoveVector);
-                else
-                    lastSuccessfulMoveVectors_.move(index, 0);
-
-                op.type = uotMove;
-                op.srcRect = movedSrcRect;
-                op.dstPoint = rect.topLeft();
-
-                DPRINTF("Move  %d, %d + %d x %d  ->  %d, %d + %d x %d  (vec %d %d)",
-                        movedSrcRect.left(), movedSrcRect.top(), rect.width(), rect.height(),
-                        rect.left(), rect.top(), rect.width(), rect.height(),
-                        currentMoveVector.x(), currentMoveVector.y()
-                        );
-
-                result.append(op);
-                movedSrcRect = QRect();
-                continue;
-            }
-        }
-#endif
-
-        /*
-            if (minRect != rect)
-                DPRINTF("Minimized rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
-                    rect.left(), rect.top(), rect.width(), rect.height(),
-                    minRect.left(), minRect.top(), minRect.width(), minRect.height()
-                );
-        */
-
-        QColor solidColor = getSolidRectColor(imageAfter_, minRect);
-        if (solidColor.isValid())
-        {
-            op.type = uotFill;
-            op.srcRect = minRect;
-            op.dstPoint = minRect.topLeft();
-            op.fillColor = solidColor;
-
+        if (processRect(rect, op))
             result.append(op);
-            continue;
-        }
-
-        DPRINTF("No move operation found for: %d, %d + %d x %d",
-                minRect.left(), minRect.top(), minRect.width(), minRect.height()
-                );
-
-        op.type = uotUpdate;
-        op.srcRect = minRect;
-        op.dstPoint = minRect.topLeft();
-
-        result.append(op);
     }
+    */
+
+    result = QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
 
     return result;
 }
 
+bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op)
+{
+    QRect minRect = fastFindChangedRect32(imageBefore_, imageAfter_, rect);
+    if (minRect.isEmpty())
+        return false;
+
+#ifdef USE_MOVE_ANALYZER
+    if (movedRectSearchEnabled_ && rect.width() == tileWidth_)
+    {
+        QRect movedSrcRect;
+        QRect movedRectSearchArea;
+        if (lastSuccessfulMoveVectors_.count() == 0)
+            movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
+        else
+        {
+            QMutexLocker l(&mutex_);
+            QList<QPoint> list = lastSuccessfulMoveVectors_;
+            list.detach();
+            l.unlock();
+
+            foreach (const QPoint &moveVector, list)
+            {
+                movedRectSearchArea = rect;
+                movedRectSearchArea.translate(-moveVector);
+                //movedRectSearchArea.adjust(-5, -5, 5, 5);
+                movedSrcRect = moveAnalyzer_->findMovedRect(movedRectSearchArea, rect);
+
+                if (!movedSrcRect.isEmpty())
+                {
+                    DPRINTF("Found move area with existing vector %d x %d", moveVector.x(), moveVector.y());
+                    break;
+                }
+            }
+
+            if (movedSrcRect.isEmpty())
+                movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
+        }
+
+        if (movedSrcRect.isNull())
+            movedSrcRect = moveAnalyzer_->findMovedRect(movedRectSearchArea, rect);
+
+        if (movedSrcRect.isNull())
+        {
+            QMutexLocker l(&mutex_);
+            ++movedRectSearchMisses_;
+            //if (movedRectSearchMisses == 10)
+            //    movedRectSearchEnabled = false;
+        }
+
+        if (!movedSrcRect.isEmpty())
+        {
+            QPoint currentMoveVector = rect.topLeft() - movedSrcRect.topLeft();
+
+            QMutexLocker l(&mutex_);
+
+            int index = lastSuccessfulMoveVectors_.indexOf(currentMoveVector);
+
+            if (index == -1)
+                lastSuccessfulMoveVectors_.prepend(currentMoveVector);
+            else
+                lastSuccessfulMoveVectors_.move(index, 0);
+
+            l.unlock();
+
+            op.type = uotMove;
+            op.srcRect = movedSrcRect;
+            op.dstPoint = rect.topLeft();
+
+            DPRINTF("Move  %d, %d + %d x %d  ->  %d, %d + %d x %d  (vec %d %d)",
+                    movedSrcRect.left(), movedSrcRect.top(), rect.width(), rect.height(),
+                    rect.left(), rect.top(), rect.width(), rect.height(),
+                    currentMoveVector.x(), currentMoveVector.y()
+                    );
+
+            return true;
+        }
+    }
+#endif
+
+#ifdef USE_FILL_ANALYZER
+    QColor solidColor = getSolidRectColor(imageAfter_, minRect);
+    if (solidColor.isValid())
+    {
+        op.type = uotFill;
+        op.srcRect = minRect;
+        op.dstPoint = minRect.topLeft();
+        op.fillColor = solidColor;
+
+        return true;
+    }
+#endif
+
+    /*
+        if (minRect != rect)
+            DPRINTF("Minimized rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
+                rect.left(), rect.top(), rect.width(), rect.height(),
+                minRect.left(), minRect.top(), minRect.width(), minRect.height()
+            );
+    */
+
+    DPRINTF("No move operation found for: %d, %d + %d x %d",
+            minRect.left(), minRect.top(), minRect.width(), minRect.height()
+            );
+
+    op.type = uotUpdate;
+    op.srcRect = minRect;
+    op.dstPoint = minRect.topLeft();
+
+    return true;
+}

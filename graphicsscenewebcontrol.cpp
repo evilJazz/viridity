@@ -13,6 +13,7 @@
 
 #include <QUuid>
 #include <QCryptographicHash>
+#include <QMutexLocker>
 
 QString createUniqueID()
 {
@@ -35,14 +36,15 @@ public:
 
 /* WebServerConnection */
 
-GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(GraphicsSceneWebServer *parent, Tufao::HttpServerRequest *request, const QByteArray &head) :
-    QObject(parent),
+GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerRequest *request, const QByteArray &head) :
+    QObject(),
     server_(parent),
     renderer_(NULL),
     frame_(0),
     clientReady_(true),
     urlMode_(true),
-    updateCheckInterval_(10)
+    updateCheckInterval_(1),
+    patchesMutex_(QMutex::Recursive)
 {
     socket_ = new Tufao::WebSocket(this);
     socket_->startServerHandshake(request, head);
@@ -66,7 +68,9 @@ GraphicsSceneWebServerConnection::~GraphicsSceneWebServerConnection()
 void GraphicsSceneWebServerConnection::clientConnected()
 {
     if (!renderer_)
-        renderer_ = new GraphicsSceneBufferRenderer(this);
+    {
+        renderer_ = new GraphicsSceneBufferRenderer();
+    }
 
     commandInterpreter_.setTargetGraphicsScene(server_->scene());
 
@@ -165,11 +169,14 @@ Patch *GraphicsSceneWebServerConnection::createPatch(const QRect &rect, bool cre
 void GraphicsSceneWebServerConnection::sendUpdate()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker l(&patchesMutex_);
 
     DPRINTF("connection: %p  thread: %p  clientReady_: %d  patches_.count(): %d", this, QThread::currentThread(), clientReady_, patches_.count());
     timer_.stop();
+
     if (clientReady_ && patches_.count() == 0)
     {
+        l.unlock();
         QList<UpdateOperation> ops = renderer_->updateBufferExt();
 
         DPRINTF("Updates available: %d", ops.count());
@@ -202,7 +209,10 @@ void GraphicsSceneWebServerConnection::sendUpdate()
                         QString("fb:" + id() + "/" + framePatchId).toLatin1().constData()
                     );
 
+                    l.relock();
                     patches_.insert(framePatchId, patch);
+                    l.unlock();
+
                     socket_->sendMessage(cmd.toLatin1());
                 }
                 else
@@ -253,6 +263,8 @@ void GraphicsSceneWebServerConnection::sendUpdate()
 
 void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
+    // THIS METHOD IS MULTI-THREADED!
+
     QString url = request->url();
 
     int indexOfSlash = url.lastIndexOf("/");
@@ -261,9 +273,11 @@ void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *r
     if (indexOfSlash > -1)
         patchId = url.mid(indexOfSlash + 1);
 
+    QMutexLocker l(&patchesMutex_);
     if (!patchId.isEmpty() && patches_.contains(patchId))
     {
         Patch *patch = patches_.take(patchId);
+        l.unlock();
 
         patch->data.open(QIODevice::ReadOnly);
 
@@ -287,9 +301,9 @@ void GraphicsSceneWebServerConnection::clientDisconnected()
     this->deleteLater();
 }
 
-/* WebServer */
+/* GraphicsSceneSingleThreadedWebServer */
 
-GraphicsSceneWebServer::GraphicsSceneWebServer(QObject *parent, QGraphicsScene *scene) :
+GraphicsSceneSingleThreadedWebServer::GraphicsSceneSingleThreadedWebServer(QObject *parent, QGraphicsScene *scene) :
     Tufao::HttpServer(parent),
     scene_(scene)
 {
@@ -297,7 +311,7 @@ GraphicsSceneWebServer::GraphicsSceneWebServer(QObject *parent, QGraphicsScene *
             this, SLOT(handleRequest(Tufao::HttpServerRequest*, Tufao::HttpServerResponse*)));
 }
 
-void GraphicsSceneWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void GraphicsSceneSingleThreadedWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     if (request->url() == "/" || request->url() == "/index.html")
     {
@@ -324,9 +338,10 @@ void GraphicsSceneWebServer::handleRequest(Tufao::HttpServerRequest *request, Tu
     else
     {
         QString id = QString(request->url()).mid(1, 40);
-        if (map_.contains(id))
+        GraphicsSceneWebServerConnection *c = getConnection(id);
+
+        if (c)
         {
-            GraphicsSceneWebServerConnection *c = map_[id];
             c->handleRequest(request, response);
             return;
         }
@@ -336,9 +351,10 @@ void GraphicsSceneWebServer::handleRequest(Tufao::HttpServerRequest *request, Tu
     }
 }
 
-void GraphicsSceneWebServer::upgrade(Tufao::HttpServerRequest *request, const QByteArray &head)
+void GraphicsSceneSingleThreadedWebServer::upgrade(Tufao::HttpServerRequest *request, const QByteArray &head)
 {
-    if (request->url() != "/display") {
+    if (request->url() != "/display")
+    {
         Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
         response.writeHead(404);
         response.end("Not found");
@@ -347,10 +363,194 @@ void GraphicsSceneWebServer::upgrade(Tufao::HttpServerRequest *request, const QB
     }
 
     GraphicsSceneWebServerConnection *c = new GraphicsSceneWebServerConnection(this, request, head);
+    addConnection(c);
+}
+
+void GraphicsSceneSingleThreadedWebServer::addConnection(GraphicsSceneWebServerConnection *c)
+{
     map_.insert(c->id(), c);
 }
 
-void GraphicsSceneWebServer::removeConnection(GraphicsSceneWebServerConnection *c)
+void GraphicsSceneSingleThreadedWebServer::removeConnection(GraphicsSceneWebServerConnection *c)
 {
     map_.remove(c->id());
+}
+
+GraphicsSceneWebServerConnection *GraphicsSceneSingleThreadedWebServer::getConnection(const QString &id)
+{
+    if (map_.contains(id))
+        return map_[id];
+
+    return NULL;
+}
+
+/* GraphicsSceneWebServerThread */
+
+GraphicsSceneWebServerThread::GraphicsSceneWebServerThread(GraphicsSceneMultiThreadedWebServer *parent) :
+    QThread(),
+    server_(parent)
+{
+    // need this to make the signals and slots run in current thread
+    moveToThread(this);
+    connect(parent, SIGNAL(destroyed()), this, SLOT(quit()));
+    connect(parent, SIGNAL(destroyed()), this, SLOT(deleteLater()));
+    connect(this, SIGNAL(newConnection(int)), this, SLOT(onNewConnection(int)));
+}
+
+void GraphicsSceneWebServerThread::addConnection(int socketDescriptor)
+{
+    emit newConnection(socketDescriptor);
+}
+
+void GraphicsSceneWebServerThread::onNewConnection(int socketDescriptor)
+{
+    QTcpSocket *socket = new QTcpSocket(this);
+
+    if (!socket->setSocketDescriptor(socketDescriptor))
+    {
+        delete socket;
+        return;
+    }
+
+    Tufao::HttpServerRequest *handle = new Tufao::HttpServerRequest(socket, this);
+
+    connect(handle, SIGNAL(ready()), this, SLOT(onRequestReady()));
+    connect(handle, SIGNAL(upgrade(QByteArray)), this, SLOT(onUpgrade(QByteArray)));
+    connect(socket, SIGNAL(disconnected()), handle, SLOT(deleteLater()));
+    connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+}
+
+void GraphicsSceneWebServerThread::onRequestReady()
+{
+    Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+
+    QAbstractSocket *socket = request->socket();
+    Tufao::HttpServerResponse *response = new Tufao::HttpServerResponse(socket, request->responseOptions(), this);
+
+    connect(socket, SIGNAL(disconnected()), response, SLOT(deleteLater()));
+    connect(response, SIGNAL(finished()), response, SLOT(deleteLater()));
+
+    if (request->headers().contains("Expect", "100-continue"))
+        response->writeContinue();
+
+    if (request->url() == "/" || request->url() == "/index.html")
+    {
+        QFile indexFile(":/webcontrol/index.html");
+        indexFile.open(QIODevice::ReadOnly);
+
+        response->writeHead(Tufao::HttpServerResponse::OK);
+        response->headers().insert("Content-Type", "text/html; charset=utf8");
+        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+        response->headers().insert("Pragma", "no-cache");
+        response->end(indexFile.readAll());
+    }
+    else if (request->url() == "/displayRenderer.js")
+    {
+        QFile indexFile(":/webcontrol/displayRenderer.js");
+        indexFile.open(QIODevice::ReadOnly);
+
+        response->writeHead(Tufao::HttpServerResponse::OK);
+        response->headers().insert("Content-Type", "application/javascript; charset=utf8");
+        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+        response->headers().insert("Pragma", "no-cache");
+        response->end(indexFile.readAll());
+    }
+    else
+    {
+        QString id = QString(request->url()).mid(1, 40);
+        GraphicsSceneWebServerConnection *c = server_->getConnection(id);
+
+        if (c)
+        {
+            c->handleRequest(request, response);
+            return;
+        }
+
+        response->writeHead(404);
+        response->end("Not found");
+    }
+
+}
+
+void GraphicsSceneWebServerThread::onUpgrade(const QByteArray &head)
+{
+    Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+
+    if (request->url() != "/display")
+    {
+        Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
+        response.writeHead(404);
+        response.end("Not found");
+        request->socket()->close();
+        return;
+    }
+
+    GraphicsSceneWebServerConnection *c = new GraphicsSceneWebServerConnection(server_, request, head);
+    c->moveToThread(this);
+    server_->addConnection(c);
+}
+
+
+/* GraphicsSceneMultiThreadedWebServer */
+
+GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject *parent, QGraphicsScene *scene) :
+    QTcpServer(parent),
+    i(0),
+    scene_(scene),
+    mapMutex_(QMutex::Recursive)
+{
+}
+
+GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
+{
+    // the thread can't have a parent then...
+    foreach (GraphicsSceneWebServerThread* t, threads)
+    {
+        t->quit();
+    }
+
+    foreach (GraphicsSceneWebServerThread* t, threads)
+    {
+        t->wait();
+        delete t;
+    }
+}
+
+void GraphicsSceneMultiThreadedWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
+{
+    threads.reserve(threadsNumber);
+
+    for (int i = 0; i < threadsNumber; ++i)
+    {
+        threads.push_back(new GraphicsSceneWebServerThread(this));
+        threads[i]->start();
+    }
+
+    QTcpServer::listen(address, port);
+}
+
+void GraphicsSceneMultiThreadedWebServer::addConnection(GraphicsSceneWebServerConnection *c)
+{
+    QMutexLocker l(&mapMutex_);
+    map_.insert(c->id(), c);
+}
+
+void GraphicsSceneMultiThreadedWebServer::removeConnection(GraphicsSceneWebServerConnection *c)
+{
+    QMutexLocker l(&mapMutex_);
+    map_.remove(c->id());
+}
+
+GraphicsSceneWebServerConnection *GraphicsSceneMultiThreadedWebServer::getConnection(const QString &id)
+{
+    QMutexLocker l(&mapMutex_);
+    if (map_.contains(id))
+        return map_[id];
+
+    return NULL;
+}
+
+void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
+{
+    threads[(i++) % threads.size()]->addConnection(handle);
 }

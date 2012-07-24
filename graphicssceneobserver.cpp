@@ -1,12 +1,15 @@
 #include "graphicssceneobserver.h"
 
+#include <QMetaType>
+
 #undef DEBUG
 #include "debug.h"
 
 GraphicsSceneObserver::GraphicsSceneObserver(QObject *parent) :
     QObject(parent),
     enabled_(false),
-    scene_(NULL)
+    scene_(NULL),
+    sceneChangedHandler_(NULL)
 {
 }
 
@@ -36,7 +39,14 @@ void GraphicsSceneObserver::setEnabled(bool value)
         {
             sceneDetaching();
 
-            disconnect(scene_, SIGNAL(changed(QList<QRectF>)));
+            if (sceneChangedHandler_)
+            {
+                disconnect(sceneChangedHandler_, SIGNAL(newUpdateAvailable(QList<QRectF>)));
+                delete sceneChangedHandler_;
+                sceneChangedHandler_ = NULL;
+            }
+
+            //disconnect(scene_, SIGNAL(changed(QList<QRectF>)));
             disconnect(scene_, SIGNAL(sceneRectChanged(QRectF)));
 
             sceneDetached();
@@ -48,7 +58,14 @@ void GraphicsSceneObserver::setEnabled(bool value)
         {
             sceneAttached();
 
-            connect(scene_, SIGNAL(changed(QList<QRectF>)), this, SLOT(sceneChanged(QList<QRectF>)));
+            //connect(scene_, SIGNAL(changed(QList<QRectF>)), this, SLOT(sceneChanged(QList<QRectF>)));
+
+            if (!sceneChangedHandler_)
+            {
+                sceneChangedHandler_ = new SynchronizedSceneChangedHandler(scene_);
+                connect(sceneChangedHandler_, SIGNAL(newUpdateAvailable(QList<QRectF>)), this, SLOT(sceneChanged(QList<QRectF>)));
+            }
+
             connect(scene_, SIGNAL(sceneRectChanged(QRectF)), this, SLOT(sceneSceneRectChanged(QRectF)));
         }
     }
@@ -59,12 +76,12 @@ void GraphicsSceneObserver::sceneAttached()
     DGUARDMETHODTIMED;
 }
 
-void GraphicsSceneObserver::sceneChanged(const QList<QRectF> &rects)
+void GraphicsSceneObserver::sceneChanged(QList<QRectF> rects)
 {
     DGUARDMETHODTIMED;
 }
 
-void GraphicsSceneObserver::sceneSceneRectChanged(const QRectF &newRect)
+void GraphicsSceneObserver::sceneSceneRectChanged(QRectF newRect)
 {
     DGUARDMETHODTIMED;
 }

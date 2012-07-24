@@ -35,8 +35,8 @@ private:
     bool keyDownKeyCodeHandled_;
     int keyDownKeyCode_;
 
-    bool sendEvent(QEvent &event, bool spontaneous = false);
-    bool sendEvent(QEvent::Type eventType, bool spontaneous = false);
+    void postEvent(QEvent *event, bool spontaneous = false);
+    void postEvent(QEvent::Type eventType, bool spontaneous = false);
 
     Qt::KeyboardModifier parseParamKeyboardModifiers(const QStringList &params, int index);
     Qt::MouseButton parseParamMouseButton(const QStringList &params, int index);

@@ -1,5 +1,7 @@
 #include "graphicsscenebufferrenderer.h"
 
+#include <QThread>
+
 #undef DEBUG
 #include "debug.h"
 
@@ -12,6 +14,7 @@ GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
     otherBuffer_(&buffer2_),
     minimizeDamageRegion_(true)
 {
+
 }
 
 GraphicsSceneBufferRenderer::~GraphicsSceneBufferRenderer()
@@ -33,11 +36,13 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     QPainter p(workBuffer_);
 
     ImageComparer comparer(otherBuffer_, workBuffer_);
+    SynchronizedSceneRenderer syncedSceneRenderer(scene_);
 
     foreach (const QRect &rect, rects)
     {
         p.eraseRect(rect);
-        scene_->render(&p, rect, rect, Qt::IgnoreAspectRatio);
+        //scene_->render(&p, rect, rect, Qt::IgnoreAspectRatio);
+        syncedSceneRenderer.render(&p, rect, rect, Qt::IgnoreAspectRatio);
     }
 
     UpdateOperationList ops;
@@ -115,21 +120,21 @@ void GraphicsSceneBufferRenderer::sceneAttached()
     int height = 768; //scene_->height();
 
     if (width != buffer1_.width() || height != buffer1_.height())
-        buffer1_ = QImage(width, height, QImage::Format_ARGB32);
+        buffer1_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
 
     if (width != buffer2_.width() || height != buffer2_.height())
-        buffer2_ = QImage(width, height, QImage::Format_ARGB32);
+        buffer2_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
 
     fullUpdate();
 }
 
-void GraphicsSceneBufferRenderer::sceneSceneRectChanged(const QRectF &newRect)
+void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
 {
     sceneAttached();
 }
 
 static int updateNo = 0;
-void GraphicsSceneBufferRenderer::sceneChanged(const QList<QRectF> &rects)
+void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 {
     //DGUARDMETHODTIMED;
     //DPRINTF("UpDaTe %d", updateNo++);

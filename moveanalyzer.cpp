@@ -376,6 +376,10 @@ bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &
     DGUARDMETHODPROFILED;
 
     QRect rect = hashedArea_.intersected(searchArea);
+
+    if (rect.height() != needle.size())
+        return false;
+
     int tempWidth = templateWidth();
     rect.setWidth(rect.width() - tempWidth + 1);
     rect.moveTo(rect.topLeft() - hashedArea_.topLeft());

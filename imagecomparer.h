@@ -9,8 +9,9 @@
 #include <QRect>
 #include <QColor>
 #include <QImage>
+#include <QMutex>
 
-enum UpdateOperationType { uotUpdate, uotMove, uotFill };
+enum UpdateOperationType { uotUpdate, uotMove, uotFill, uotNoOp };
 
 struct UpdateOperation
 {
@@ -37,6 +38,8 @@ QRect findMovedRect(QImage *imageBefore, QImage *imageAfter, const QRect &search
 UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps);
 UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops);
 
+class MoveAnalyzer;
+
 class ImageComparer
 {
 public:
@@ -44,11 +47,20 @@ public:
 
     UpdateOperationList findUpdateOperations(const QRect &searchArea);
 
+protected:
+    friend struct MapProcessRect;
+    bool processRect(const QRect &rect, UpdateOperation &op);
+
 private:
     QImage *imageBefore_;
     QImage *imageAfter_;
 
+    QMutex mutex_;
     QList<QPoint> lastSuccessfulMoveVectors_;
+    MoveAnalyzer *moveAnalyzer_;
+    int movedRectSearchMisses_;
+    bool movedRectSearchEnabled_;
+    int tileWidth_;
 };
 
 #endif // IMAGECOMPARER_H

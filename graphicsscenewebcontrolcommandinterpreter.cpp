@@ -30,11 +30,14 @@ void GraphicsSceneWebControlCommandInterpreter::setTargetGraphicsScene(QGraphics
     scene_ = scene;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::sendEvent(QEvent &event, bool spontaneous)
+void GraphicsSceneWebControlCommandInterpreter::postEvent(QEvent *event, bool spontaneous)
 {
     if (spontaneous)
-        QSpontaneKeyEvent::setSpontaneous(&event);
+        QSpontaneKeyEvent::setSpontaneous(event);
 
+    QApplication::postEvent(scene_, event);
+
+    /*
     if (!QApplication::sendEvent(scene_, &event))
     {
         DPRINTF("Event not accepted...");
@@ -42,12 +45,13 @@ bool GraphicsSceneWebControlCommandInterpreter::sendEvent(QEvent &event, bool sp
     }
 
     return true;
+    */
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::sendEvent(QEvent::Type eventType, bool spontaneous)
+void GraphicsSceneWebControlCommandInterpreter::postEvent(QEvent::Type eventType, bool spontaneous)
 {
-    QEvent event(eventType);
-    return sendEvent(event, spontaneous);
+    QEvent *event = new QEvent(eventType);
+    postEvent(event, spontaneous);
 }
 
 Qt::KeyboardModifier GraphicsSceneWebControlCommandInterpreter::parseParamKeyboardModifiers(const QStringList &params, int index)
@@ -113,15 +117,15 @@ QPoint GraphicsSceneWebControlCommandInterpreter::parseParamPoint(const QStringL
 bool GraphicsSceneWebControlCommandInterpreter::handleMouseEnter(const QString &command, const QStringList &params)
 {
     if (!scene_->isActive())
-        sendEvent(QEvent::WindowActivate);
+        postEvent(QEvent::WindowActivate);
 
-    sendEvent(QEvent::Enter, true);
+    postEvent(QEvent::Enter, true);
 
     if (!scene_->hasFocus())
         scene_->setFocus();
 
-    QInputMethodEvent enterFocus;
-    sendEvent(enterFocus);
+    QInputMethodEvent *enterFocus = new QInputMethodEvent();
+    postEvent(enterFocus);
 
     return true;
 }
@@ -147,26 +151,26 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
     {
         QPoint delta(parseParamPoint(params, 4));
 
-        QGraphicsSceneWheelEvent we(QEvent::GraphicsSceneWheel);
-        we.setWidget(NULL);
-        we.setScenePos(scenePos);
-        we.setScreenPos(screenPos);
-        we.setButtons(buttons);
-        we.setModifiers(modifiers);
+        QGraphicsSceneWheelEvent *we = new QGraphicsSceneWheelEvent(QEvent::GraphicsSceneWheel);
+        we->setWidget(NULL);
+        we->setScenePos(scenePos);
+        we->setScreenPos(screenPos);
+        we->setButtons(buttons);
+        we->setModifiers(modifiers);
 
         if (delta.y() != 0)
         {
-            we.setDelta(delta.y() * 10);
-            we.setOrientation(Qt::Vertical);
+            we->setDelta(delta.y() * 10);
+            we->setOrientation(Qt::Vertical);
         }
         else
         {
-            we.setDelta(delta.x() * 10);
-            we.setOrientation(Qt::Horizontal);
+            we->setDelta(delta.x() * 10);
+            we->setOrientation(Qt::Horizontal);
         }
 
-        we.setAccepted(false);
-        sendEvent(we, true);
+        we->setAccepted(false);
+        postEvent(we, true);
         return true;
     }
     else
@@ -206,26 +210,27 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
             return false;
         }
 
-        QGraphicsSceneMouseEvent me(type);
-        me.setButtonDownScenePos(button, lastButtonDownScenePos_);
-        me.setButtonDownScreenPos(button, lastButtonDownScreenPos_);
+        QGraphicsSceneMouseEvent *me = new QGraphicsSceneMouseEvent(type);
+        me->setButtonDownScenePos(button, lastButtonDownScenePos_);
+        me->setButtonDownScreenPos(button, lastButtonDownScreenPos_);
 
-        me.setScenePos(scenePos);
-        me.setScreenPos(screenPos);
+        me->setScenePos(scenePos);
+        me->setScreenPos(screenPos);
 
-        me.setLastScenePos(lastScenePos_);
-        me.setLastScreenPos(lastScreenPos_);
+        me->setLastScenePos(lastScenePos_);
+        me->setLastScreenPos(lastScreenPos_);
 
         lastScenePos_ = scenePos;
         lastScreenPos_ = screenPos;
 
-        me.setButtons(buttons);
-        me.setButton(button);
-        me.setModifiers(modifiers);
+        me->setButtons(buttons);
+        me->setButton(button);
+        me->setModifiers(modifiers);
 
-        me.setAccepted(false);
+        me->setAccepted(false);
 
-        return sendEvent(me, true);
+        postEvent(me, true);
+        return true;
     }
 }
 
@@ -319,8 +324,9 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
         return false;
     }
 
-    QKeyEvent ke(type, key, modifiers, text);
-    return sendEvent(ke, true);
+    QKeyEvent *ke = new QKeyEvent(type, key, modifiers, text);
+    postEvent(ke, true);
+    return true;
 }
 
 bool GraphicsSceneWebControlCommandInterpreter::sendCommand(const QString &command, const QStringList &params)
