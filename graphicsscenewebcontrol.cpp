@@ -263,6 +263,8 @@ void GraphicsSceneWebServerConnection::sendUpdate()
 
 void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
+    //qDebug("GraphicsSceneWebServerConnection::handleRequest  ->  Thread: %p (%d)", QThread::currentThread(), QThread::currentThreadId());
+
     // THIS METHOD IS MULTI-THREADED!
 
     QString url = request->url();

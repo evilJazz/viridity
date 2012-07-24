@@ -16,6 +16,9 @@ public:
     SynchronizedSceneRenderer(QGraphicsScene *scene) :
         scene_(scene)
     {
+        qRegisterMetaType<QPainter *>("QPainter *");
+        qRegisterMetaType<Qt::AspectRatioMode>("Qt::AspectRatioMode");
+
         if (scene_->thread() != QThread::currentThread())
             this->moveToThread(scene_->thread());
     }

@@ -378,7 +378,7 @@ ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     moveAnalyzer_(NULL),
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true),
-    tileWidth_(20)
+    tileWidth_(64)
 {
 
 }
@@ -436,7 +436,7 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
     UpdateOperationList result;
     UpdateOperation op;
 
-#define USE_MOVE_ANALYZER
+//#define USE_MOVE_ANALYZER
 #define USE_FILL_ANALYZER
 
 #ifdef USE_MOVE_ANALYZER
