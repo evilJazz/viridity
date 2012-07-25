@@ -1,0 +1,1 @@
+#include "synchronizedscenechangedhandler.h"

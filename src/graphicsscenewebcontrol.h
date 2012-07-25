@@ -1,6 +1,8 @@
 #ifndef GRAPHICSSCENEWEBCONTROL_H
 #define GRAPHICSSCENEWEBCONTROL_H
 
+#include "viridity_global.h"
+
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
@@ -8,8 +10,8 @@
 #include <QThread>
 
 #include <QtNetwork/QTcpSocket>
-#include <HttpServer>
-#include <WebSocket>
+#include <Tufao/HttpServer>
+#include <Tufao/WebSocket>
 #include <QBuffer>
 
 class WebServerInterface;
@@ -34,8 +36,7 @@ private slots:
     void sendUpdate();
 
 public slots:
-    void handleRequest(Tufao::HttpServerRequest *request,
-                       Tufao::HttpServerResponse *response);
+    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
     WebServerInterface *server_;

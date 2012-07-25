@@ -1,15 +1,14 @@
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-#define DEBUG
-#include "debug.h"
-
 #include <QApplication>
 #include <QEvent>
 #include <QMouseEvent>
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsItem>
 
-#include "qtestspontaneevent.h"
+#define DEBUG
+#include "private/debug.h"
+#include "private/qtestspontaneevent.h"
 
 /* GraphicsSceneWebControlCommandInterpreter */
 

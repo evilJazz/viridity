@@ -2,8 +2,10 @@
 
 #include <QThread>
 
+#include "private/synchronizedscenerenderer.h"
+
 #undef DEBUG
-#include "debug.h"
+#include "private/debug.h"
 
 /* GraphicsSceneBufferRenderer */
 

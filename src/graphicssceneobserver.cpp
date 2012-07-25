@@ -2,8 +2,10 @@
 
 #include <QMetaType>
 
+#include "private/synchronizedscenechangedhandler.h"
+
 #undef DEBUG
-#include "debug.h"
+#include "private/debug.h"
 
 GraphicsSceneObserver::GraphicsSceneObserver(QObject *parent) :
     QObject(parent),

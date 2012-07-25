@@ -1,10 +1,10 @@
 #include "graphicsscenewebcontrol.h"
 
 #undef DEBUG
-#include "debug.h"
+#include "private/debug.h"
 
-#include "WebSocket"
-#include "HttpServerRequest"
+#include "Tufao/WebSocket"
+#include "Tufao/HttpServerRequest"
 
 #include <QByteArray>
 #include <QBuffer>

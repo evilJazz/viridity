@@ -4,7 +4,7 @@
 #include <QtConcurrentMap>
 
 #undef DEBUG
-#include "debug.h"
+#include "private/debug.h"
 
 inline uint qHash(const QPoint& p)
 {

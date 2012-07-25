@@ -1,13 +1,11 @@
-#ifndef GRAPHICSSCENEBUFFERRENDERER_H
-#define GRAPHICSSCENEBUFFERRENDERER_H
+#ifndef SYNCHRONIZEDSCENERENDERER_H
+#define SYNCHRONIZEDSCENERENDERER_H
 
-#include <QImage>
+#include <QObject>
+#include <QGraphicsScene>
 #include <QPainter>
-#include <QRegion>
 #include <QThread>
-
-#include "graphicssceneobserver.h"
-#include "imagecomparer.h"
+#include <QMetaType>
 
 class SynchronizedSceneRenderer : public QObject
 {
@@ -47,44 +45,4 @@ private:
     QGraphicsScene *scene_;
 };
 
-class GraphicsSceneBufferRenderer : public GraphicsSceneObserver
-{
-    Q_OBJECT
-public:
-    explicit GraphicsSceneBufferRenderer(QObject *parent = 0);
-    virtual ~GraphicsSceneBufferRenderer();
-
-    void setMinimizeDamageRegion(bool value);
-    bool minimizeDamageRegion() { return minimizeDamageRegion_; }
-
-    QRegion updateBuffer();
-    UpdateOperationList updateBufferExt();
-    QImage buffer() const { return *workBuffer_; }
-    bool updatesAvailable() const { return updatesAvailable_; }
-
-public slots:
-    void fullUpdate();
-
-signals:
-    void damagedRegionAvailable();
-
-protected slots:
-    void sceneAttached();
-    void sceneSceneRectChanged(QRectF newRect);
-    void sceneChanged(QList<QRectF> rects);
-    void sceneDetached();
-
-protected:
-    bool minimizeDamageRegion_;
-    bool updatesAvailable_;
-    QImage *workBuffer_;
-    QImage *otherBuffer_;
-    QImage buffer1_;
-    QImage buffer2_;
-    QRegion region_;
-
-    void swapWorkBuffer();
-    void emitUpdatesAvailable();
-};
-
-#endif // GRAPHICSSCENEBUFFERRENDERER_H
+#endif // SYNCHRONIZEDSCENERENDERER_H

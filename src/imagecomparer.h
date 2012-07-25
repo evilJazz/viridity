@@ -1,6 +1,8 @@
 #ifndef IMAGECOMPARER_H
 #define IMAGECOMPARER_H
 
+#include "viridity_global.h"
+
 #include <QRegion>
 #include <QVector>
 #include <QList>
@@ -40,7 +42,7 @@ UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops);
 
 class MoveAnalyzer;
 
-class ImageComparer
+class VIRIDITY_EXPORT ImageComparer
 {
 public:
     ImageComparer(QImage *imageBefore, QImage *imageAfter);

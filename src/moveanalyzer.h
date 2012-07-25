@@ -1,11 +1,13 @@
 #ifndef MOVEANALYZER_H
 #define MOVEANALYZER_H
 
+#include "viridity_global.h"
+
 #include <QVector>
 #include <QRect>
 #include <QImage>
 
-class AreaFingerPrint
+class VIRIDITY_EXPORT AreaFingerPrint
 {
 public:
     explicit AreaFingerPrint();
@@ -29,7 +31,7 @@ private:
     quint32 *data_;
 };
 
-class AreaFingerPrints
+class VIRIDITY_EXPORT AreaFingerPrints
 {
 public:
     explicit AreaFingerPrints();
@@ -61,7 +63,7 @@ private:
     QRect hashedArea_;
 };
 
-class MoveAnalyzer
+class VIRIDITY_EXPORT MoveAnalyzer
 {
 public:
     MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth);

@@ -1,6 +1,8 @@
 #ifndef GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H
 #define GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H
 
+#include "viridity_global.h"
+
 #include <QObject>
 #include <QEvent>
 #include <QGraphicsScene>
