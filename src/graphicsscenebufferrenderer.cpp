@@ -143,7 +143,7 @@ void GraphicsSceneBufferRenderer::sceneAttached()
 
 void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
 {
-    sceneAttached();
+    // DO NOTHING HERE
 }
 
 static int updateNo = 0;
@@ -189,9 +189,10 @@ void GraphicsSceneBufferRenderer::swapWorkBuffer()
         otherBuffer_ = &buffer2_;
     }
 
+    comparer_->swap();
+
     // copy content over to new work buffer...
     *workBuffer_ = *otherBuffer_;
-    comparer_->swap();
 }
 
 void GraphicsSceneBufferRenderer::emitUpdatesAvailable()

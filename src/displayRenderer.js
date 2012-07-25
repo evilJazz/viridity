@@ -54,7 +54,7 @@ var Base64Binary = {
 
 var DisplayRenderer = function() {
 
-    var debugEnabled = true;
+    var debugVerbosity = 1;
 
     var dr =
     {
@@ -76,11 +76,11 @@ var DisplayRenderer = function() {
 
         _determineReadyState: function()
         {
-            if (debugEnabled) console.log("_imageDone: " + dr.frameImageCount)
+            if (debugVerbosity > 1) console.log("_imageDone: " + dr.frameImageCount)
             if (dr.frameImageCount === 0)
             {
                 dr._flipToFront();
-                if (debugEnabled) console.log("Sending ready...");
+                if (debugVerbosity > 1) console.log("Sending ready...");
                 dr.socket.send("ready()");
             }
         },
@@ -112,7 +112,7 @@ var DisplayRenderer = function() {
 
         init: function()
         {
-            dr.socket = new WebSocket('ws://127.0.0.1:8080/display');
+            dr.socket = new WebSocket('ws://192.168.1.1:8080/display');
             dr.canvas = document.getElementById('canvasBack');
             dr.ctx = dr.canvas.getContext("2d");
 
@@ -208,11 +208,11 @@ var DisplayRenderer = function() {
 
                         if (dr.lastFrame !== frame)
                         {
-                            if (debugEnabled) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
+                            if (debugVerbosity) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
                             dr.lastFrame = frame;
                         }
 
-                        if (debugEnabled) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
+                        if (debugVerbosity) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
 
                         if (command === "fillRect")
                         {
@@ -239,7 +239,7 @@ var DisplayRenderer = function() {
                                         if (frame !== dr.lastFrame)
                                             console.log("ASYNCHRONOUS IMAGE!!!!!");
 
-                                        if (debugEnabled) console.log("frame: " + frame + " img.src: " + img.src);
+                                        if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
 
                                         dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
                                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
@@ -293,7 +293,7 @@ var DisplayRenderer = function() {
                         }
                         else if (command === "end")
                         {
-                            if (debugEnabled) console.log("Frame end " + frame + " received...");
+                            if (debugVerbosity) console.log("Frame end " + frame + " received...");
                             dr._determineReadyState();
                         }
                     };

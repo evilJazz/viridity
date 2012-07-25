@@ -39,36 +39,4 @@ headers.files = src/*.h \
 
 INSTALLS = target qmakefile headers
 
-# Project files
-
-OTHER_FILES += \
-    src/displayRenderer.js
-
-HEADERS += \
-    src/moveanalyzer.h \
-    src/imagecomparer.h \
-    src/graphicsscenewebcontrolcommandinterpreter.h \
-    src/graphicsscenewebcontrol.h \
-    src/graphicssceneobserver.h \
-    src/graphicsscenebufferrenderer.h \
-    src/viridity_global.h \
-    src/private/debug.h \
-    src/private/qtestspontaneevent.h \
-    src/private/synchronizedscenechangedhandler.h \
-    src/private/synchronizedscenerenderer.h
-
-SOURCES += \
-    src/moveanalyzer.cpp \
-    src/imagecomparer.cpp \
-    src/graphicsscenewebcontrolcommandinterpreter.cpp \
-    src/graphicsscenewebcontrol.cpp \
-    src/graphicssceneobserver.cpp \
-    src/graphicsscenebufferrenderer.cpp \
-    src/private/debug.cpp \
-    src/private/synchronizedscenechangedhandler.cpp \
-    src/private/synchronizedscenerenderer.cpp
-
-RESOURCES += \
-    resources/webresources.qrc
-
-
+include(viridity.pri)
