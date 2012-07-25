@@ -45,15 +45,15 @@ OTHER_FILES += \
     src/displayRenderer.js
 
 HEADERS += \
-    src/qtestspontaneevent.h \
     src/moveanalyzer.h \
     src/imagecomparer.h \
     src/graphicsscenewebcontrolcommandinterpreter.h \
     src/graphicsscenewebcontrol.h \
     src/graphicssceneobserver.h \
     src/graphicsscenebufferrenderer.h \
-    src/private/debug.h \
     src/viridity_global.h \
+    src/private/debug.h \
+    src/private/qtestspontaneevent.h \
     src/private/synchronizedscenechangedhandler.h \
     src/private/synchronizedscenerenderer.h
 

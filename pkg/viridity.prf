@@ -1,0 +1,10 @@
+QT += network gui
+
+DEFINES += VIRIDITY_VERSION_MAJOR=0
+
+release {
+    LIBS += -lviridity
+} else {
+    LIBS += -lviridityd
+}
+
