@@ -442,8 +442,6 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
     UpdateOperationList result;
     UpdateOperation op;
 
-    damagedAreas_ += searchArea;
-
 #define USE_MOVE_ANALYZER
 #define USE_FILL_ANALYZER
 
@@ -494,6 +492,10 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op)
     QRect minRect = fastFindChangedRect32(imageBefore_, imageAfter_, rect);
     if (minRect.isEmpty())
         return false;
+
+    QMutexLocker l(&mutex_);
+    damagedAreas_.append(rect); // used for updating MoveAnalyzer instance in swap()
+    l.unlock();
 
 #ifdef USE_MOVE_ANALYZER
     if (movedRectSearchEnabled_ && rect.width() == tileWidth_)
