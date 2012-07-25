@@ -54,7 +54,7 @@ var Base64Binary = {
 
 var DisplayRenderer = function() {
 
-    var debugEnabled = false;
+    var debugEnabled = true;
 
     var dr =
     {

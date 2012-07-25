@@ -380,7 +380,13 @@ ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     movedRectSearchEnabled_(true),
     tileWidth_(64)
 {
+    moveAnalyzer_ = new MoveAnalyzer(imageBefore_, imageAfter_, imageBefore_->rect(), tileWidth_);
+}
 
+ImageComparer::~ImageComparer()
+{
+    if (moveAnalyzer_)
+        delete moveAnalyzer_;
 }
 
 struct MapProcessRect
@@ -436,17 +442,14 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
     UpdateOperationList result;
     UpdateOperation op;
 
-//#define USE_MOVE_ANALYZER
+    damagedAreas_ += searchArea;
+
+#define USE_MOVE_ANALYZER
 #define USE_FILL_ANALYZER
 
 #ifdef USE_MOVE_ANALYZER
     movedRectSearchMisses_ = 0;
     movedRectSearchEnabled_ = true;
-
-    if (moveAnalyzer_)
-        delete moveAnalyzer_;
-
-    moveAnalyzer_ = new MoveAnalyzer(imageBefore_, imageAfter_, searchArea, tileWidth_);
 #endif
 
     QList<QRect> tiles = splitRectIntoTiles(searchArea, tileWidth_, tileWidth_);
@@ -462,6 +465,28 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
     result = QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
 
     return result;
+}
+
+void ImageComparer::swap()
+{
+    QImage *temp = imageBefore_;
+    imageBefore_ = imageAfter_;
+    imageAfter_ = temp;
+
+    QRegion region;
+    foreach (const QRect &rect, damagedAreas_)
+        region += rect;
+
+    damagedAreas_.clear();
+
+    while (lastSuccessfulMoveVectors_.count() > 10)
+        lastSuccessfulMoveVectors_.removeLast();
+
+    moveAnalyzer_->swap();
+
+    const QVector<QRect> rects = region.rects();
+    foreach (const QRect &rect, rects)
+        moveAnalyzer_->updateArea(rect);
 }
 
 bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op)

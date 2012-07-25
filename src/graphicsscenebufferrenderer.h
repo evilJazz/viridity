@@ -45,7 +45,9 @@ protected:
     QImage buffer1_;
     QImage buffer2_;
     QRegion region_;
+    ImageComparer *comparer_;
 
+    void initComparer();
     void swapWorkBuffer();
     void emitUpdatesAvailable();
 };

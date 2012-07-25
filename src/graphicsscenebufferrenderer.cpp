@@ -14,13 +14,24 @@ GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
     updatesAvailable_(false),
     workBuffer_(&buffer1_),
     otherBuffer_(&buffer2_),
-    minimizeDamageRegion_(true)
+    minimizeDamageRegion_(true),
+    comparer_(NULL)
 {
-
+    initComparer();
 }
 
 GraphicsSceneBufferRenderer::~GraphicsSceneBufferRenderer()
 {
+    if (comparer_)
+        delete comparer_;
+}
+
+void GraphicsSceneBufferRenderer::initComparer()
+{
+    if (comparer_)
+        delete comparer_;
+
+    comparer_ = new ImageComparer(otherBuffer_, workBuffer_);
 }
 
 void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
@@ -37,7 +48,6 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     swapWorkBuffer();
     QPainter p(workBuffer_);
 
-    ImageComparer comparer(otherBuffer_, workBuffer_);
     SynchronizedSceneRenderer syncedSceneRenderer(scene_);
 
     foreach (const QRect &rect, rects)
@@ -52,7 +62,7 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     if (minimizeDamageRegion_)
     {
         foreach (const QRect &rect, rects)
-            ops += comparer.findUpdateOperations(rect);
+            ops += comparer_->findUpdateOperations(rect);
 
         ops = optimizeUpdateOperations(ops);
     }
@@ -127,6 +137,7 @@ void GraphicsSceneBufferRenderer::sceneAttached()
     if (width != buffer2_.width() || height != buffer2_.height())
         buffer2_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
 
+    initComparer();
     fullUpdate();
 }
 
@@ -180,6 +191,7 @@ void GraphicsSceneBufferRenderer::swapWorkBuffer()
 
     // copy content over to new work buffer...
     *workBuffer_ = *otherBuffer_;
+    comparer_->swap();
 }
 
 void GraphicsSceneBufferRenderer::emitUpdatesAvailable()

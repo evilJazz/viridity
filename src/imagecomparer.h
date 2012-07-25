@@ -46,8 +46,10 @@ class VIRIDITY_EXPORT ImageComparer
 {
 public:
     ImageComparer(QImage *imageBefore, QImage *imageAfter);
+    virtual ~ImageComparer();
 
     UpdateOperationList findUpdateOperations(const QRect &searchArea);
+    void swap();
 
 protected:
     friend struct MapProcessRect;
@@ -63,6 +65,8 @@ private:
     int movedRectSearchMisses_;
     bool movedRectSearchEnabled_;
     int tileWidth_;
+
+    QList<QRect> damagedAreas_;
 };
 
 #endif // IMAGECOMPARER_H

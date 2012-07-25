@@ -67,9 +67,13 @@ class VIRIDITY_EXPORT MoveAnalyzer
 {
 public:
     MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth);
+    virtual ~MoveAnalyzer();
 
     QRect findMovedRect(const QRect &searchArea, const QRect &templateRect);
     QRect findMovedRectNaive(const QRect &searchArea, const QRect &templateRect);
+
+    void swap();
+    void updateArea(const QRect &rect);
 
 private:
     QImage *imageBefore_;

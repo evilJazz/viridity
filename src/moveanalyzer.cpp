@@ -377,7 +377,7 @@ bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &
 
     QRect rect = hashedArea_.intersected(searchArea);
 
-    if (rect.height() != needle.size())
+    if (rect.height() < needle.size())
         return false;
 
     int tempWidth = templateWidth();
@@ -427,6 +427,22 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
 {
     //hashArea_ = imageBefore_->rect();
     searchAreaFingerPrints_.initFromImageThreaded(imageBefore_, hashArea_, templateWidth);
+}
+
+MoveAnalyzer::~MoveAnalyzer()
+{
+}
+
+void MoveAnalyzer::swap()
+{
+    QImage *temp = imageBefore_;
+    imageBefore_ = imageAfter_;
+    imageAfter_ = temp;
+}
+
+void MoveAnalyzer::updateArea(const QRect &rect)
+{
+    searchAreaFingerPrints_.updateFromImage(imageBefore_, rect);
 }
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
