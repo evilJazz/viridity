@@ -1,3 +1,5 @@
+QT += core gui network
+
 VIRIDITY_SRC_PATH = $$PWD/src
 VIRIDITY_RES_PATH = $$PWD/resources
 VIRIDITY_INCLUDE_PATH = $$PWD/include

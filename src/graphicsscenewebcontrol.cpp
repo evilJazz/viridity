@@ -136,12 +136,12 @@ Patch *GraphicsSceneWebServerConnection::createPatch(const QRect &rect, bool cre
     p.drawImage(0, 0, renderer_->buffer(), rect.x(), rect.y());
 
     patch->data.open(QIODevice::ReadWrite);
-    image.save(&patch->data, "JPEG", 90);
+    //image.save(&patch->data, "JPEG", 90);
     //image.save(&patch->data, "BMP");
-    //image.save(&patch->data, "PNG");
+    image.save(&patch->data, "PNG");
     patch->data.close();
 
-    patch->mimeType = "image/jpeg";
+    patch->mimeType = "image/png";
 
     if (createBase64)
     {

@@ -3,7 +3,7 @@
 #include "moveanalyzer.h"
 
 #define DEBUG
-#include "debug.h"
+#include "private/debug.h"
 
 void testFingerPrints(QImage *image, int templateWidth)
 {
