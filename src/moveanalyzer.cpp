@@ -10,6 +10,8 @@
 #define OPTIMIZE_UNROLL_LOOPS
 #define OPTIMIZE_CONDITIONAL_OPT
 
+//#define USE_MULTITHREADING
+
 /* AreaFingerPrint */
 
 AreaFingerPrint::AreaFingerPrint() :
@@ -112,43 +114,72 @@ int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int 
     int haystackSize = size();
     int needleSize = needle.size();
 
-    if (needleSize > haystackSize)
+    if (needleSize > haystackSize || needleSize == 0 || haystackSize == 0)
         return -1;
 
-    const quint32 *y = constData();
-    const quint32 *x = needle.constData();
-
-    quint32 j, k, l;
-
-    if (x[0] == x[1])
-    {
-        k = 2;
-        l = 1;
-    }
-    else
-    {
-        k = 1;
-        l = 2;
-    }
+    if (startIndex > haystackSize)
+        return -1;
 
     int maxIndex = haystackSize - needleSize;
     if (endIndex <= 0 || endIndex > maxIndex)
-        endIndex == maxIndex;
+        endIndex = maxIndex;
 
-    j = startIndex;
-    while (j <= endIndex)
+    if (endIndex < startIndex)
+        return -1;
+
+    const quint32 *haystackData = constData();
+    const quint32 *needleData = needle.constData();
+
+    if (needleSize > 1)
     {
-        if (x[1] != y[j + 1])
+        int needleSizeBytes = needleSize * sizeof(quint32);
+
+        int index = startIndex;
+        for (; index <= endIndex; ++index);
+            if (!memcmp(needleData, haystackData + index, needleSizeBytes))
+                return index;
+
+        /*
+        // Based on the Not-So-Naive search algorithm:
+        // http://www-igm.univ-mlv.fr/~lecroq/string/
+        // Adapted to work on quint32
+
+        quint32 index, k, l;
+
+        if (needleData[0] == needleData[1])
         {
-            j += k;
+            k = 2;
+            l = 1;
         }
         else
         {
-            if (!memcmp(x + 2, y + j + 2, (needleSize - 2) * sizeof(quint32)) && x[0] == y[j])
-                return j;
-
-            j += l;
+            k = 1;
+            l = 2;
         }
+
+        index = startIndex;
+        while (index <= endIndex)
+        {
+            if (needleData[1] != haystackData[index + 1])
+            {
+                index += k;
+            }
+            else
+            {
+                if (!memcmp(needleData + 2, haystackData + index + 2, (needleSize - 2) * sizeof(quint32)) &&
+                    needleData[0] == haystackData[index])
+                    return index;
+
+                index += l;
+            }
+        }
+        */
+    }
+    else
+    {
+        for (int index = startIndex; index <= endIndex; ++index)
+            if (haystackData[index] == needleData[0])
+                return index;
     }
 
     return -1;
@@ -210,7 +241,14 @@ void AreaFingerPrints::initFromImageSlow(QImage *image, const QRect &area, int t
 
     hashedArea_ = rect;
 
-    QSize size(templateWidth, rect.height());
+    updateFromImageSlow(image, rect);
+}
+
+void AreaFingerPrints::updateFromImageSlow(QImage *image, const QRect &area)
+{
+    QRect rect = hashedArea_.intersected(area.intersected(image->rect()));
+
+    QSize size(templateWidth(), rect.height());
     int rightLimit = rect.left() + width_;
 
     int column = 0;
@@ -229,10 +267,10 @@ void AreaFingerPrints::initFromImageFast(QImage *image, const QRect &area, int t
     initFromSize(rect.width(), rect.height(), templateWidth);
 
     hashedArea_ = rect;
-    updateFromImage(image, rect);
+    updateFromImageFast(image, rect);
 }
 
-void AreaFingerPrints::updateFromImage(QImage *image, const QRect &area)
+void AreaFingerPrints::updateFromImageFast(QImage *image, const QRect &area)
 {
     QRect rect = hashedArea_.intersected(area.intersected(image->rect()));
 
@@ -302,6 +340,8 @@ void AreaFingerPrints::updateFromImage(QImage *image, const QRect &area)
     }
 }
 
+#ifdef USE_MULTITHREADING
+
 struct AreaFingerPrintsThreadedUpdateFromImage
 {
     AreaFingerPrintsThreadedUpdateFromImage(QImage *image, AreaFingerPrints *target) :
@@ -313,10 +353,12 @@ struct AreaFingerPrintsThreadedUpdateFromImage
 
     bool operator()(const QRect &rect)
     {
-        target->updateFromImage(image, rect);
+        target->updateFromImageFast(image, rect);
         return true;
     }
 };
+
+#endif
 
 void AreaFingerPrints::initFromImageThreaded(QImage *image, const QRect &area, int templateWidth)
 {
@@ -331,7 +373,7 @@ void AreaFingerPrints::initFromImageThreaded(QImage *image, const QRect &area, i
     int parts = rect.height() / partHeight;
 
     if (parts == 0)
-        updateFromImage(image, rect);
+        updateFromImageFast(image, rect);
     else
     {
         QVector<QRect> rects;
@@ -344,12 +386,12 @@ void AreaFingerPrints::initFromImageThreaded(QImage *image, const QRect &area, i
         if (remainingHeight > 0)
             rects.append(QRect(rect.x(), rect.y() + partsTotalHeight, rect.width(), remainingHeight));
 
-        /*
-        foreach (const QRect &partRect, rects)
-            updateFromImage(image, partRect);
-        */
-
+#ifdef USE_MULTITHREADING
         QtConcurrent::blockingFilter(rects, AreaFingerPrintsThreadedUpdateFromImage(image, this));
+#else
+        foreach (const QRect &partRect, rects)
+            updateFromImageFast(image, partRect);
+#endif
     }
 }
 
@@ -426,7 +468,7 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
     templateWidth_(templateWidth)
 {
     //hashArea_ = imageBefore_->rect();
-    searchAreaFingerPrints_.initFromImageThreaded(imageBefore_, hashArea_, templateWidth);
+    searchAreaFingerPrints_.initFromImageSlow(imageBefore_, hashArea_, templateWidth);
 }
 
 MoveAnalyzer::~MoveAnalyzer()
@@ -442,7 +484,7 @@ void MoveAnalyzer::swap()
 
 void MoveAnalyzer::updateArea(const QRect &rect)
 {
-    searchAreaFingerPrints_.updateFromImage(imageBefore_, rect);
+    searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, rect);
 }
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)

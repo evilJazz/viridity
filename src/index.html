@@ -5,11 +5,12 @@
     <script src="https://raw.github.com/brandonaaron/jquery-mousewheel/master/jquery.mousewheel.js"></script>
     <script src="displayRenderer.js"></script>
   </head>
-  <body onload="displayRenderer.init()">
+  <body onload="displayRenderer.init(); document.getElementById('debugDrawCB').checked = displayRenderer.debugDrawEnabled();">
     <div>
         <button onclick="displayRenderer.debugClearCanvas()">Clear Canvas</button>
         <button onclick="displayRenderer.requestFullUpdate()">Request full frame</button>
-        <span id="connectionId"></span>
+        <input type="checkbox" id="debugDrawCB" onchange="displayRenderer.setDebugDrawEnabled(this.checked)" /><label for="debugDrawCB">Debug drawing </label>
+        <strong>ID: </strong><span id="connectionId"></span>
     </div>
     <canvas id="canvas">
     </canvas>

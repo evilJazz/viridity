@@ -55,6 +55,7 @@ var Base64Binary = {
 var DisplayRenderer = function() {
 
     var debugVerbosity = 1;
+    var debugDraw = 1;
 
     var dr =
     {
@@ -64,6 +65,7 @@ var DisplayRenderer = function() {
 
         lastFrame: 0,
         frameImageCount: 0,
+        frameCommands: [],
 
         frontCanvas: 0,
         frontCtx: 0,
@@ -80,6 +82,9 @@ var DisplayRenderer = function() {
             if (dr.frameImageCount === 0)
             {
                 dr._flipToFront();
+                if (debugDraw)
+                    dr.debugDraw();
+
                 if (debugVerbosity > 1) console.log("Sending ready...");
                 dr.socket.send("ready()");
             }
@@ -108,6 +113,50 @@ var DisplayRenderer = function() {
 
             // Restore the transform
             dr.ctx.restore();
+        },
+
+        debugDrawEnabled: function()
+        {
+            return debugDraw;
+        },
+
+        setDebugDrawEnabled: function(value)
+        {
+            debugDraw = value;
+        },
+
+        debugDraw: function()
+        {
+            var alpha = 0.5;
+
+            for (var i = 0; i < dr.frameCommands.length; ++i)
+            {
+                var frameCmd = dr.frameCommands[i];
+                var command = frameCmd.command;
+                var inputParams = frameCmd.params;
+
+                dr.frontCtx.strokeStyle = "rgba(0, 0, 0, 0.8)";
+                dr.frontCtx.lineWidth = 0.2;
+
+                if (command === "fillRect")
+                {
+                    dr.frontCtx.fillStyle = "rgba(0, 255, 0, " + alpha + ")";
+                    dr.frontCtx.fillRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                    dr.frontCtx.strokeRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                }
+                else if (command === "moveImage")
+                {
+                    dr.frontCtx.fillStyle = "rgba(0, 0, 255, " + alpha + ")";
+                    dr.frontCtx.fillRect(inputParams[5], inputParams[6], inputParams[3], inputParams[4]);
+                    dr.frontCtx.strokeRect(inputParams[5], inputParams[6], inputParams[3], inputParams[4]);
+                }
+                else if (command === "drawImage")
+                {
+                    dr.frontCtx.fillStyle = "rgba(255, 0, 0, " + alpha + ")";
+                    dr.frontCtx.fillRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                    dr.frontCtx.strokeRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                }
+            }
         },
 
         init: function()
@@ -210,9 +259,23 @@ var DisplayRenderer = function() {
                         {
                             if (debugVerbosity) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
                             dr.lastFrame = frame;
+
+                            if (debugDraw)
+                            {
+                                dr._flipToFront(); // overwrite debug rects...
+                                dr.frameCommands = [];
+                            }
                         }
 
                         if (debugVerbosity) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
+                        if (debugDraw)
+                        {
+                            var frameCmd = {
+                                command: command,
+                                params: inputParams
+                            }
+                            dr.frameCommands.push(frameCmd);
+                        }
 
                         if (command === "fillRect")
                         {

@@ -7,7 +7,7 @@
 #include "private/debug.h"
 
 #define USE_MOVE_ANALYZER
-//#define USE_FILL_ANALYZER
+#define USE_FILL_ANALYZER
 #define USE_MULTITHREADING
 
 inline uint qHash(const QPoint& p)
@@ -382,7 +382,7 @@ ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     moveAnalyzer_(NULL),
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true),
-    tileWidth_(64)
+    tileWidth_(20)
 {
 #ifdef USE_MOVE_ANALYZER
     moveAnalyzer_ = new MoveAnalyzer(imageBefore_, imageAfter_, imageBefore_->rect(), tileWidth_);

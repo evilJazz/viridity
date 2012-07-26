@@ -42,9 +42,10 @@ public:
     void initFromSize(int width, int height, int templateWidth);
     void initFromImageSlow(QImage *image, const QRect &area, int templateWidth);
     void initFromImageFast(QImage *image, const QRect &area, int templateWidth);
-
-    void updateFromImage(QImage *image, const QRect &area);
     void initFromImageThreaded(QImage *image, const QRect &area, int templateWidth);
+
+    void updateFromImageSlow(QImage *image, const QRect &area);
+    void updateFromImageFast(QImage *image, const QRect &area);
 
     int width() const { return width_; }
     int height() const { return height_; }
