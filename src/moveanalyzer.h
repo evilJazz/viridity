@@ -21,6 +21,8 @@ public:
     void initFromSize(int height);
     void initFromImage(QImage *image, const QRect &area);
 
+    void updateFromImage(QImage *image, const QRect &area, int startIndex = 0);
+
     int size() const { return size_; }
     int indexOf(const AreaFingerPrint &needle, int startIndex = 0, int endIndex = -1);
 

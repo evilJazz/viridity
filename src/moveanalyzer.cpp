@@ -116,6 +116,60 @@ void AreaFingerPrint::initFromImage(QImage *image, const QRect &area)
     }
 }
 
+void AreaFingerPrint::updateFromImage(QImage *image, const QRect &area, int startIndex)
+{
+    if (startIndex >= size_)
+        return;
+
+    QRect rect = area.intersected(image->rect());
+
+    //int endIndex = qMin(size() - 1, startIndex + rect.height() - 1);
+
+    quint32 *pBuf;
+#ifdef OPTIMIZE_UNROLL_LOOPS
+    int limX = roundDownToMultipleOf(rect.width(), 16);
+#endif
+
+    for (int y = 0; y < rect.height(); ++y)
+    {
+        pBuf = (quint32 *)image->scanLine(rect.top() + y) + rect.left();
+
+        quint32 hash = 0;
+        int x = 0;
+
+#ifdef OPTIMIZE_UNROLL_LOOPS
+        for (; x < limX; x += 16)
+        {
+            hash += pBuf[x + 0];
+            hash += pBuf[x + 1];
+            hash += pBuf[x + 2];
+            hash += pBuf[x + 3];
+            hash += pBuf[x + 4];
+            hash += pBuf[x + 5];
+            hash += pBuf[x + 6];
+            hash += pBuf[x + 7];
+            hash += pBuf[x + 8];
+            hash += pBuf[x + 9];
+            hash += pBuf[x + 10];
+            hash += pBuf[x + 11];
+            hash += pBuf[x + 12];
+            hash += pBuf[x + 13];
+            hash += pBuf[x + 14];
+            hash += pBuf[x + 15];
+        }
+
+        pBuf += x;
+#endif
+        for (; x < rect.width(); ++x)
+        {
+            hash += (*pBuf);
+            ++pBuf;
+        }
+
+        data_[startIndex + y] = hash;
+    }
+}
+
 int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int endIndex)
 {
     int haystackSize = size();
@@ -256,12 +310,15 @@ void AreaFingerPrints::updateFromImageSlow(QImage *image, const QRect &area)
     QRect rect = hashedArea_.intersected(area.intersected(image->rect()));
 
     QSize size(templateWidth(), rect.height());
-    int rightLimit = rect.left() + width_;
 
-    int column = 0;
+    int rightLimit = rect.left() + rect.width() - templateWidth() + 1;
+
+    int startIndex = rect.top() - hashedArea_.top();
+
+    int column = rect.left() - hashedArea_.left();
     for (int x = rect.left(); x < rightLimit; ++x)
     {
-        fingerPrints_[column]->initFromImage(image, QRect(QPoint(x, rect.top()), size));
+        fingerPrints_[column]->updateFromImage(image, QRect(QPoint(x, rect.top()), size), startIndex);
         ++column;
     }
 }
@@ -505,7 +562,8 @@ void MoveAnalyzer::swap()
 
 void MoveAnalyzer::updateArea(const QRect &rect)
 {
-    searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, rect);
+    //searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, rect);
+    searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, imageBefore_->rect());
     emit changed();
 }
 
