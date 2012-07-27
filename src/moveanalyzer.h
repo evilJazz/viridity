@@ -3,6 +3,7 @@
 
 #include "viridity_global.h"
 
+#include <QObject>
 #include <QVector>
 #include <QRect>
 #include <QImage>
@@ -52,6 +53,8 @@ public:
     const QRect &hashedArea() const { return hashedArea_; }
     bool isEqual(const AreaFingerPrints &other);
 
+    AreaFingerPrint **fingerPrints() const { return fingerPrints_; }
+
     int templateWidth() const { return hashedArea_.width() - width_ + 1; }
 
     bool findPosition(const AreaFingerPrint &needle, QPoint &result);
@@ -64,8 +67,11 @@ private:
     QRect hashedArea_;
 };
 
-class VIRIDITY_EXPORT MoveAnalyzer
+class MoveAnalyzerDebugView;
+
+class VIRIDITY_EXPORT MoveAnalyzer : public QObject
 {
+    Q_OBJECT
 public:
     MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth);
     virtual ~MoveAnalyzer();
@@ -76,12 +82,18 @@ public:
     void swap();
     void updateArea(const QRect &rect);
 
+signals:
+    void changed();
+
 private:
+    friend class MoveAnalyzerDebugView;
+
     QImage *imageBefore_;
     QImage *imageAfter_;
     QRect hashArea_;
     int templateWidth_;
     AreaFingerPrints searchAreaFingerPrints_;
+    MoveAnalyzerDebugView *debugView_;
 };
 
 #endif // MOVEANALYZER_H

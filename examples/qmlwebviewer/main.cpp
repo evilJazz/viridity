@@ -1,7 +1,12 @@
 #include <QtGui/QApplication>
 #include <QtDeclarative>
 #include <QDeclarativeEngine>
+
+#ifdef USE_MULTITHREADED_WEBSERVER
 #include <Viridity/GraphicsSceneMultiThreadedWebServer>
+#else
+#include <Viridity/GraphicsSceneSingleThreadedWebServer>
+#endif
 
 int main(int argc, char *argv[])
 {
@@ -23,8 +28,13 @@ int main(int argc, char *argv[])
     QGraphicsScene scene;
     scene.addItem(item);
 
+#ifdef USE_MULTITHREADED_WEBSERVER
     GraphicsSceneMultiThreadedWebServer server(&a, &scene);
     server.listen(QHostAddress::Any, 8080, QThread::idealThreadCount() * 2);
+#else
+    GraphicsSceneSingleThreadedWebServer server(&a, &scene);
+    server.listen(QHostAddress::Any, 8080);
+#endif
 
     qDebug("Server is now listening on 127.0.0.1 Port 8080");
 

@@ -12,6 +12,13 @@
 
 //#define USE_MULTITHREADING
 
+#define SHOW_MOVEANALYZER_DEBUGVIEW
+
+#ifdef SHOW_MOVEANALYZER_DEBUGVIEW
+#include "private/moveanalyzerdebugview.h"
+#undef USE_MULTITHREADING
+#endif
+
 /* AreaFingerPrint */
 
 AreaFingerPrint::AreaFingerPrint() :
@@ -462,17 +469,29 @@ bool AreaFingerPrints::isEqual(const AreaFingerPrints &other)
 /* MoveAnalyzer */
 
 MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth) :
+    QObject(0),
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
     hashArea_(hashArea),
-    templateWidth_(templateWidth)
+    templateWidth_(templateWidth),
+    debugView_(NULL)
 {
     //hashArea_ = imageBefore_->rect();
     searchAreaFingerPrints_.initFromImageSlow(imageBefore_, hashArea_, templateWidth);
+
+#ifdef SHOW_MOVEANALYZER_DEBUGVIEW
+    debugView_ = new MoveAnalyzerDebugView();
+    debugView_->setMoveAnalyzer(this);
+    debugView_->show();
+#endif
 }
 
 MoveAnalyzer::~MoveAnalyzer()
 {
+#ifdef SHOW_MOVEANALYZER_DEBUGVIEW
+    if (debugView_)
+        debugView_->deleteLater();
+#endif
 }
 
 void MoveAnalyzer::swap()
@@ -480,11 +499,14 @@ void MoveAnalyzer::swap()
     QImage *temp = imageBefore_;
     imageBefore_ = imageAfter_;
     imageAfter_ = temp;
+
+    emit changed();
 }
 
 void MoveAnalyzer::updateArea(const QRect &rect)
 {
     searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, rect);
+    emit changed();
 }
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)

@@ -9,7 +9,7 @@ Item {
         id: rect
         width: 111
         height: 200
-        color: "red"
+        color: "gray"
 
 
         /*
@@ -69,7 +69,14 @@ Item {
         else if (event.key == Qt.Key_Right)
             diffX += 10;
 
-        rect.x = rect.x + diffX;
-        rect.y = rect.y + diffY;
+        var multiplier = 1;
+        if (event.modifiers & Qt.ShiftModifier)
+            multiplier *= 4;
+
+        if (event.modifiers & Qt.ControlModifier)
+            multiplier *= 15;
+
+        rect.x = rect.x + diffX * multiplier;
+        rect.y = rect.y + diffY * multiplier;
     }
 }
