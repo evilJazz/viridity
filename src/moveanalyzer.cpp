@@ -198,7 +198,7 @@ int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int 
         int needleSizeBytes = needleSize * sizeof(quint32);
 
         int index = startIndex;
-        for (; index <= endIndex; ++index);
+        for (; index <= endIndex; ++index)
             if (!memcmp(needleData, &haystackData[index], needleSizeBytes))
                 return index;
 
@@ -495,10 +495,13 @@ bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &
     rect.setWidth(rect.width() - tempWidth + 1);
     rect.moveTo(rect.topLeft() - hashedArea_.topLeft());
 
+    int startIndex = rect.top();
+    int endIndex = rect.bottom() + 1 - needle.size();
+
     //for (int line = 0; line < width_; ++line)
     for (int column = rect.left(); column < rect.right() + 1; ++column)
     {
-        int index = fingerPrints_[column]->indexOf(needle, rect.top(), rect.bottom() + 1 - needle.size());
+        int index = fingerPrints_[column]->indexOf(needle, startIndex, endIndex);
 
         if (index > -1)
         {
