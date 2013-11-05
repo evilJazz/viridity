@@ -161,7 +161,7 @@ var DisplayRenderer = function() {
 
         init: function()
         {
-            dr.socket = new WebSocket('ws://192.168.1.1:8080/display');
+            dr.socket = new WebSocket('ws://' + window.location.host + '/display');
             dr.canvas = document.getElementById('canvasBack');
             dr.ctx = dr.canvas.getContext("2d");
 
