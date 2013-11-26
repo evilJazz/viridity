@@ -12,6 +12,8 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
+    int port = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
+
     QDeclarativeEngine engine;
     QDeclarativeComponent component(&engine, QUrl("qrc:/qml/test.qml"));
 
@@ -30,13 +32,13 @@ int main(int argc, char *argv[])
 
 #ifdef USE_MULTITHREADED_WEBSERVER
     GraphicsSceneMultiThreadedWebServer server(&a, &scene);
-    server.listen(QHostAddress::Any, 8080, QThread::idealThreadCount() * 2);
+    server.listen(QHostAddress::Any, port, QThread::idealThreadCount() * 2);
 #else
     GraphicsSceneSingleThreadedWebServer server(&a, &scene);
-    server.listen(QHostAddress::Any, 8080);
+    server.listen(QHostAddress::Any, port);
 #endif
 
-    qDebug("Server is now listening on 127.0.0.1 Port 8080");
+    qDebug("Server is now listening on 127.0.0.1 Port %d", port);
 
     return a.exec();
 }
