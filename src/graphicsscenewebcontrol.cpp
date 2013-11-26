@@ -14,11 +14,39 @@
 #include <QUuid>
 #include <QCryptographicHash>
 #include <QMutexLocker>
+#include <QUrl>
 
 QString createUniqueID()
 {
     QString uuid = QUuid::createUuid().toString();
     return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+
+GraphicsSceneInputPostHandler::GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneWebServerConnection *connection, QObject *parent) :
+    QObject(parent),
+    request_(request),
+    response_(response),
+    connection_(connection)
+{
+    connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
+    connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
+}
+
+void GraphicsSceneInputPostHandler::onData(const QByteArray &chunk)
+{
+    data_ += chunk;
+}
+
+void GraphicsSceneInputPostHandler::onEnd()
+{
+    QList<QByteArray> commands = data_.split('\n');
+
+    foreach (QByteArray command, commands)
+        connection_->clientMessageReceived(command);
+
+    // handle request
+    response_->writeHead(Tufao::HttpServerResponse::OK);
+    response_->end();
 }
 
 /* Patch */
@@ -39,11 +67,11 @@ public:
 GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerRequest *request, const QByteArray &head) :
     QObject(),
     server_(parent),
-    renderer_(NULL),
-    frame_(0),
-    clientReady_(true),
     urlMode_(true),
     updateCheckInterval_(1),
+    frame_(0),
+    renderer_(NULL),
+    clientReady_(true),
     patchesMutex_(QMutex::Recursive)
 {
     socket_ = new Tufao::WebSocket(this);
@@ -58,6 +86,22 @@ GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInte
     clientConnected();
 }
 
+GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerResponse *response) :
+    QObject(),
+    server_(parent),
+    urlMode_(true),
+    updateCheckInterval_(1),
+    frame_(0),
+    renderer_(NULL),
+    clientReady_(true),
+    patchesMutex_(QMutex::Recursive)
+{
+    socket_ = NULL;
+    id_ = createUniqueID();
+
+    clientConnected(response);
+}
+
 GraphicsSceneWebServerConnection::~GraphicsSceneWebServerConnection()
 {
     qDeleteAll(patches_.values());
@@ -65,7 +109,7 @@ GraphicsSceneWebServerConnection::~GraphicsSceneWebServerConnection()
     server_->removeConnection(this);
 }
 
-void GraphicsSceneWebServerConnection::clientConnected()
+void GraphicsSceneWebServerConnection::clientConnected(Tufao::HttpServerResponse *response)
 {
     if (!renderer_)
     {
@@ -83,7 +127,16 @@ void GraphicsSceneWebServerConnection::clientConnected()
     connect(&commandInterpreter_, SIGNAL(fullUpdateRequested()), renderer_, SLOT(fullUpdate()));
 
     QString info = "info(" + id_ + ")";
-    socket_->sendMessage(info.toUtf8().constData());
+    if (socket_)
+        socket_->sendMessage(info.toUtf8().constData());
+    else
+    {
+        response->writeHead(Tufao::HttpServerResponse::OK);
+        response->headers().insert("Content-Type", "text/plain; charset=utf8");
+        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+        response->headers().insert("Pragma", "no-cache");
+        response->end(info.toUtf8());
+    }
 
     timer_.setSingleShot(false);
     timer_.start(updateCheckInterval_);
@@ -103,18 +156,28 @@ void GraphicsSceneWebServerConnection::clientMessageReceived(QByteArray data)
 
     //DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", socket_, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
 
-    if (command == "ready")
+    if (socket_)
     {
-        clientReady_ = true;
-        if (renderer_->updatesAvailable())
+        if (command == "ready")
         {
-            DPRINTF("Updates are available, triggering again...");
-            if (!timer_.isActive())
-                timer_.start(updateCheckInterval_);
+            clientReady_ = true;
+            if (renderer_->updatesAvailable())
+            {
+                DPRINTF("Updates are available, triggering again...");
+                if (!timer_.isActive())
+                    timer_.start(updateCheckInterval_);
+            }
         }
+        else
+            commandInterpreter_.sendCommand(command, params);
     }
     else
-        commandInterpreter_.sendCommand(command, params);
+    {
+        if (command != "ready")
+            commandInterpreter_.sendCommand(command, params);
+
+        clientReady_ = true;
+    }
 }
 
 void GraphicsSceneWebServerConnection::sceneDamagedRegionsAvailable()
@@ -172,7 +235,8 @@ void GraphicsSceneWebServerConnection::sendUpdate()
     QMutexLocker l(&patchesMutex_);
 
     DPRINTF("connection: %p  thread: %p  clientReady_: %d  patches_.count(): %d", this, QThread::currentThread(), clientReady_, patches_.count());
-    timer_.stop();
+    if (socket_)
+        timer_.stop();
 
     if (clientReady_ && patches_.count() == 0)
     {
@@ -213,7 +277,7 @@ void GraphicsSceneWebServerConnection::sendUpdate()
                     patches_.insert(framePatchId, patch);
                     l.unlock();
 
-                    socket_->sendMessage(cmd.toLatin1());
+                    sendCommand(cmd);
                 }
                 else
                 {
@@ -226,7 +290,8 @@ void GraphicsSceneWebServerConnection::sendUpdate()
                         format.toLatin1().constData()
                     );
 
-                    socket_->sendMessage(cmd.toLatin1() + patch->dataBase64);
+                    sendCommand(cmd + patch->dataBase64);
+
                     delete patch;
                 }
             }
@@ -240,7 +305,7 @@ void GraphicsSceneWebServerConnection::sendUpdate()
                     op.dstPoint.x(), op.dstPoint.y()
                 );
 
-                socket_->sendMessage(cmd.toLatin1());
+                sendCommand(cmd);
             }
             else if (op.type == uotFill)
             {
@@ -252,12 +317,12 @@ void GraphicsSceneWebServerConnection::sendUpdate()
                     op.fillColor.name().toLatin1().constData()
                 );
 
-                socket_->sendMessage(cmd.toLatin1());
+                sendCommand(cmd);
             }
         }
 
         if (ops.count() > 0)
-            socket_->sendMessage(QString().sprintf("end(%d):", frame_).toLatin1().constData());
+            sendCommand(QString().sprintf("end(%d):", frame_));
     }
 }
 
@@ -269,32 +334,73 @@ void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *r
 
     QString url = request->url();
 
-    int indexOfSlash = url.lastIndexOf("/");
-    QString patchId = "";
-
-    if (indexOfSlash > -1)
-        patchId = url.mid(indexOfSlash + 1);
-
-    QMutexLocker l(&patchesMutex_);
-    if (!patchId.isEmpty() && patches_.contains(patchId))
+    if (url.startsWith("/display?")) // long polling
     {
-        Patch *patch = patches_.take(patchId);
-        l.unlock();
+        if (request->method() == "GET") // Long polling output
+        {
+            clientMessageReceived("ready()");
 
-        patch->data.open(QIODevice::ReadOnly);
+            QByteArray out = commands_.count() > 0 ? commands_.join("\n").toUtf8() : QByteArray();
+            commands_.clear();
 
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", patch->mimeType.toUtf8().constData());
-        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response->headers().insert("Pragma", "no-cache");
-        response->end(patch->data.readAll());
+            response->writeHead(Tufao::HttpServerResponse::OK);
+            response->headers().insert("Content-Type", "text/plain; charset=utf8");
+            response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+            response->headers().insert("Pragma", "no-cache");
+            response->end(out);
 
-        delete patch;
+        }
+        else if (request->method() == "POST") // Long polling input
+        {
+            GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, this);
+            connect(response, SIGNAL(finished()), handler, SLOT(deleteLater()));
+            return;
+        }
     }
     else
     {
-        response->writeHead(404);
-        response->end("Not found");
+        int indexOfSlash = url.lastIndexOf("/");
+        QString patchId = "";
+
+        if (indexOfSlash > -1)
+            patchId = url.mid(indexOfSlash + 1);
+
+        QMutexLocker l(&patchesMutex_);
+        if (!patchId.isEmpty() && patches_.contains(patchId))
+        {
+            Patch *patch = patches_.take(patchId);
+            l.unlock();
+
+            patch->data.open(QIODevice::ReadOnly);
+
+            response->writeHead(Tufao::HttpServerResponse::OK);
+            response->headers().insert("Content-Type", patch->mimeType.toUtf8().constData());
+            response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+            response->headers().insert("Pragma", "no-cache");
+            response->end(patch->data.readAll());
+
+            delete patch;
+        }
+        else
+        {
+            response->writeHead(404);
+            response->end("Not found");
+        }
+    }
+}
+
+void GraphicsSceneWebServerConnection::sendCommand(const QString &cmd, const QString &queueCmd)
+{
+    if (socket_)
+    {
+        socket_->sendMessage(cmd.toLatin1());
+    }
+    else
+    {
+        if (queueCmd.isEmpty())
+            commands_.append(cmd);
+        else
+            commands_.append(queueCmd);
     }
 }
 
@@ -317,29 +423,41 @@ void GraphicsSceneSingleThreadedWebServer::handleRequest(Tufao::HttpServerReques
 {
     if (request->url() == "/" || request->url() == "/index.html")
     {
-        QFile indexFile(":/webcontrol/index.html");
-        indexFile.open(QIODevice::ReadOnly);
+        QFile file(":/webcontrol/index.html");
+        file.open(QIODevice::ReadOnly);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "text/html; charset=utf8");
         response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
         response->headers().insert("Pragma", "no-cache");
-        response->end(indexFile.readAll());
+        response->end(file.readAll());
     }
     else if (request->url() == "/displayRenderer.js")
     {
-        QFile indexFile(":/webcontrol/displayRenderer.js");
-        indexFile.open(QIODevice::ReadOnly);
+        QFile file(":/webcontrol/displayRenderer.js");
+        file.open(QIODevice::ReadOnly);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "application/javascript; charset=utf8");
         response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
         response->headers().insert("Pragma", "no-cache");
-        response->end(indexFile.readAll());
+        response->end(file.readAll());
+    }
+    else if (request->url() == "/jquery.mousewheel.js")
+    {
+        QFile file(":/webcontrol/jquery.mousewheel.js");
+        file.open(QIODevice::ReadOnly);
+
+        response->writeHead(Tufao::HttpServerResponse::OK);
+        response->headers().insert("Content-Type", "application/javascript; charset=utf8");
+        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+        response->headers().insert("Pragma", "no-cache");
+        response->end(file.readAll());
     }
     else
     {
         QString id = QString(request->url()).mid(1, 40);
+
         GraphicsSceneWebServerConnection *c = getConnection(id);
 
         if (c)
@@ -437,29 +555,65 @@ void GraphicsSceneWebServerThread::onRequestReady()
 
     if (request->url() == "/" || request->url() == "/index.html")
     {
-        QFile indexFile(":/webcontrol/index.html");
-        indexFile.open(QIODevice::ReadOnly);
+        QFile file(":/webcontrol/index.html");
+        file.open(QIODevice::ReadOnly);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "text/html; charset=utf8");
         response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
         response->headers().insert("Pragma", "no-cache");
-        response->end(indexFile.readAll());
+        response->end(file.readAll());
     }
     else if (request->url() == "/displayRenderer.js")
     {
-        QFile indexFile(":/webcontrol/displayRenderer.js");
-        indexFile.open(QIODevice::ReadOnly);
+        QFile file(":/webcontrol/displayRenderer.js");
+        file.open(QIODevice::ReadOnly);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "application/javascript; charset=utf8");
         response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
         response->headers().insert("Pragma", "no-cache");
-        response->end(indexFile.readAll());
+        response->end(file.readAll());
+    }
+    else if (request->url() == "/jquery.mousewheel.js")
+    {
+        QFile file(":/webcontrol/jquery.mousewheel.js");
+        file.open(QIODevice::ReadOnly);
+
+        response->writeHead(Tufao::HttpServerResponse::OK);
+        response->headers().insert("Content-Type", "application/javascript; charset=utf8");
+        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+        response->headers().insert("Pragma", "no-cache");
+        response->end(file.readAll());
+    }
+    else if (request->url().startsWith("/display?")) // long polling
+    {
+        QUrl url(request->url());
+        QString id = url.queryItemValue("id");
+//qDebug("ID is %s", id.toUtf8().constData());
+
+        GraphicsSceneWebServerConnection *c = server_->getConnection(id);
+
+        if (c)
+        {
+            c->handleRequest(request, response);
+            return;
+        }
+        else if (id.isEmpty()) // start new connection
+        {
+            c = new GraphicsSceneWebServerConnection(server_, response);
+            c->moveToThread(this);
+            server_->addConnection(c);
+            return;
+        }
+
+        response->writeHead(404);
+        response->end("Not found");
     }
     else
     {
         QString id = QString(request->url()).mid(1, 40);
+
         GraphicsSceneWebServerConnection *c = server_->getConnection(id);
 
         if (c)

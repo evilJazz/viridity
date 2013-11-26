@@ -34,7 +34,8 @@ SOURCES += \
 
 OTHER_FILES += \
     $$VIRIDITY_SRC_PATH/displayRenderer.js \
-    $$VIRIDITY_SRC_PATH/index.html
+    $$VIRIDITY_SRC_PATH/index.html \
+    $$VIRIDITY_SRC_PATH/jquery.mousewheel.js
 
 RESOURCES += \
     $$VIRIDITY_RES_PATH/webresources.qrc

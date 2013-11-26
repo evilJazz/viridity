@@ -54,11 +54,13 @@ var Base64Binary = {
 
 var DisplayRenderer = function() {
 
-    var debugVerbosity = 1;
-    var debugDraw = 1;
+    var debugVerbosity = 0;
+    var debugDraw = 0;
 
     var dr =
     {
+        useLongPolling: true,
+
         socket: 0,
         canvas: 0,
         ctx: 0,
@@ -69,6 +71,14 @@ var DisplayRenderer = function() {
 
         frontCanvas: 0,
         frontCtx: 0,
+
+        location: "",
+
+        timeout: 2000,
+        pause: 50,
+        connectionId: "",
+
+        inputEvents: [],
 
         _imageDone: function()
         {
@@ -86,7 +96,10 @@ var DisplayRenderer = function() {
                     dr.debugDraw();
 
                 if (debugVerbosity > 1) console.log("Sending ready...");
-                dr.socket.send("ready()");
+                if (!dr.useLongPolling)
+                    dr.socket.send("ready()");
+                else
+                    dr.inputEvents.push("ready()");
             }
         },
 
@@ -99,7 +112,10 @@ var DisplayRenderer = function() {
 
         requestFullUpdate: function()
         {
-            dr.socket.send("requestFullUpdate()");
+            if (!dr.useLongPolling)
+                dr.socket.send("requestFullUpdate()");
+            else
+                dr.inputEvents.push("requestFullUpdate()");
         },
 
         debugClearCanvas: function()
@@ -159,13 +175,218 @@ var DisplayRenderer = function() {
             }
         },
 
-        init: function()
+        sendInputEvents: function()
         {
-            dr.socket = new WebSocket('ws://' + window.location.host + '/display');
-            dr.canvas = document.getElementById('canvasBack');
+            if (dr.inputEvents.length > 0)
+            {
+                var data = dr.inputEvents.splice(0).join("\n");
+                var options =
+                {
+                    type: "POST",
+                    url: "display?id=" + dr.connectionId,
+                    async: false,
+                    cache: false,
+                    timeout: dr.timeout,
+                    data: data,
+
+                    success: function(data)
+                    {
+                        setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+                    },
+
+                    error: function(xhr, status, exception)
+                    {
+                        console.log("error while sending input events \"" + data + "\":\n" + status + " (" + exception + ")");
+                        setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+                    }
+                };
+
+                $.ajax(options);
+            }
+            else
+            {
+                setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+            }
+        },
+
+        receiveOutputMessages: function()
+        {
+            var options =
+            {
+                type: "GET",
+                url: "display?id=" + dr.connectionId,
+
+                async: true,
+                cache: false,
+
+                timeout: dr.timeout,
+
+                success: function(data)
+                {
+                    //console.log("Got data: " + data);
+                    var lines = data.split("\n");
+
+                    for (var i = 0, ii = lines.length; i < ii; i++)
+                    {
+                        console.log("line " + i + ": " + lines[i] + "\n");
+                        dr.processPlainMessage(lines[i]);
+                    }
+
+                    setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
+                },
+                error: function(xhr, status, exception)
+                {
+                    console.log("error: " + status + " (" + exception + ")");
+                    setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
+                }
+            };
+
+            $.ajax(options);
+        },
+
+        processPlainMessage: function(data, useBlobBuilder)
+        {
+            var msg = {};
+            msg["data"] = data;
+            dr.processMessage(msg, useBlobBuilder);
+        },
+
+        processMessage: function(msg, useBlobBuilder)
+        {
+            var paramStartIndex = msg.data.indexOf("(");
+            var paramEndIndex = msg.data.indexOf(")");
+
+            var command = msg.data.substring(0, paramStartIndex);
+            var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
+            var inputParams = params.split(/[\s,]+/);
+
+            var frame = inputParams[0];
+
+            if (dr.lastFrame !== frame)
+            {
+                if (debugVerbosity) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
+                dr.lastFrame = frame;
+
+                if (debugDraw)
+                {
+                    dr._flipToFront(); // overwrite debug rects...
+                    dr.frameCommands = [];
+                }
+            }
+
+            if (debugVerbosity) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
+            if (debugDraw)
+            {
+                var frameCmd =
+                {
+                    command: command,
+                    params: inputParams
+                }
+
+                dr.frameCommands.push(frameCmd);
+            }
+
+            if (command === "fillRect")
+            {
+                dr.ctx.fillStyle = inputParams[5]
+                dr.ctx.fillRect(
+                            inputParams[1], inputParams[2], inputParams[3], inputParams[4]
+                            );
+            }
+            else if (command === "moveImage")
+            {
+                dr.ctx.drawImage(
+                            dr.frontCanvas,
+                            inputParams[1], inputParams[2], inputParams[3], inputParams[4],
+                            inputParams[5], inputParams[6], inputParams[3], inputParams[4]
+                            );
+            }
+            else if (command === "drawImage")
+            {
+                ++dr.frameImageCount;
+
+                var img = new Image;
+                img.onload = function()
+                {
+                    if (frame !== dr.lastFrame)
+                        console.log("ASYNCHRONOUS IMAGE!!!!! " + " frame is " + frame + ", but dr.lastFrame is " + dr.lastFrame);
+
+                    if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
+
+                    dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
+                    dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
+
+                    if (useBlobBuilder)
+                        URL.revokeObjectURL(img.src);
+
+                    dr._imageDone();
+                };
+
+                var imageData = msg.data.slice(paramEndIndex + 2);
+
+                if (imageData.substring(0,3) === "fb:")
+                {
+                    img.src = imageData.substring(3);
+                }
+                else if (imageData.substring(0,4) === "http")
+                {
+                    img.src = imageData;
+                }
+                else if (useBlobBuilder)
+                {
+                    var blobber = new BlobBuilder;
+
+                    var buf = Base64Binary.decodeArrayBuffer(imageData);
+
+                    /*
+                    var rawData = atob(imageData);
+
+                    var buf = new ArrayBuffer(rawData.length);
+                    var view = new Uint8Array(buf);
+                    for (var i = 0; i < view.length; i++)
+                        view[i] = rawData.charCodeAt(i);
+                    */
+
+                    blobber.append(buf);
+
+                    var contentType = inputParams[5].split(";")[0]; // "image/jpeg" etc. remove base64
+                    //console.log("contentType: " + contentType);
+
+                    var blob = blobber.getBlob(contentType);
+                    var blobUrl = URL.createObjectURL(blob);
+                    img.src = blobUrl;
+                }
+                else
+                    img.src = "data:" + inputParams[5] + "," + imageData;
+            }
+            else if (command === "info")
+            {
+                $("#connectionId").text(inputParams[0]);
+                dr.connectionId = inputParams[0];
+            }
+            else if (command === "end")
+            {
+                if (debugVerbosity) console.log("Frame end " + frame + " received...");
+                dr._determineReadyState();
+            }
+        },
+
+        init: function(useLongPolling)
+        {
+            useLongPolling = useLongPolling || false;
+            dr.useLongPolling = useLongPolling;
+
+            var hostWithPath = window.location.host + window.location.pathname;
+                  hostWithPath = hostWithPath.replace(/\/$/, "");
+            dr.location = hostWithPath;
+
+            if (!dr.useLongPolling)
+                dr.socket = new WebSocket("ws://" + dr.location + "/display");
+
+            dr.canvas = document.getElementById("canvasBack");
             dr.ctx = dr.canvas.getContext("2d");
 
-            dr.frontCanvas = document.getElementById('canvas');
+            dr.frontCanvas = document.getElementById("canvas");
             dr.frontCtx = dr.frontCanvas.getContext("2d");
 
             var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
@@ -210,10 +431,20 @@ var DisplayRenderer = function() {
             {
                 var pos = getCanvasPos(event)
 
-                if (other)
-                    dr.socket.send(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
+                if (!dr.useLongPolling)
+                {
+                    if (other)
+                        dr.socket.send(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
+                    else
+                        dr.socket.send(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
+                }
                 else
-                    dr.socket.send(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
+                {
+                    if (other)
+                        dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
+                    else
+                        dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
+                }
 
                 event.stopPropagation();
                 event.preventDefault();
@@ -221,10 +452,20 @@ var DisplayRenderer = function() {
 
             function sendKeyEvent(type, event)
             {
-                if (event.hasOwnProperty("which"))
-                    dr.socket.send(type + "(" + event.which + "," + getModifiers(event) + ")");
+                if (!dr.useLongPolling)
+                {
+                    if (event.hasOwnProperty("which"))
+                        dr.socket.send(type + "(" + event.which + "," + getModifiers(event) + ")");
+                    else
+                        dr.socket.send(type + "(" + pos.x + "," + pos.y + ")");
+                }
                 else
-                    dr.socket.send(type + "(" + pos.x + "," + pos.y + ")");
+                {
+                    if (event.hasOwnProperty("which"))
+                        dr.inputEvents.push(type + "(" + event.which + "," + getModifiers(event) + ")");
+                    else
+                        dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + ")");
+                }
 
                 event.stopPropagation();
                 event.preventDefault();
@@ -244,122 +485,15 @@ var DisplayRenderer = function() {
             $(document).keypress(function(event)   { sendKeyEvent("keyPress", event) });
             $(document).keyup(function(event)      { sendKeyEvent("keyUp", event) });
 
-            dr.socket.onmessage = function(msg)
-                    {
-                        var paramStartIndex = msg.data.indexOf("(");
-                        var paramEndIndex = msg.data.indexOf(")");
-
-                        var command = msg.data.substring(0, paramStartIndex);
-                        var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
-                        var inputParams = params.split(/[\s,]+/);
-
-                        var frame = inputParams[0];
-
-                        if (dr.lastFrame !== frame)
-                        {
-                            if (debugVerbosity) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
-                            dr.lastFrame = frame;
-
-                            if (debugDraw)
-                            {
-                                dr._flipToFront(); // overwrite debug rects...
-                                dr.frameCommands = [];
-                            }
-                        }
-
-                        if (debugVerbosity) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
-                        if (debugDraw)
-                        {
-                            var frameCmd = {
-                                command: command,
-                                params: inputParams
-                            }
-                            dr.frameCommands.push(frameCmd);
-                        }
-
-                        if (command === "fillRect")
-                        {
-                            dr.ctx.fillStyle = inputParams[5]
-                            dr.ctx.fillRect(
-                                inputParams[1], inputParams[2], inputParams[3], inputParams[4]
-                            );
-                        }
-                        else if (command === "moveImage")
-                        {
-                            dr.ctx.drawImage(
-                                dr.frontCanvas,
-                                inputParams[1], inputParams[2], inputParams[3], inputParams[4],
-                                inputParams[5], inputParams[6], inputParams[3], inputParams[4]
-                            );
-                        }
-                        else if (command === "drawImage")
-                        {
-                            ++dr.frameImageCount;
-
-                            var img = new Image;
-                            img.onload = function()
-                                    {
-                                        if (frame !== dr.lastFrame)
-                                            console.log("ASYNCHRONOUS IMAGE!!!!!");
-
-                                        if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
-
-                                        dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
-                                        dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
-
-                                        if (useBlobBuilder)
-                                            URL.revokeObjectURL(img.src);
-
-                                        dr._imageDone();
-                                    };
-
-                            var imageData = msg.data.slice(paramEndIndex + 2);
-
-                            if (imageData.substring(0,3) === "fb:")
-                            {
-                                img.src = imageData.substring(3);
-                            }
-                            else if (imageData.substring(0,4) === "http")
-                            {
-                                img.src = imageData;
-                            }
-                            else if (useBlobBuilder)
-                            {
-                                var blobber = new BlobBuilder;
-
-                                var buf = Base64Binary.decodeArrayBuffer(imageData);
-
-                                /*
-                                var rawData = atob(imageData);
-
-                                var buf = new ArrayBuffer(rawData.length);
-                                var view = new Uint8Array(buf);
-                                for (var i = 0; i < view.length; i++)
-                                    view[i] = rawData.charCodeAt(i);
-                                */
-
-                                blobber.append(buf);
-
-                                var contentType = inputParams[5].split(";")[0]; // "image/jpeg" etc. remove base64
-                                //console.log("contentType: " + contentType);
-
-                                var blob = blobber.getBlob(contentType);
-                                var blobUrl = URL.createObjectURL(blob);
-                                img.src = blobUrl;
-                            }
-                            else
-                                img.src = "data:" + inputParams[5] + "," + imageData;
-                        }
-                        else if (command === "info")
-                        {
-                            $("#connectionId").text(inputParams[0]);
-                        }
-                        else if (command === "end")
-                        {
-                            if (debugVerbosity) console.log("Frame end " + frame + " received...");
-                            dr._determineReadyState();
-                        }
-                    };
+            if (dr.useLongPolling)
+            {
+                $(document).ready(function() { dr.receiveOutputMessages() });
+                $(document).ready(function() { dr.sendInputEvents() });
+            }
+            else
+            {
+                dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
+            }
         }
     }
 
