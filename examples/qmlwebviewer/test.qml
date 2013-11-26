@@ -15,17 +15,46 @@ Item {
         /*
         SequentialAnimation on x {
             loops: Animation.Infinite
-            PropertyAnimation { to: 900; duration: 2000; easing.type: Easing.InOutQuad }
-            PropertyAnimation { to: 100; duration: 2000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 900; duration: 20000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 100; duration: 20000; easing.type: Easing.InOutQuad }
         }
 
         SequentialAnimation on y {
             loops: Animation.Infinite
-            PropertyAnimation { to: 100; duration: 2300; easing.type: Easing.InOutQuad }
-            PropertyAnimation { to: 500; duration: 2300; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 100; duration: 23000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 500; duration: 23000; easing.type: Easing.InOutQuad }
         }
         */
     }
+/*
+    Image {
+        id: image
+
+        x: 1000
+        y: 1000
+
+        width: 1000
+        height: 1000
+
+        source: "http://localhost/~wincent/mona-lisa.png"
+//        source: "http://192.168.56.1/~wincent/mona-lisa.png"
+        fillMode: Image.PreserveAspectFit
+
+        SequentialAnimation on x {
+            loops: Animation.Infinite
+            PropertyAnimation { to: 900; duration: 10000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 100; duration: 10000; easing.type: Easing.InOutQuad }
+        }
+
+        SequentialAnimation on y {
+            loops: Animation.Infinite
+            PropertyAnimation { to: 100; duration: 10000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 500; duration: 10000; easing.type: Easing.InOutQuad }
+        }
+
+    }
+*/
+
 
     MouseArea {
         anchors.fill: parent
