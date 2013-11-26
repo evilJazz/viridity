@@ -15,3 +15,8 @@ OTHER_FILES += \
 
 RESOURCES += \
     qmlresource.qrc
+
+linux-* {
+    target.path = /opt/bin
+    INSTALLS += target
+}
