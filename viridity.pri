@@ -19,7 +19,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/private/qtestspontaneevent.h \
     $$VIRIDITY_SRC_PATH/private/synchronizedscenechangedhandler.h \
     $$VIRIDITY_SRC_PATH/private/synchronizedscenerenderer.h \
-    $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.h
+    $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.h \
+    $$VIRIDITY_SRC_PATH/private/commandbridge.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/moveanalyzer.cpp \
@@ -30,7 +31,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/graphicsscenebufferrenderer.cpp \
     $$VIRIDITY_SRC_PATH/private/synchronizedscenechangedhandler.cpp \
     $$VIRIDITY_SRC_PATH/private/synchronizedscenerenderer.cpp \
-    $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.cpp
+    $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.cpp \
+    $$VIRIDITY_SRC_PATH/private/commandbridge.cpp
 
 OTHER_FILES += \
     $$VIRIDITY_SRC_PATH/displayRenderer.js \

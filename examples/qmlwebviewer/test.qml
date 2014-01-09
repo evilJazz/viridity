@@ -108,4 +108,14 @@ Item {
         rect.x = rect.x + diffX * multiplier;
         rect.y = rect.y + diffY * multiplier;
     }
+
+    Connections {
+        target: commandBridge
+
+        onCommandReceived:
+        {
+            console.log("command received: " + command + " for session with ID: " + id);
+            commandBridge.response = "yes";
+        }
+    }
 }

@@ -3,6 +3,8 @@
 #undef DEBUG
 #include "private/debug.h"
 
+#include "private/commandbridge.h"
+
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
@@ -15,6 +17,7 @@
 #include <QCryptographicHash>
 #include <QMutexLocker>
 #include <QUrl>
+
 
 QString createUniqueID()
 {
@@ -67,6 +70,7 @@ public:
 GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerRequest *request, const QByteArray &head) :
     QObject(),
     server_(parent),
+    commandsMutex_(QMutex::NonRecursive),
     urlMode_(true),
     updateCheckInterval_(1),
     frame_(0),
@@ -89,6 +93,7 @@ GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInte
 GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerResponse *response) :
     QObject(),
     server_(parent),
+    commandsMutex_(QMutex::NonRecursive),
     urlMode_(true),
     updateCheckInterval_(1),
     frame_(0),
@@ -323,6 +328,12 @@ void GraphicsSceneWebServerConnection::sendUpdate()
 
         if (ops.count() > 0)
             sendCommand(QString().sprintf("end(%d):", frame_));
+
+
+        {
+            QMutexLocker cl(&commandsMutex_);
+            commandsPresent_.wakeAll();
+        }
     }
 }
 
@@ -340,15 +351,37 @@ void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *r
         {
             clientMessageReceived("ready()");
 
-            QByteArray out = commands_.count() > 0 ? commands_.join("\n").toUtf8() : QByteArray();
-            commands_.clear();
+            QByteArray out;
+
+            {
+                QMutexLocker cl(&commandsMutex_);
+
+                if (commands_.isEmpty())
+                {
+                    bool gotData =
+                            commandsPresent_.wait(&commandsMutex_, 1800);
+
+                    qDebug(gotData ? "got frame" : "timed out");
+
+                    if (!gotData)
+                    {
+                        out = commands_.join("\n").toUtf8();
+                        commands_.clear();
+                    }
+                }
+                else
+                {
+                    qDebug("got frame at once");
+                    out = commands_.join("\n").toUtf8();
+                    commands_.clear();
+                }
+            }
 
             response->writeHead(Tufao::HttpServerResponse::OK);
             response->headers().insert("Content-Type", "text/plain; charset=utf8");
             response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
             response->headers().insert("Pragma", "no-cache");
             response->end(out);
-
         }
         else if (request->method() == "POST") // Long polling input
         {
@@ -389,18 +422,14 @@ void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *r
     }
 }
 
-void GraphicsSceneWebServerConnection::sendCommand(const QString &cmd, const QString &queueCmd)
+void GraphicsSceneWebServerConnection::sendCommand(const QString &cmd)
 {
     if (socket_)
-    {
         socket_->sendMessage(cmd.toLatin1());
-    }
     else
     {
-        if (queueCmd.isEmpty())
-            commands_.append(cmd);
-        else
-            commands_.append(queueCmd);
+        QMutexLocker cl(&commandsMutex_);
+        commands_.append(cmd);
     }
 }
 
@@ -709,4 +738,54 @@ GraphicsSceneWebServerConnection *GraphicsSceneMultiThreadedWebServer::getConnec
 void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
 {
     threads[(i++) % threads.size()]->addConnection(handle);
+}
+
+
+static const char* commandScriptPath = "/command?";
+
+
+CommandPostHandler::CommandPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, QObject *parent) :
+    QObject(parent),
+    request_(request),
+    response_(response)
+{
+    connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
+    connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
+}
+
+void CommandPostHandler::onData(const QByteArray &chunk)
+{
+    data_ += chunk;
+}
+
+void CommandPostHandler::onEnd()
+{
+    // handle request
+    QString id = QString(request_->url()).mid(strlen(commandScriptPath), 40);
+    QString command(data_);
+qDebug("Command is %s", data_.constData());
+    QString result = globalCommandBridge.handleCommandReady(id, command);
+
+    response_->writeHead(Tufao::HttpServerResponse::OK);
+    response_->write(result.toUtf8());
+    response_->flush();
+    response_->end();
+//    response_->end(result.toUtf8());
+}
+
+
+CommandWebServer::CommandWebServer(QObject *parent) :
+    Tufao::HttpServer(parent)
+{
+    connect(this, SIGNAL(requestReady(Tufao::HttpServerRequest*,Tufao::HttpServerResponse*)),
+            this, SLOT(handleRequest(Tufao::HttpServerRequest*,Tufao::HttpServerResponse*)));
+}
+
+void CommandWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+{
+    if (request->method() == "POST" && request->url().startsWith(commandScriptPath))
+    {
+        CommandPostHandler *handler = new CommandPostHandler(request, response);
+        connect(response, SIGNAL(finished()), handler, SLOT(deleteLater()));
+    }
 }

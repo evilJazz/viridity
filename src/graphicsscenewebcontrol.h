@@ -14,6 +14,8 @@
 #include <Tufao/WebSocket>
 #include <QBuffer>
 #include <QMutex>
+#include <QWaitCondition>
+
 
 class GraphicsSceneWebServerConnection;
 
@@ -62,13 +64,17 @@ public slots:
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
-    void sendCommand(const QString &cmd, const QString &queueCmd = "");
+    Patch *createPatch(const QRect &rect, bool createBase64);
+
+    void sendCommand(const QString &cmd);
 
 private:
     WebServerInterface *server_;
     Tufao::WebSocket *socket_;
 
     QStringList commands_;
+    QMutex commandsMutex_;
+    QWaitCondition commandsPresent_;
 
     QString id_;
     bool urlMode_;
@@ -85,8 +91,6 @@ private:
 
     QHash<QString, Patch *> patches_;
     QMutex patchesMutex_;
-
-    Patch *createPatch(const QRect &rect, bool createBase64);
 };
 
 class WebServerInterface
@@ -174,6 +178,35 @@ private:
     QGraphicsScene *scene_;
     QMutex mapMutex_;
     QHash<QString, GraphicsSceneWebServerConnection *> map_;
+};
+
+class CommandPostHandler : public QObject
+{
+    Q_OBJECT
+
+public:
+    explicit CommandPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, QObject *parent = 0);
+
+private slots:
+    void onData(const QByteArray &chunk);
+    void onEnd();
+
+private:
+    Tufao::HttpServerRequest *request_;
+    Tufao::HttpServerResponse *response_;
+    QByteArray data_;
+};
+
+class CommandWebServer : public Tufao::HttpServer
+{
+    Q_OBJECT
+
+public:
+    explicit CommandWebServer(QObject *parent);
+
+public slots:
+    void handleRequest(Tufao::HttpServerRequest *request,
+                       Tufao::HttpServerResponse * response);
 };
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

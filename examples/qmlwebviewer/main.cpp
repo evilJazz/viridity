@@ -8,13 +8,20 @@
 #include <Viridity/GraphicsSceneSingleThreadedWebServer>
 #endif
 
+#include "private/commandbridge.h"
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    int port = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
+    const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
+    const int commandPort = a.arguments().count() > 2 ? a.arguments().at(2).toInt() : 8081;
 
     QDeclarativeEngine engine;
+
+    QDeclarativeContext *rootContext = engine.rootContext();
+    rootContext->setContextProperty("commandBridge", &globalCommandBridge);
+
     QDeclarativeComponent component(&engine, QUrl("qrc:/qml/test.qml"));
 
     if (component.status() != QDeclarativeComponent::Ready)
@@ -32,13 +39,16 @@ int main(int argc, char *argv[])
 
 #ifdef USE_MULTITHREADED_WEBSERVER
     GraphicsSceneMultiThreadedWebServer server(&a, &scene);
-    server.listen(QHostAddress::Any, port, QThread::idealThreadCount() * 2);
+    server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount() * 2);
 #else
     GraphicsSceneSingleThreadedWebServer server(&a, &scene);
-    server.listen(QHostAddress::Any, port);
+    server.listen(QHostAddress::Any, dataPort);
 #endif
 
-    qDebug("Server is now listening on 127.0.0.1 Port %d", port);
+    CommandWebServer commandServer(&a);
+    commandServer.listen(QHostAddress::Any, commandPort);
+
+    qDebug("Server is now listening on 127.0.0.1 data port %d and command port %d", dataPort, commandPort);
 
     return a.exec();
 }
