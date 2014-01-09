@@ -11,10 +11,10 @@
 
 GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
     GraphicsSceneObserver(parent),
+    minimizeDamageRegion_(true),
     updatesAvailable_(false),
     workBuffer_(&buffer1_),
     otherBuffer_(&buffer2_),
-    minimizeDamageRegion_(true),
     comparer_(NULL)
 {
     initComparer();
@@ -146,7 +146,7 @@ void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
     // DO NOTHING HERE
 }
 
-static int updateNo = 0;
+//static int updateNo = 0;
 void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 {
     //DGUARDMETHODTIMED;

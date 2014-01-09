@@ -110,7 +110,7 @@ void kaProfilePrintStat()
     for (int i = 0; i < records.count(); ++i)
     {
         const ProfileRecord &record = records.at(i);
-        kaDebug(QString().sprintf("%5d -> %100s, times called: %6d,  total runtime: %8d ms,  average runtime: %8.2f ms",
+        kaDebug(QString().sprintf("%5d -> %100s, times called: %6d,  total runtime: %8lld ms,  average runtime: %8.2f ms",
             i + 1,
             record.name.toLatin1().constData(),
             record.timesCalled,

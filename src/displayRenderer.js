@@ -377,7 +377,7 @@ var DisplayRenderer = function() {
             dr.useLongPolling = useLongPolling;
 
             var hostWithPath = window.location.host + window.location.pathname;
-                  hostWithPath = hostWithPath.replace(/\/$/, "");
+            hostWithPath = hostWithPath.replace(/\/$/, "");
             dr.location = hostWithPath;
 
             if (!dr.useLongPolling)
