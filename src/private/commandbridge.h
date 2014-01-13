@@ -8,8 +8,6 @@ class CommandBridge : public QObject
     Q_OBJECT
     Q_PROPERTY(QString response READ response WRITE setResponse)
 
-    friend class CommandPostHandler;
-
 public:
     static CommandBridge& singleton();
 #   define globalCommandBridge CommandBridge::singleton()
@@ -20,6 +18,7 @@ public:
 protected:
     explicit CommandBridge(QObject *parent = 0);
 
+public slots:
     QString handleCommandReady(const QString &id, const QString &command);
 
 signals:

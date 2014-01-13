@@ -15,7 +15,6 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 
     const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
-    const int commandPort = a.arguments().count() > 2 ? a.arguments().at(2).toInt() : 8081;
 
     QDeclarativeEngine engine;
 
@@ -45,10 +44,7 @@ int main(int argc, char *argv[])
     server.listen(QHostAddress::Any, dataPort);
 #endif
 
-    CommandWebServer commandServer(&a);
-    commandServer.listen(QHostAddress::Any, commandPort);
-
-    qDebug("Server is now listening on 127.0.0.1 data port %d and command port %d", dataPort, commandPort);
+    qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
 
     return a.exec();
 }

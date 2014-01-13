@@ -15,6 +15,7 @@
 #include <QBuffer>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QRunnable>
 
 
 class GraphicsSceneWebServerConnection;
@@ -195,18 +196,6 @@ private:
     Tufao::HttpServerRequest *request_;
     Tufao::HttpServerResponse *response_;
     QByteArray data_;
-};
-
-class CommandWebServer : public Tufao::HttpServer
-{
-    Q_OBJECT
-
-public:
-    explicit CommandWebServer(QObject *parent);
-
-public slots:
-    void handleRequest(Tufao::HttpServerRequest *request,
-                       Tufao::HttpServerResponse * response);
 };
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

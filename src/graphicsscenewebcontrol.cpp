@@ -347,7 +347,7 @@ void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *r
 
     if (url.startsWith("/display?")) // long polling
     {
-        if (request->method() == "GET") // Long polling output
+        if (request->method() == "GET") // long polling output
         {
             clientMessageReceived("ready()");
 
@@ -383,12 +383,17 @@ void GraphicsSceneWebServerConnection::handleRequest(Tufao::HttpServerRequest *r
             response->headers().insert("Pragma", "no-cache");
             response->end(out);
         }
-        else if (request->method() == "POST") // Long polling input
+        else if (request->method() == "POST") // long polling input
         {
             GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, this);
-            connect(response, SIGNAL(finished()), handler, SLOT(deleteLater()));
+            connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
             return;
         }
+    }
+    else if (url.startsWith("/command?") && request->method() == "POST") // long polling command
+    {
+        CommandPostHandler *handler = new CommandPostHandler(request, response);
+        connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
     }
     else
     {
@@ -615,7 +620,7 @@ void GraphicsSceneWebServerThread::onRequestReady()
         response->headers().insert("Pragma", "no-cache");
         response->end(file.readAll());
     }
-    else if (request->url().startsWith("/display?")) // long polling
+    else if (request->url().startsWith("/display?") || request->url().startsWith("/command?")) // long polling
     {
         QUrl url(request->url());
         QString id = url.queryItemValue("id");
@@ -741,9 +746,6 @@ void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
 }
 
 
-static const char* commandScriptPath = "/command?";
-
-
 CommandPostHandler::CommandPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, QObject *parent) :
     QObject(parent),
     request_(request),
@@ -761,31 +763,21 @@ void CommandPostHandler::onData(const QByteArray &chunk)
 void CommandPostHandler::onEnd()
 {
     // handle request
-    QString id = QString(request_->url()).mid(strlen(commandScriptPath), 40);
+    QString id = QUrl(request_->url()).queryItemValue("id");
     QString command(data_);
 qDebug("Command is %s", data_.constData());
-    QString result = globalCommandBridge.handleCommandReady(id, command);
+
+    QString result;
+    metaObject()->invokeMethod(&globalCommandBridge, "handleCommandReady", Qt::BlockingQueuedConnection,
+                               Q_RETURN_ARG(QString, result),
+                               Q_ARG(QString, id),
+                               Q_ARG(QString, command));
+
+    if (!result.endsWith("\r\n"))
+        result.append("\r\n");
 
     response_->writeHead(Tufao::HttpServerResponse::OK);
-    response_->write(result.toUtf8());
-    response_->flush();
-    response_->end();
-//    response_->end(result.toUtf8());
+    response_->headers().insert("Content-Type", "text/plain");
+    response_->end(result.toUtf8());
 }
 
-
-CommandWebServer::CommandWebServer(QObject *parent) :
-    Tufao::HttpServer(parent)
-{
-    connect(this, SIGNAL(requestReady(Tufao::HttpServerRequest*,Tufao::HttpServerResponse*)),
-            this, SLOT(handleRequest(Tufao::HttpServerRequest*,Tufao::HttpServerResponse*)));
-}
-
-void CommandWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
-{
-    if (request->method() == "POST" && request->url().startsWith(commandScriptPath))
-    {
-        CommandPostHandler *handler = new CommandPostHandler(request, response);
-        connect(response, SIGNAL(finished()), handler, SLOT(deleteLater()));
-    }
-}

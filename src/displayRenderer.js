@@ -371,6 +371,32 @@ var DisplayRenderer = function() {
             }
         },
 
+        sendCommand: function(command)
+        {
+            var options =
+            {
+                type: "POST",
+                url: "command?id=" + dr.connectionId,
+                async: true,
+                cache: true,
+                timeout: dr.timeout,
+                data: command,
+
+                success: function(data)
+                {
+                    console.log("command " + command + "answered with " + data);
+                    $("#commandResponse").show().text(data).fadeOut(2000);                },
+
+                error: function(xhr, status, exception)
+                {
+                    console.log("error while sending command: " + status + " (" + exception + ")");
+                    $("#commandResponse").show().text("error: " + status + " (" + exception + ")").fadeOut(2000);
+                }
+            };
+
+            $.ajax(options);
+        },
+
         init: function(useLongPolling)
         {
             useLongPolling = useLongPolling || false;

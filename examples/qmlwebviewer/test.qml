@@ -114,8 +114,16 @@ Item {
 
         onCommandReceived:
         {
-            console.log("command received: " + command + " for session with ID: " + id);
-            commandBridge.response = "yes";
+//            console.log("command received: " + command + " for session with ID: " + id);
+            if (command === "switchRectColor")
+            {
+                rect.color = (rect.color == "#808080") ? "red" : "gray";
+                commandBridge.response = "switched";
+            }
+            else
+            {
+                commandBridge.response = "invalid command";
+            }
         }
     }
 }

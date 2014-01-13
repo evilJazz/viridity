@@ -18,6 +18,9 @@
         <button onclick="displayRenderer.requestFullUpdate()">Request full frame</button>
         <input type="checkbox" id="debugDrawCB" onchange="displayRenderer.setDebugDrawEnabled(this.checked)" /><label for="debugDrawCB">Debug drawing </label>
         <strong>ID: </strong><span id="connectionId"></span>
+        <button onclick="displayRenderer.sendCommand('switchRectColor')">Switch rect color</button>
+        <button onclick="displayRenderer.sendCommand('wrong command')">Send wrong command</button>
+        <label id="commandResponse"></label>
     </div>
     <canvas id="canvas">
     </canvas>
