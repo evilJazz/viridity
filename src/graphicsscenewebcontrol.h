@@ -18,25 +18,6 @@
 #include <QRunnable>
 
 
-class GraphicsSceneWebServerConnection;
-
-class GraphicsSceneInputPostHandler : public QObject
-{
-    Q_OBJECT
-public:
-    explicit GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneWebServerConnection *connection, QObject *parent = 0);
-
-private slots:
-    void onData(const QByteArray &chunk);
-    void onEnd();
-
-private:
-    Tufao::HttpServerRequest *request_;
-    Tufao::HttpServerResponse *response_;
-    GraphicsSceneWebServerConnection *connection_;
-    QByteArray data_;
-};
-
 class WebServerInterface;
 class Patch;
 
@@ -181,21 +162,5 @@ private:
     QHash<QString, GraphicsSceneWebServerConnection *> map_;
 };
 
-class CommandPostHandler : public QObject
-{
-    Q_OBJECT
-
-public:
-    explicit CommandPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, QObject *parent = 0);
-
-private slots:
-    void onData(const QByteArray &chunk);
-    void onEnd();
-
-private:
-    Tufao::HttpServerRequest *request_;
-    Tufao::HttpServerResponse *response_;
-    QByteArray data_;
-};
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

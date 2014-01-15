@@ -8,6 +8,9 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
+#include "graphicssceneinputposthandler.h"
+#include "commandposthandler.h"
+
 #include <QByteArray>
 #include <QBuffer>
 #include <QFile>
@@ -23,33 +26,6 @@ QString createUniqueID()
 {
     QString uuid = QUuid::createUuid().toString();
     return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
-}
-
-GraphicsSceneInputPostHandler::GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneWebServerConnection *connection, QObject *parent) :
-    QObject(parent),
-    request_(request),
-    response_(response),
-    connection_(connection)
-{
-    connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
-    connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
-}
-
-void GraphicsSceneInputPostHandler::onData(const QByteArray &chunk)
-{
-    data_ += chunk;
-}
-
-void GraphicsSceneInputPostHandler::onEnd()
-{
-    QList<QByteArray> commands = data_.split('\n');
-
-    foreach (QByteArray command, commands)
-        connection_->clientMessageReceived(command);
-
-    // handle request
-    response_->writeHead(Tufao::HttpServerResponse::OK);
-    response_->end();
 }
 
 /* Patch */
@@ -743,41 +719,5 @@ GraphicsSceneWebServerConnection *GraphicsSceneMultiThreadedWebServer::getConnec
 void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
 {
     threads[(i++) % threads.size()]->addConnection(handle);
-}
-
-
-CommandPostHandler::CommandPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, QObject *parent) :
-    QObject(parent),
-    request_(request),
-    response_(response)
-{
-    connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
-    connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
-}
-
-void CommandPostHandler::onData(const QByteArray &chunk)
-{
-    data_ += chunk;
-}
-
-void CommandPostHandler::onEnd()
-{
-    // handle request
-    QString id = QUrl(request_->url()).queryItemValue("id");
-    QString command(data_);
-qDebug("Command is %s", data_.constData());
-
-    QString result;
-    metaObject()->invokeMethod(&globalCommandBridge, "handleCommandReady", Qt::BlockingQueuedConnection,
-                               Q_RETURN_ARG(QString, result),
-                               Q_ARG(QString, id),
-                               Q_ARG(QString, command));
-
-    if (!result.endsWith("\r\n"))
-        result.append("\r\n");
-
-    response_->writeHead(Tufao::HttpServerResponse::OK);
-    response_->headers().insert("Content-Type", "text/plain");
-    response_->end(result.toUtf8());
 }
 
