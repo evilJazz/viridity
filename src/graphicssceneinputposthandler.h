@@ -3,15 +3,13 @@
 
 #include "Tufao/HttpServerRequest"
 
-
-
-class GraphicsSceneWebServerConnection;
+class GraphicsSceneDisplay;
 
 class GraphicsSceneInputPostHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneWebServerConnection *connection, QObject *parent = 0);
+    explicit GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneDisplay *display, QObject *parent = 0);
 
 private slots:
     void onData(const QByteArray &chunk);
@@ -20,7 +18,7 @@ private slots:
 private:
     Tufao::HttpServerRequest *request_;
     Tufao::HttpServerResponse *response_;
-    GraphicsSceneWebServerConnection *connection_;
+    GraphicsSceneDisplay *display_;
     QByteArray data_;
 };
 

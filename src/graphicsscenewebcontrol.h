@@ -18,18 +18,18 @@
 #include <QRunnable>
 
 
-class WebServerInterface;
 class Patch;
+class GraphicsSceneMultiThreadedWebServer;
 
-class GraphicsSceneWebServerConnection : public QObject
+class GraphicsSceneDisplay : public QObject
 {
     Q_OBJECT
 
     friend class GraphicsSceneInputPostHandler;
 public:
-    explicit GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerRequest *request, const QByteArray &head);
-    explicit GraphicsSceneWebServerConnection(WebServerInterface *parent, Tufao::HttpServerResponse *response);
-    virtual ~GraphicsSceneWebServerConnection();
+    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerRequest *request, const QByteArray &head);
+    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerResponse *response);
+    virtual ~GraphicsSceneDisplay();
 
     QString id() const { return id_; }
 
@@ -51,7 +51,7 @@ private:
     void sendCommand(const QString &cmd);
 
 private:
-    WebServerInterface *server_;
+    GraphicsSceneMultiThreadedWebServer *server_;
     Tufao::WebSocket *socket_;
 
     QStringList commands_;
@@ -75,41 +75,6 @@ private:
     QMutex patchesMutex_;
 };
 
-class WebServerInterface
-{
-public:
-    virtual ~WebServerInterface() {}
-    virtual QGraphicsScene *scene() const = 0;
-
-    virtual void addConnection(GraphicsSceneWebServerConnection *c) = 0;
-    virtual void removeConnection(GraphicsSceneWebServerConnection *c) = 0;
-    virtual GraphicsSceneWebServerConnection *getConnection(const QString &id) = 0;
-};
-
-class GraphicsSceneSingleThreadedWebServer : public Tufao::HttpServer, public WebServerInterface
-{
-    Q_OBJECT
-public:
-    explicit GraphicsSceneSingleThreadedWebServer(QObject *parent, QGraphicsScene *scene);
-    QGraphicsScene *scene() const { return scene_; }
-
-public slots:
-    void handleRequest(Tufao::HttpServerRequest *request,
-                       Tufao::HttpServerResponse *response);
-
-protected:
-    void upgrade(Tufao::HttpServerRequest *request, const QByteArray &head);
-    friend class GraphicsSceneWebServerConnection;
-
-    void addConnection(GraphicsSceneWebServerConnection *c);
-    void removeConnection(GraphicsSceneWebServerConnection *c);
-    GraphicsSceneWebServerConnection *getConnection(const QString &id);
-
-private:
-    QGraphicsScene *scene_;
-    QHash<QString, GraphicsSceneWebServerConnection *> map_;
-};
-
 class GraphicsSceneMultiThreadedWebServer;
 
 class GraphicsSceneWebServerThread : public QThread
@@ -118,13 +83,10 @@ class GraphicsSceneWebServerThread : public QThread
 public:
     explicit GraphicsSceneWebServerThread(GraphicsSceneMultiThreadedWebServer *parent);
 
-    void addConnection(int socketDescriptor);
-
-signals:
+public slots:
     void newConnection(int socketDescriptor);
 
 private slots:
-    void onNewConnection(int socketDescriptor);
     void onRequestReady();
     void onUpgrade(const QByteArray &);
 
@@ -132,7 +94,7 @@ private:
     GraphicsSceneMultiThreadedWebServer *server_;
 };
 
-class GraphicsSceneMultiThreadedWebServer : public QTcpServer, public WebServerInterface
+class GraphicsSceneMultiThreadedWebServer : public QTcpServer
 {
     Q_OBJECT
 public:
@@ -143,15 +105,12 @@ public:
 
     void listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
-    void addConnection(GraphicsSceneWebServerConnection *c);
-    void removeConnection(GraphicsSceneWebServerConnection *c);
-    GraphicsSceneWebServerConnection *getConnection(const QString &id);
-
-signals:
-    void newConnection(int socketDescriptor);
+    void addDisplay(GraphicsSceneDisplay *c);
+    void removeDisplay(GraphicsSceneDisplay *c);
+    GraphicsSceneDisplay *getDisplay(const QString &id);
 
 protected:
-    void incomingConnection(int handle);
+    virtual void incomingConnection(int handle);
 
 private:
     QList<GraphicsSceneWebServerThread*> threads;
@@ -159,7 +118,7 @@ private:
 
     QGraphicsScene *scene_;
     QMutex mapMutex_;
-    QHash<QString, GraphicsSceneWebServerConnection *> map_;
+    QHash<QString, GraphicsSceneDisplay *> map_;
 };
 
 

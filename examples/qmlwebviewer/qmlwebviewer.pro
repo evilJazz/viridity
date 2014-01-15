@@ -9,7 +9,6 @@ SOURCES += main.cpp
 #CONFIG += tufao
 include(../../3rdparty/tufao/tufao.pri)
 
-DEFINES += USE_MULTITHREADED_WEBSERVER
 include(../../viridity.pri)
 
 OTHER_FILES += \

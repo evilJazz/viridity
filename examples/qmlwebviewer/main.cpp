@@ -2,11 +2,7 @@
 #include <QtDeclarative>
 #include <QDeclarativeEngine>
 
-#ifdef USE_MULTITHREADED_WEBSERVER
 #include <Viridity/GraphicsSceneMultiThreadedWebServer>
-#else
-#include <Viridity/GraphicsSceneSingleThreadedWebServer>
-#endif
 
 #include "private/commandbridge.h"
 
@@ -36,13 +32,8 @@ int main(int argc, char *argv[])
     QGraphicsScene scene;
     scene.addItem(item);
 
-#ifdef USE_MULTITHREADED_WEBSERVER
     GraphicsSceneMultiThreadedWebServer server(&a, &scene);
     server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount() * 2);
-#else
-    GraphicsSceneSingleThreadedWebServer server(&a, &scene);
-    server.listen(QHostAddress::Any, dataPort);
-#endif
 
     qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
 
