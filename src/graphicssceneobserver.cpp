@@ -5,7 +5,7 @@
 #include "private/synchronizedscenechangedhandler.h"
 
 #undef DEBUG
-#include "private/debug.h"
+#include "KCL/debug.h"
 
 GraphicsSceneObserver::GraphicsSceneObserver(QObject *parent) :
     QObject(parent),

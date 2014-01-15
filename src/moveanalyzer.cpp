@@ -4,7 +4,7 @@
 #include <QtConcurrentFilter>
 
 #define DEBUG
-#include "private/debug.h"
+#include "KCL/debug.h"
 
 #define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))
 #define OPTIMIZE_UNROLL_LOOPS

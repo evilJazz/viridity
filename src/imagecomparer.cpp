@@ -4,7 +4,7 @@
 #include <QtConcurrentMap>
 
 #undef DEBUG
-#include "private/debug.h"
+#include "KCL/debug.h"
 
 //#define USE_MOVE_ANALYZER
 #define USE_FILL_ANALYZER

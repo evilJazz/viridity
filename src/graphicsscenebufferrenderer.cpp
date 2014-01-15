@@ -5,7 +5,7 @@
 #include "private/synchronizedscenerenderer.h"
 
 #undef DEBUG
-#include "private/debug.h"
+#include "KCL/debug.h"
 
 /* GraphicsSceneBufferRenderer */
 

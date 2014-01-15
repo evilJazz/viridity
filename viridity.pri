@@ -45,12 +45,3 @@ OTHER_FILES += \
 
 RESOURCES += \
     $$VIRIDITY_RES_PATH/webresources.qrc
-
-
-!has_katastrophos_debug {
-    SOURCES += \
-        $$VIRIDITY_SRC_PATH/private/debug.cpp \
-
-    HEADERS += \
-        $$VIRIDITY_SRC_PATH/private/debug.h \
-}

@@ -7,7 +7,7 @@
 #include <QGraphicsItem>
 
 #define DEBUG
-#include "private/debug.h"
+#include "KCL/debug.h"
 #include "private/qtestspontaneevent.h"
 
 /* GraphicsSceneWebControlCommandInterpreter */
