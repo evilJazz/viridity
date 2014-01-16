@@ -1,6 +1,6 @@
 #include "graphicsscenewebcontrol.h"
 
-#undef DEBUG
+//#undef DEBUG
 #include "KCL/debug.h"
 
 #include "private/commandbridge.h"
@@ -421,21 +421,21 @@ void GraphicsSceneDisplay::clientDisconnected()
 
 /* GraphicsSceneWebServerThread */
 
-GraphicsSceneWebServerThread::GraphicsSceneWebServerThread(GraphicsSceneMultiThreadedWebServer *parent) :
-    QThread(),
-    server_(parent)
+GraphicsSceneWebServerTask::GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor) :
+    EventLoopTask(),
+    server_(parent),
+    socketDescriptor_(socketDescriptor)
 {
-    // need this to make the signals and slots run in current thread
-    moveToThread(this);
-    connect(parent, SIGNAL(destroyed()), this, SLOT(quit()));
-    connect(parent, SIGNAL(destroyed()), this, SLOT(deleteLater()));
+    connect(this, SIGNAL(started(Task*, QThread*)), this, SLOT(setupConnection()));
 }
 
-void GraphicsSceneWebServerThread::newConnection(int socketDescriptor)
+void GraphicsSceneWebServerTask::setupConnection()
 {
+    DGUARDMETHODTIMED;
+
     QTcpSocket *socket = new QTcpSocket(this);
 
-    if (!socket->setSocketDescriptor(socketDescriptor))
+    if (!socket->setSocketDescriptor(socketDescriptor_))
     {
         delete socket;
         return;
@@ -447,10 +447,14 @@ void GraphicsSceneWebServerThread::newConnection(int socketDescriptor)
     connect(handle, SIGNAL(upgrade(QByteArray)), this, SLOT(onUpgrade(QByteArray)));
     connect(socket, SIGNAL(disconnected()), handle, SLOT(deleteLater()));
     connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+
+    connect(socket, SIGNAL(disconnected()), this, SLOT(quit()));
 }
 
-void GraphicsSceneWebServerThread::onRequestReady()
+void GraphicsSceneWebServerTask::onRequestReady()
 {
+    DGUARDMETHODTIMED;
+
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
 
     QAbstractSocket *socket = request->socket();
@@ -511,7 +515,7 @@ void GraphicsSceneWebServerThread::onRequestReady()
         else if (id.isEmpty()) // start new connection
         {
             c = new GraphicsSceneDisplay(server_, response);
-            c->moveToThread(this);
+            c->moveToThread(QThread::currentThread());
             server_->addDisplay(c);
             return;
         }
@@ -536,8 +540,10 @@ void GraphicsSceneWebServerThread::onRequestReady()
     }
 }
 
-void GraphicsSceneWebServerThread::onUpgrade(const QByteArray &head)
+void GraphicsSceneWebServerTask::onUpgrade(const QByteArray &head)
 {
+    DGUARDMETHODTIMED;
+
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
 
     if (request->url() != "/display")
@@ -550,7 +556,7 @@ void GraphicsSceneWebServerThread::onUpgrade(const QByteArray &head)
     }
 
     GraphicsSceneDisplay *c = new GraphicsSceneDisplay(server_, request, head);
-    c->moveToThread(this);
+    c->moveToThread(QThread::currentThread());
     server_->addDisplay(c);
 }
 
@@ -559,37 +565,20 @@ void GraphicsSceneWebServerThread::onUpgrade(const QByteArray &head)
 
 GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject *parent, QGraphicsScene *scene) :
     QTcpServer(parent),
-    i(0),
     scene_(scene),
-    mapMutex_(QMutex::Recursive)
+    mapMutex_(QMutex::Recursive),
+    taskController_(new TaskProcessingController(this))
 {
+
 }
 
 GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
 {
-    // the thread can't have a parent then...
-    foreach (GraphicsSceneWebServerThread* t, threads)
-    {
-        t->quit();
-    }
-
-    foreach (GraphicsSceneWebServerThread* t, threads)
-    {
-        t->wait();
-        delete t;
-    }
+    taskController_->waitForDone();
 }
 
 void GraphicsSceneMultiThreadedWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
 {
-    threads.reserve(threadsNumber);
-
-    for (int i = 0; i < threadsNumber; ++i)
-    {
-        threads.push_back(new GraphicsSceneWebServerThread(this));
-        threads[i]->start();
-    }
-
     QTcpServer::listen(address, port);
 }
 
@@ -616,12 +605,8 @@ GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::getDisplay(const QStr
 
 void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
 {
-    metaObject()->invokeMethod(
-        threads[(i++) % threads.size()],
-        "newConnection",
-        Qt::QueuedConnection,
-        QGenericReturnArgument(0),
-        Q_ARG(int, handle)
-    );
+    DGUARDMETHODTIMED;
+    GraphicsSceneWebServerTask *task = new GraphicsSceneWebServerTask(this, handle);
+    taskController_->addTask(task);
 }
 

@@ -6,8 +6,11 @@
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
+#include "KCL/backgroundtasks.h"
+
 #include <QTimer>
 #include <QThread>
+#include <QEventLoop>
 
 #include <QtNetwork/QTcpSocket>
 #include <Tufao/HttpServer>
@@ -77,14 +80,14 @@ private:
 
 class GraphicsSceneMultiThreadedWebServer;
 
-class GraphicsSceneWebServerThread : public QThread
+class GraphicsSceneWebServerTask : public EventLoopTask
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneWebServerThread(GraphicsSceneMultiThreadedWebServer *parent);
+    explicit GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor);
 
 public slots:
-    void newConnection(int socketDescriptor);
+    void setupConnection();
 
 private slots:
     void onRequestReady();
@@ -92,6 +95,7 @@ private slots:
 
 private:
     GraphicsSceneMultiThreadedWebServer *server_;
+    int socketDescriptor_;
 };
 
 class GraphicsSceneMultiThreadedWebServer : public QTcpServer
@@ -113,12 +117,11 @@ protected:
     virtual void incomingConnection(int handle);
 
 private:
-    QList<GraphicsSceneWebServerThread*> threads;
-    int i;
-
     QGraphicsScene *scene_;
     QMutex mapMutex_;
     QHash<QString, GraphicsSceneDisplay *> map_;
+
+    TaskProcessingController *taskController_;
 };
 
 

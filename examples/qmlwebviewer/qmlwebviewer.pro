@@ -7,6 +7,9 @@ TEMPLATE = app
 SOURCES += main.cpp
 
 #CONFIG += tufao
+
+DEFINES += DEBUG
+
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao.pri)
 include(../../viridity.pri)
