@@ -223,12 +223,12 @@ var DisplayRenderer = function() {
 
                 success: function(data)
                 {
-                    //console.log("Got data: " + data);
+//                    console.log("Got data: " + data);
                     var lines = data.split("\n");
 
                     for (var i = 0, ii = lines.length; i < ii; i++)
                     {
-                        console.log("line " + i + ": " + lines[i] + "\n");
+//                        console.log("line " + i + ": " + lines[i] + "\n");
                         dr.processPlainMessage(lines[i]);
                     }
 
@@ -378,19 +378,19 @@ var DisplayRenderer = function() {
                 type: "POST",
                 url: "command?id=" + dr.connectionId,
                 async: true,
-                cache: true,
                 timeout: dr.timeout,
                 data: command,
 
                 success: function(data)
                 {
                     console.log("command " + command + "answered with " + data);
-                    $("#commandResponse").show().text(data).fadeOut(2000);                },
+                    $("#commandResponse").show().text(data).fadeOut(2000);
+                },
 
                 error: function(xhr, status, exception)
                 {
                     console.log("error while sending command: " + status + " (" + exception + ")");
-                    $("#commandResponse").show().text("error: " + status + " (" + exception + ")").fadeOut(2000);
+                    $("#commandResponse").show().text(status + " " + exception).fadeOut(2000);
                 }
             };
 
