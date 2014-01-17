@@ -23,7 +23,7 @@ void GraphicsSceneInputPostHandler::onEnd()
     QList<QByteArray> commands = data_.split('\n');
 
     foreach (QByteArray command, commands)
-        display_->clientMessageReceived(command);
+        display_->sendCommand(command);
 
     // handle request
     response_->writeHead(Tufao::HttpServerResponse::OK);

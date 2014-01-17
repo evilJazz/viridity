@@ -23,13 +23,19 @@
 
 #include "graphicsscenedisplay.h"
 
+#include "handlers/websockethandler.h"
+#include "handlers/longpollinghandler.h"
+#include "handlers/patchrequesthandler.h"
 
 /* GraphicsSceneWebServerThread */
 
 GraphicsSceneWebServerTask::GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor) :
     EventLoopTask(),
     server_(parent),
-    socketDescriptor_(socketDescriptor)
+    socketDescriptor_(socketDescriptor),
+    webSocketHandler_(NULL),
+    longPollingHandler_(NULL),
+    patchRequestHandler_(NULL)
 {
     connect(this, SIGNAL(started(Task*, QThread*)), this, SLOT(setupConnection()));
 }
@@ -54,6 +60,10 @@ void GraphicsSceneWebServerTask::setupConnection()
     connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
 
     connect(socket, SIGNAL(disconnected()), this, SLOT(quit()));
+
+    webSocketHandler_ = new WebSocketHandler(this);
+    longPollingHandler_ = new LongPollingHandler(this);
+    patchRequestHandler_ = new PatchRequestHandler(this);
 }
 
 void GraphicsSceneWebServerTask::onRequestReady()
@@ -104,42 +114,16 @@ void GraphicsSceneWebServerTask::onRequestReady()
         response->headers().insert("Pragma", "no-cache");
         response->end(file.readAll());
     }
-    else if (request->url().startsWith("/display?") || request->url().startsWith("/command?")) // long polling
+    else if (longPollingHandler_->doesHandleRequest(request))
     {
-        QUrl url(request->url());
-        QString id = url.queryItemValue("id");
-//qDebug("ID is %s", id.toUtf8().constData());
-
-        GraphicsSceneDisplay *c = server_->getDisplay(id);
-
-        if (c)
-        {
-            c->handleRequest(request, response);
-            return;
-        }
-        else if (id.isEmpty()) // start new connection
-        {
-            c = new GraphicsSceneDisplay(server_, response);
-            c->moveToThread(QThread::currentThread());
-            server_->addDisplay(c);
-            return;
-        }
-
-        response->writeHead(404);
-        response->end("Not found");
+        longPollingHandler_->handleRequest(request, response);
+    }
+    else if (patchRequestHandler_->doesHandleRequest(request))
+    {
+        patchRequestHandler_->handleRequest(request, response);
     }
     else
     {
-        QString id = QString(request->url()).mid(1, 40);
-
-        GraphicsSceneDisplay *c = server_->getDisplay(id);
-
-        if (c)
-        {
-            c->handleRequest(request, response);
-            return;
-        }
-
         response->writeHead(404);
         response->end("Not found");
     }
@@ -147,23 +131,10 @@ void GraphicsSceneWebServerTask::onRequestReady()
 
 void GraphicsSceneWebServerTask::onUpgrade(const QByteArray &head)
 {
-    DGUARDMETHODTIMED;
-
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
-
-    if (request->url() != "/display")
-    {
-        Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
-        response.writeHead(404);
-        response.end("Not found");
-        request->socket()->close();
-        return;
-    }
-
-    GraphicsSceneDisplay *c = new GraphicsSceneDisplay(server_, request, head);
-    c->moveToThread(QThread::currentThread());
-    server_->addDisplay(c);
+    webSocketHandler_->handleUpgrade(request, head);
 }
+
 
 
 /* GraphicsSceneMultiThreadedWebServer */

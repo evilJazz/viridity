@@ -16,6 +16,10 @@
 
 #include <QGraphicsScene>
 
+class WebSocketHandler;
+class LongPollingHandler;
+class PatchRequestHandler;
+
 class GraphicsSceneMultiThreadedWebServer;
 class GraphicsSceneDisplay;
 
@@ -25,6 +29,8 @@ class GraphicsSceneWebServerTask : public EventLoopTask
 public:
     explicit GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor);
 
+    GraphicsSceneMultiThreadedWebServer *server() { return server_; }
+
 public slots:
     void setupConnection();
 
@@ -33,6 +39,10 @@ private slots:
     void onUpgrade(const QByteArray &);
 
 private:
+    WebSocketHandler *webSocketHandler_;
+    LongPollingHandler *longPollingHandler_;
+    PatchRequestHandler *patchRequestHandler_;
+
     GraphicsSceneMultiThreadedWebServer *server_;
     int socketDescriptor_;
 };

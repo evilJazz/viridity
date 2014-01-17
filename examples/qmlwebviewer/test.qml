@@ -54,7 +54,7 @@ Item {
 
     }
 */
-
+    /*
     TextEdit {
         id: edit
 
@@ -73,6 +73,7 @@ Item {
             console.log("Text changed to \"" + edit.text + "\"");
         }
     }
+    */
 
 
 

@@ -35,48 +35,49 @@ public:
     QDateTime deadline;
 };
 
-typedef QSharedPointer<Patch> SharedDisplayPatch;
-
 class GraphicsSceneDisplay : public QObject
 {
     Q_OBJECT
 
     friend class GraphicsSceneInputPostHandler;
 public:
-    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerRequest *request, const QByteArray &head);
-    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerResponse *response);
+    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent);
     virtual ~GraphicsSceneDisplay();
 
     QString id() const { return id_; }
 
-private slots:
-    void clientConnected(Tufao::HttpServerResponse *response = NULL);
-    void clientDisconnected();
-    void clientMessageReceived(QByteArray data);
+    bool isUpdateAvailable() { return updateAvailable_; }
+    Patch *takePatch(const QString &patchId);
 
-    void sceneDamagedRegionsAvailable();
+    bool sendCommand(const QByteArray &data);
+    bool sendCommand(const QString &command, const QStringList &params);
 
-    void sendUpdate();
+    QStringList getUpdateCommandList();
+
+signals:
+    void updateAvailable();
 
 public slots:
-    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    void clientReady();
+
+private slots:
+    void sceneDamagedRegionsAvailable();
+    void sendUpdate();
 
 private:
     Patch *createPatch(const QRect &rect, bool createBase64);
 
-    void sendCommand(const QString &cmd);
-
 private:
     GraphicsSceneMultiThreadedWebServer *server_;
-    Tufao::WebSocket *socket_;
 
     QStringList commands_;
     QMutex commandsMutex_;
-    QWaitCondition commandsPresent_;
 
     QString id_;
     bool urlMode_;
     int updateCheckInterval_;
+
+    bool updateAvailable_;
 
     int frame_;
 

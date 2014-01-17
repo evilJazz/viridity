@@ -74,7 +74,7 @@ var DisplayRenderer = function() {
 
         location: "",
 
-        timeout: 2000,
+        timeout: 20000,
         pause: 50,
         connectionId: "",
 
