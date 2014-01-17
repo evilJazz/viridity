@@ -22,7 +22,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.h \
     $$VIRIDITY_SRC_PATH/private/commandbridge.h \
     $$VIRIDITY_SRC_PATH/graphicssceneinputposthandler.h \
-    $$VIRIDITY_SRC_PATH/commandposthandler.h
+    $$VIRIDITY_SRC_PATH/commandposthandler.h \
+    $$VIRIDITY_SRC_PATH/graphicsscenedisplay.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/moveanalyzer.cpp \
@@ -36,7 +37,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.cpp \
     $$VIRIDITY_SRC_PATH/private/commandbridge.cpp \
     $$VIRIDITY_SRC_PATH/graphicssceneinputposthandler.cpp \
-    $$VIRIDITY_SRC_PATH/commandposthandler.cpp
+    $$VIRIDITY_SRC_PATH/commandposthandler.cpp \
+    $$VIRIDITY_SRC_PATH/graphicsscenedisplay.cpp
 
 OTHER_FILES += \
     $$VIRIDITY_SRC_PATH/displayRenderer.js \

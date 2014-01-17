@@ -3,14 +3,9 @@
 
 #include "viridity_global.h"
 
-#include "graphicsscenebufferrenderer.h"
-#include "graphicsscenewebcontrolcommandinterpreter.h"
-
 #include "KCL/backgroundtasks.h"
 
 #include <QTimer>
-#include <QThread>
-#include <QEventLoop>
 
 #include <QtNetwork/QTcpSocket>
 #include <Tufao/HttpServer>
@@ -18,67 +13,11 @@
 #include <QBuffer>
 #include <QMutex>
 #include <QWaitCondition>
-#include <QRunnable>
 
-
-class Patch;
-class GraphicsSceneMultiThreadedWebServer;
-
-class GraphicsSceneDisplay : public QObject
-{
-    Q_OBJECT
-
-    friend class GraphicsSceneInputPostHandler;
-public:
-    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerRequest *request, const QByteArray &head);
-    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerResponse *response);
-    virtual ~GraphicsSceneDisplay();
-
-    QString id() const { return id_; }
-
-private slots:
-    void clientConnected(Tufao::HttpServerResponse *response = NULL);
-    void clientDisconnected();
-    void clientMessageReceived(QByteArray data);
-
-    void sceneDamagedRegionsAvailable();
-
-    void sendUpdate();
-
-public slots:
-    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
-
-private:
-    Patch *createPatch(const QRect &rect, bool createBase64);
-
-    void sendCommand(const QString &cmd);
-
-private:
-    GraphicsSceneMultiThreadedWebServer *server_;
-    Tufao::WebSocket *socket_;
-
-    QStringList commands_;
-    QMutex commandsMutex_;
-    QWaitCondition commandsPresent_;
-
-    QString id_;
-    bool urlMode_;
-    int updateCheckInterval_;
-
-    int frame_;
-
-    GraphicsSceneWebControlCommandInterpreter commandInterpreter_;
-
-    QTimer timer_;
-
-    GraphicsSceneBufferRenderer *renderer_;
-    bool clientReady_;
-
-    QHash<QString, Patch *> patches_;
-    QMutex patchesMutex_;
-};
+#include <QGraphicsScene>
 
 class GraphicsSceneMultiThreadedWebServer;
+class GraphicsSceneDisplay;
 
 class GraphicsSceneWebServerTask : public EventLoopTask
 {
@@ -123,6 +62,5 @@ private:
 
     TaskProcessingController *taskController_;
 };
-
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

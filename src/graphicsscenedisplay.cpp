@@ -1,0 +1,407 @@
+#include "graphicsscenedisplay.h"
+
+//#undef DEBUG
+#include "KCL/debug.h"
+
+#include "private/commandbridge.h"
+
+#include "Tufao/WebSocket"
+#include "Tufao/HttpServerRequest"
+
+#include "graphicsscenewebcontrol.h"
+#include "graphicssceneinputposthandler.h"
+#include "commandposthandler.h"
+
+#include <QByteArray>
+#include <QBuffer>
+#include <QFile>
+#include <QThread>
+
+#include <QUuid>
+#include <QCryptographicHash>
+#include <QMutexLocker>
+#include <QUrl>
+
+QString createUniqueID()
+{
+    QString uuid = QUuid::createUuid().toString();
+    return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
+}
+
+/* GraphicsSceneDisplay */
+
+GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerRequest *request, const QByteArray &head) :
+    QObject(),
+    server_(parent),
+    commandsMutex_(QMutex::NonRecursive),
+    urlMode_(true),
+    updateCheckInterval_(1),
+    frame_(0),
+    renderer_(NULL),
+    clientReady_(true),
+    patchesMutex_(QMutex::Recursive)
+{
+    socket_ = new Tufao::WebSocket(this);
+    socket_->startServerHandshake(request, head);
+    socket_->setMessagesType(Tufao::WebSocket::TEXT_MESSAGE);
+
+    id_ = createUniqueID();
+
+    connect(socket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
+    connect(socket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
+
+    clientConnected();
+}
+
+GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent, Tufao::HttpServerResponse *response) :
+    QObject(),
+    server_(parent),
+    commandsMutex_(QMutex::NonRecursive),
+    urlMode_(true),
+    updateCheckInterval_(1),
+    frame_(0),
+    renderer_(NULL),
+    clientReady_(true),
+    patchesMutex_(QMutex::Recursive)
+{
+    socket_ = NULL;
+    id_ = createUniqueID();
+
+    clientConnected(response);
+}
+
+GraphicsSceneDisplay::~GraphicsSceneDisplay()
+{
+    qDeleteAll(patches_.values());
+
+    server_->removeDisplay(this);
+}
+
+void GraphicsSceneDisplay::clientConnected(Tufao::HttpServerResponse *response)
+{
+    if (!renderer_)
+    {
+        renderer_ = new GraphicsSceneBufferRenderer();
+    }
+
+    commandInterpreter_.setTargetGraphicsScene(server_->scene());
+
+    renderer_->setTargetGraphicsScene(server_->scene());
+    renderer_->setEnabled(true);
+
+    connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
+    connect(&timer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
+
+    connect(&commandInterpreter_, SIGNAL(fullUpdateRequested()), renderer_, SLOT(fullUpdate()));
+
+    QString info = "info(" + id_ + ")";
+    if (socket_)
+        socket_->sendMessage(info.toUtf8().constData());
+    else
+    {
+        response->writeHead(Tufao::HttpServerResponse::OK);
+        response->headers().insert("Content-Type", "text/plain; charset=utf8");
+        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+        response->headers().insert("Pragma", "no-cache");
+        response->end(info.toUtf8());
+    }
+
+    timer_.setSingleShot(false);
+    timer_.start(updateCheckInterval_);
+}
+
+void GraphicsSceneDisplay::clientMessageReceived(QByteArray data)
+{
+    QString rawCommand = data;
+
+    int paramStartIndex = rawCommand.indexOf("(");
+    int paramStopIndex = rawCommand.indexOf(")");
+
+    QString command = rawCommand.mid(0, paramStartIndex);
+    QString rawParams = rawCommand.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+
+    QStringList params = rawParams.split(",", QString::KeepEmptyParts);
+
+    //DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", socket_, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
+
+    if (socket_)
+    {
+        if (command == "ready")
+        {
+            clientReady_ = true;
+            if (renderer_->updatesAvailable())
+            {
+                DPRINTF("Updates are available, triggering again...");
+                if (!timer_.isActive())
+                    timer_.start(updateCheckInterval_);
+            }
+        }
+        else
+            commandInterpreter_.sendCommand(command, params);
+    }
+    else
+    {
+        if (command != "ready")
+            commandInterpreter_.sendCommand(command, params);
+
+        clientReady_ = true;
+    }
+}
+
+void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
+{
+    if (!timer_.isActive())
+        timer_.start(updateCheckInterval_);
+}
+
+Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
+{
+    Patch *patch = new Patch;
+
+    patch->id = createUniqueID();
+    patch->rect = rect;
+
+    QImage image(rect.size(), QImage::Format_RGB888);
+
+    QPainter p(&image);
+    p.drawImage(0, 0, renderer_->buffer(), rect.x(), rect.y());
+
+    patch->data.open(QIODevice::ReadWrite);
+    //image.save(&patch->data, "JPEG", 90);
+    //image.save(&patch->data, "BMP");
+    image.save(&patch->data, "PNG");
+    patch->data.close();
+
+    patch->mimeType = "image/png";
+
+    if (createBase64)
+    {
+        patch->dataBase64 = patch->data.data().toBase64();
+
+        DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte), base64 size: %d kB (%d byte)",
+                rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
+                image.byteCount() / 1024, image.byteCount(),
+                patch->data.size() / 1024, patch->data.size(),
+                patch->dataBase64.size() / 1024, patch->dataBase64.size()
+                );
+    }
+    else
+    {
+        DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
+                rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
+                image.byteCount() / 1024, image.byteCount(),
+                patch->data.size() / 1024, patch->data.size()
+                );
+    }
+
+    return patch;
+}
+
+void GraphicsSceneDisplay::sendUpdate()
+{
+    DGUARDMETHODTIMED;
+    QMutexLocker l(&patchesMutex_);
+
+    DPRINTF("connection: %p  thread: %p  clientReady_: %d  patches_.count(): %d", this, QThread::currentThread(), clientReady_, patches_.count());
+    if (socket_)
+        timer_.stop();
+
+    if (clientReady_ && patches_.count() == 0)
+    {
+        l.unlock();
+        QList<UpdateOperation> ops = renderer_->updateBufferExt();
+
+        DPRINTF("Updates available: %d", ops.count());
+
+        if (ops.count() > 0)
+        {
+            clientReady_ = false;
+            ++frame_;
+            DPRINTF("New Frame Number: %d", frame_);
+        }
+
+        for (int i = 0; i < ops.count(); ++i)
+        {
+            const UpdateOperation &op = ops.at(i);
+
+            if (op.type == uotUpdate)
+            {
+                const QRect &rect = op.srcRect;
+
+                if (urlMode_)
+                {
+                    Patch *patch = createPatch(rect, true);
+
+                    QString framePatchId = QString::number(frame_) + "_" + QString::number(i);
+
+                    QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
+                        frame_,
+                        rect.x(), rect.y(), rect.width(), rect.height(),
+                        patch->mimeType.toLatin1().constData(),
+                        QString("fb:" + id() + "/" + framePatchId).toLatin1().constData()
+                    );
+
+                    l.relock();
+                    patches_.insert(framePatchId, patch);
+                    l.unlock();
+
+                    sendCommand(cmd);
+                }
+                else
+                {
+                    Patch *patch = createPatch(rect, true);
+
+                    QString format = patch->mimeType + ";base64";
+                    QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):",
+                        frame_,
+                        rect.x(), rect.y(), rect.width(), rect.height(),
+                        format.toLatin1().constData()
+                    );
+
+                    sendCommand(cmd + patch->dataBase64);
+
+                    delete patch;
+                }
+            }
+            else if (op.type == uotMove)
+            {
+                const QRect &rect = op.srcRect;
+
+                QString cmd = QString().sprintf("moveImage(%d,%d,%d,%d,%d,%d,%d):",
+                    frame_,
+                    rect.x(), rect.y(), rect.width(), rect.height(),
+                    op.dstPoint.x(), op.dstPoint.y()
+                );
+
+                sendCommand(cmd);
+            }
+            else if (op.type == uotFill)
+            {
+                const QRect &rect = op.srcRect;
+
+                QString cmd = QString().sprintf("fillRect(%d,%d,%d,%d,%d,%s):",
+                    frame_,
+                    rect.x(), rect.y(), rect.width(), rect.height(),
+                    op.fillColor.name().toLatin1().constData()
+                );
+
+                sendCommand(cmd);
+            }
+        }
+
+        if (ops.count() > 0)
+            sendCommand(QString().sprintf("end(%d):", frame_));
+
+
+        {
+            QMutexLocker cl(&commandsMutex_);
+            commandsPresent_.wakeAll();
+        }
+    }
+}
+
+void GraphicsSceneDisplay::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+{
+    //qDebug("GraphicsSceneWebServerConnection::handleRequest  ->  Thread: %p (%d)", QThread::currentThread(), QThread::currentThreadId());
+
+    // THIS METHOD IS MULTI-THREADED!
+
+    QString url = request->url();
+
+    if (url.startsWith("/display?")) // long polling
+    {
+        if (request->method() == "GET") // long polling output
+        {
+            clientMessageReceived("ready()");
+
+            QByteArray out;
+
+            {
+                QMutexLocker cl(&commandsMutex_);
+
+                if (commands_.isEmpty())
+                {
+                    bool gotData =
+                            commandsPresent_.wait(&commandsMutex_, 1800);
+
+                    qDebug(gotData ? "got frame" : "timed out");
+
+                    if (!gotData)
+                    {
+                        out = commands_.join("\n").toUtf8();
+                        commands_.clear();
+                    }
+                }
+                else
+                {
+                    qDebug("got frame at once");
+                    out = commands_.join("\n").toUtf8();
+                    commands_.clear();
+                }
+            }
+
+            response->writeHead(Tufao::HttpServerResponse::OK);
+            response->headers().insert("Content-Type", "text/plain; charset=utf8");
+            response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+            response->headers().insert("Pragma", "no-cache");
+            response->end(out);
+        }
+        else if (request->method() == "POST") // long polling input
+        {
+            GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, this);
+            connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+            return;
+        }
+    }
+    else if (url.startsWith("/command?") && request->method() == "POST") // long polling command
+    {
+        CommandPostHandler *handler = new CommandPostHandler(request, response);
+        connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+    }
+    else
+    {
+        int indexOfSlash = url.lastIndexOf("/");
+        QString patchId = "";
+
+        if (indexOfSlash > -1)
+            patchId = url.mid(indexOfSlash + 1);
+
+        QMutexLocker l(&patchesMutex_);
+        if (!patchId.isEmpty() && patches_.contains(patchId))
+        {
+            Patch *patch = patches_.take(patchId);
+            l.unlock();
+
+            patch->data.open(QIODevice::ReadOnly);
+
+            response->writeHead(Tufao::HttpServerResponse::OK);
+            response->headers().insert("Content-Type", patch->mimeType.toUtf8().constData());
+            response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
+            response->headers().insert("Pragma", "no-cache");
+            response->end(patch->data.readAll());
+
+            delete patch;
+        }
+        else
+        {
+            response->writeHead(404);
+            response->end("Not found");
+        }
+    }
+}
+
+void GraphicsSceneDisplay::sendCommand(const QString &cmd)
+{
+    if (socket_)
+        socket_->sendMessage(cmd.toLatin1());
+    else
+    {
+        QMutexLocker cl(&commandsMutex_);
+        commands_.append(cmd);
+    }
+}
+
+void GraphicsSceneDisplay::clientDisconnected()
+{
+    this->deleteLater();
+}

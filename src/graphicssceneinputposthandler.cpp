@@ -1,7 +1,7 @@
 #include "graphicssceneinputposthandler.h"
 
 #include "graphicsscenewebcontrol.h"
-
+#include "graphicsscenedisplay.h"
 
 GraphicsSceneInputPostHandler::GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneDisplay *display, QObject *parent) :
     QObject(parent),
@@ -29,4 +29,3 @@ void GraphicsSceneInputPostHandler::onEnd()
     response_->writeHead(Tufao::HttpServerResponse::OK);
     response_->end();
 }
-
