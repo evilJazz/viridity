@@ -55,6 +55,26 @@ Item {
     }
 */
 
+    TextEdit {
+        id: edit
+
+        width: parent.width / 2
+        height: 20
+
+        anchors.left: parent.left
+        anchors.leftMargin: 10
+        anchors.top: parent.top
+        anchors.topMargin: 10
+
+        focus: true
+
+        onTextChanged:
+        {
+            console.log("Text changed to \"" + edit.text + "\"");
+        }
+    }
+
+
 
     MouseArea {
         anchors.fill: parent
