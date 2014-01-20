@@ -196,7 +196,7 @@ var DisplayRenderer = function() {
 
                     error: function(xhr, status, exception)
                     {
-                        console.log("error while sending input events \"" + data + "\":\n" + status + " (" + exception + ")");
+                        console.log("While sending input events \"" + data + "\":\n" + status + " - " + exception + "\n");
                         setTimeout(function() { dr.sendInputEvents() }, dr.pause);
                     }
                 };
@@ -236,7 +236,7 @@ var DisplayRenderer = function() {
                 },
                 error: function(xhr, status, exception)
                 {
-                    console.log("error: " + status + " (" + exception + ")");
+                    console.log("error receiving display data:\n" + status + " - " + exception + "\n");
                     setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
                 }
             };
@@ -389,7 +389,7 @@ var DisplayRenderer = function() {
 
                 error: function(xhr, status, exception)
                 {
-                    console.log("error while sending command: " + status + " (" + exception + ")");
+                    console.log("error while sending command:\n" + status + " - " + exception + "\n");
                     $("#commandResponse").show().text(status + " " + exception).fadeOut(2000);
                 }
             };

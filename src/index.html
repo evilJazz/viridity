@@ -1,6 +1,35 @@
+<!DOCTYPE html>
 <html>
   <head>
     <title>QGraphicsScene Web Controller</title>
+    <style type="text/css">
+    [draggable]
+    {
+        cursor: move;
+        user-select: none;
+        -moz-user-select: none;
+        -khtml-user-select: none;
+        -webkit-user-select: none;
+        /* Required for old Webkit. */
+        -khtml-user-drag: element;
+        -webkit-user-drag: element;
+    }
+
+    .gallery
+    {
+        width: 200px;
+        height: auto;
+        position: fixed;
+        top: 0;
+        right: 0;
+    }
+
+    .picture
+    {
+        width: 200px;
+        height: 50px;
+    }
+    </style>
     <script src="http://code.jquery.com/jquery-1.7.2.min.js"></script>
     <script src="jquery.mousewheel.js"></script>
     <script src="displayRenderer.js"></script>
@@ -9,6 +38,39 @@
             var usingLongPolling = true;
             displayRenderer.init(usingLongPolling);
             document.getElementById('debugDrawCB').checked = displayRenderer.debugDrawEnabled();
+
+
+            $('.gallery .picture').each(function()
+            {
+                $(this).attr('draggable', 'true')
+                       .on('dragstart', function(ev)
+                                        {
+                                            $(this).css('opacity', '0.4');
+
+                                            ev.originalEvent.dataTransfer.effectAllowed = 'copy';
+                                            ev.originalEvent.dataTransfer.setData('text/plain', $(this).text());
+                                        })
+                       .on('dragend', function(ev)
+                                      {
+                                          $(this).css('opacity', '1.0');
+                                      });
+            });
+
+            $('#canvas').on('dragover', function(ev)
+                                        {
+                                            ev.preventDefault();
+                                        })
+                        .on('drop', function(ev)
+                                    {
+                                        ev.preventDefault();
+
+                                        var canvasOffset = $(this).offset();
+                                        var mouseX = ev.originalEvent.clientX - canvasOffset.left;
+                                        var mouseY = ev.originalEvent.clientY - canvasOffset.top;
+                                        var command = 'imageDropped(' + ev.originalEvent.dataTransfer.getData('text/plain') + ',' + mouseX + ',' + mouseY + ')';
+
+                                        displayRenderer.sendCommand(command);
+                                    });
         });
     </script>
   </head>
@@ -16,7 +78,8 @@
     <div>
         <button onclick="displayRenderer.debugClearCanvas()">Clear Canvas</button>
         <button onclick="displayRenderer.requestFullUpdate()">Request full frame</button>
-        <input type="checkbox" id="debugDrawCB" onchange="displayRenderer.setDebugDrawEnabled(this.checked)" /><label for="debugDrawCB">Debug drawing </label>
+        <input type="checkbox" id="debugDrawCB" onchange="displayRenderer.setDebugDrawEnabled(this.checked)" />
+        <label for="debugDrawCB">Debug drawing </label>
         <strong>ID: </strong><span id="connectionId"></span>
         <button onclick="displayRenderer.sendCommand('switchRectColor')">Switch rect color</button>
         <button onclick="displayRenderer.sendCommand('wrong command')">Send wrong command</button>
@@ -26,5 +89,11 @@
     </canvas>
     <canvas id="canvasBack" style="visibility:hidden">
     </canvas>
+    <div class="gallery">
+        <div class="picture" style="background-color: red">red</div>
+        <div class="picture" style="background-color: yellow">yellow</div>
+        <div class="picture" style="background-color: green">green</div>
+        <div class="picture" style="background-color: blue">blue</div>
+    </div>
   </body>
 </html>

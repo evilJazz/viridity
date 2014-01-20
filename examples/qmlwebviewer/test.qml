@@ -55,6 +55,7 @@ Item {
     }
 */
     /*
+/*
     TextEdit {
         id: edit
 
@@ -74,7 +75,6 @@ Item {
         }
     }
     */
-
 
 
     MouseArea {

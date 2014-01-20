@@ -26,6 +26,7 @@ void GraphicsSceneInputPostHandler::onEnd()
         display_->sendCommand(command);
 
     // handle request
+    response_->headers().insert("Content-Type", "text/plain");
     response_->writeHead(Tufao::HttpServerResponse::OK);
     response_->end();
 }

@@ -37,8 +37,8 @@ qDebug("Command is %s", data_.constData());
     if (!result.endsWith("\r\n"))
         result.append("\r\n");
 
-    response_->writeHead(Tufao::HttpServerResponse::OK);
     response_->headers().insert("Content-Type", "text/plain");
+    response_->writeHead(Tufao::HttpServerResponse::OK);
     response_->end(result.toUtf8());
 }
 
