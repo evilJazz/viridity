@@ -26,7 +26,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/graphicsscenedisplay.h \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.h \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.h \
-    $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h
+    $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h \
+    $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/moveanalyzer.cpp \
@@ -44,7 +45,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/graphicsscenedisplay.cpp \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.cpp \
-    $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp
+    $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp \
+    $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.cpp
 
 OTHER_FILES += \
     $$VIRIDITY_SRC_PATH/displayRenderer.js \

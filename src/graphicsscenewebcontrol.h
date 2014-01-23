@@ -19,6 +19,7 @@
 class WebSocketHandler;
 class LongPollingHandler;
 class PatchRequestHandler;
+class FileRequestHandler;
 
 class GraphicsSceneMultiThreadedWebServer;
 class GraphicsSceneDisplay;
@@ -42,6 +43,7 @@ private:
     WebSocketHandler *webSocketHandler_;
     LongPollingHandler *longPollingHandler_;
     PatchRequestHandler *patchRequestHandler_;
+    FileRequestHandler *fileRequestHandler_;
 
     GraphicsSceneMultiThreadedWebServer *server_;
     int socketDescriptor_;

@@ -25,16 +25,18 @@
 #include "handlers/websockethandler.h"
 #include "handlers/longpollinghandler.h"
 #include "handlers/patchrequesthandler.h"
+#include "handlers/filerequesthandler.h"
 
 /* GraphicsSceneWebServerThread */
 
 GraphicsSceneWebServerTask::GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor) :
     EventLoopTask(),
-    server_(parent),
-    socketDescriptor_(socketDescriptor),
     webSocketHandler_(NULL),
     longPollingHandler_(NULL),
-    patchRequestHandler_(NULL)
+    patchRequestHandler_(NULL),
+    fileRequestHandler_(NULL),
+    server_(parent),
+    socketDescriptor_(socketDescriptor)
 {
     connect(this, SIGNAL(started(Task*, QThread*)), this, SLOT(setupConnection()));
 }
@@ -63,6 +65,11 @@ void GraphicsSceneWebServerTask::setupConnection()
     webSocketHandler_ = new WebSocketHandler(this);
     longPollingHandler_ = new LongPollingHandler(this);
     patchRequestHandler_ = new PatchRequestHandler(this);
+    fileRequestHandler_ = new FileRequestHandler(this);
+    fileRequestHandler_->insertFileInformation("/", ":/webcontrol/index.html", "text/html; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/index.html", ":/webcontrol/index.html", "text/html; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/displayRenderer.js", ":/webcontrol/displayRenderer.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/webcontrol/jquery.mousewheel.js", "application/javascript; charset=utf8");
 }
 
 void GraphicsSceneWebServerTask::onRequestReady()
@@ -80,38 +87,9 @@ void GraphicsSceneWebServerTask::onRequestReady()
     if (request->headers().contains("Expect", "100-continue"))
         response->writeContinue();
 
-    if (request->url() == "/" || request->url() == "/index.html")
+    if (fileRequestHandler_->doesHandleRequest(request))
     {
-        QFile file(":/webcontrol/index.html");
-        file.open(QIODevice::ReadOnly);
-
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", "text/html; charset=utf8");
-        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response->headers().insert("Pragma", "no-cache");
-        response->end(file.readAll());
-    }
-    else if (request->url() == "/displayRenderer.js")
-    {
-        QFile file(":/webcontrol/displayRenderer.js");
-        file.open(QIODevice::ReadOnly);
-
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", "application/javascript; charset=utf8");
-        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response->headers().insert("Pragma", "no-cache");
-        response->end(file.readAll());
-    }
-    else if (request->url() == "/jquery.mousewheel.js")
-    {
-        QFile file(":/webcontrol/jquery.mousewheel.js");
-        file.open(QIODevice::ReadOnly);
-
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", "application/javascript; charset=utf8");
-        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response->headers().insert("Pragma", "no-cache");
-        response->end(file.readAll());
+        fileRequestHandler_->handleRequest(request, response);
     }
     else if (longPollingHandler_->doesHandleRequest(request))
     {
