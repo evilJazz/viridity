@@ -67,7 +67,7 @@
                                         var canvasOffset = $(this).offset();
                                         var mouseX = ev.originalEvent.clientX - canvasOffset.left;
                                         var mouseY = ev.originalEvent.clientY - canvasOffset.top;
-                                        var command = 'imageDropped(' + ev.originalEvent.dataTransfer.getData('text/plain') + ',' + mouseX + ',' + mouseY + ')';
+                                        var command = 'colorDropped(' + ev.originalEvent.dataTransfer.getData('text/plain') + ',' + mouseX + ',' + mouseY + ')';
 
                                         displayRenderer.sendCommand(command);
                                     });
@@ -81,7 +81,7 @@
         <input type="checkbox" id="debugDrawCB" onchange="displayRenderer.setDebugDrawEnabled(this.checked)" />
         <label for="debugDrawCB">Debug drawing </label>
         <strong>ID: </strong><span id="connectionId"></span>
-        <button onclick="displayRenderer.sendCommand('switchRectColor')">Switch rect color</button>
+        <button onclick="displayRenderer.sendCommand('switchRectColor()')">Switch rect color</button>
         <button onclick="displayRenderer.sendCommand('wrong command')">Send wrong command</button>
         <label id="commandResponse"></label>
     </div>

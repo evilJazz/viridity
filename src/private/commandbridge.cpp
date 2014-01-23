@@ -25,10 +25,10 @@ CommandBridge::CommandBridge(QObject *parent) :
 
 QString CommandBridge::handleCommandReady(const QString &id, const QString &command)
 {
-qDebug("CommandBridge got command %s for ID %s", command.toUtf8().constData(), id.toUtf8().constData());
+qDebug("CommandBridge got command %s for display ID %s", command.toUtf8().constData(), id.toUtf8().constData());
     emit commandReceived(id, command);
 
-qDebug("CommandBridge answers with %s for ID %s", response_.toUtf8().constData(), id.toUtf8().constData());
+qDebug("CommandBridge answers with %s for display ID %s", response_.toUtf8().constData(), id.toUtf8().constData());
     QString result = response_;
     response_ = QString::null;
     return result;

@@ -513,8 +513,8 @@ var DisplayRenderer = function() {
 
             if (dr.useLongPolling)
             {
-                $(document).ready(function() { dr.receiveOutputMessages() });
-                $(document).ready(function() { dr.sendInputEvents() });
+                dr.receiveOutputMessages();
+                dr.sendInputEvents();
             }
             else
             {

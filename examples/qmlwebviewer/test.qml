@@ -136,7 +136,27 @@ Item {
         onCommandReceived:
         {
 //            console.log("command received: " + command + " for session with ID: " + id);
-            if (command === "switchRectColor")
+            var paramStartIndex = command.indexOf("("),
+                    paramEndIndex = command.indexOf(")");
+
+            var cmd = command.substring(0, paramStartIndex).trim(),
+                params = command.substring(paramStartIndex + 1, paramEndIndex),
+                inputParams = params.split(/[\s,]+/);
+
+            if (cmd === "colorDropped")
+            {
+                var color = inputParams[0],
+                    mouseX = inputParams[1],
+                    mouseY = inputParams[2];
+
+                if (mouseX >= rect.x && mouseX <= rect.x + rect.width &&
+                        mouseY >= rect.y && mouseY <= rect.y + rect.height)
+                {
+                    rect.color = color;
+                    commandBridge.response = "applied color " + color + " to rectangle";
+                }
+            }
+            else if (cmd === "switchRectColor")
             {
                 rect.color = (rect.color == "#808080") ? "red" : "gray";
                 commandBridge.response = "switched";
