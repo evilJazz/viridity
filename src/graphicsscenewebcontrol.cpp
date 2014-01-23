@@ -18,11 +18,10 @@
 #include <QMutexLocker>
 #include <QUrl>
 
-#include "graphicssceneinputposthandler.h"
-#include "commandposthandler.h"
-
 #include "graphicsscenedisplay.h"
 
+#include "handlers/graphicssceneinputposthandler.h"
+#include "handlers/commandposthandler.h"
 #include "handlers/websockethandler.h"
 #include "handlers/longpollinghandler.h"
 #include "handlers/patchrequesthandler.h"

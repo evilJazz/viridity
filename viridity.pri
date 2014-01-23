@@ -21,8 +21,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/private/synchronizedscenerenderer.h \
     $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.h \
     $$VIRIDITY_SRC_PATH/private/commandbridge.h \
-    $$VIRIDITY_SRC_PATH/graphicssceneinputposthandler.h \
-    $$VIRIDITY_SRC_PATH/commandposthandler.h \
+    $$VIRIDITY_SRC_PATH/handlers/graphicssceneinputposthandler.h \
+    $$VIRIDITY_SRC_PATH/handlers/commandposthandler.h \
     $$VIRIDITY_SRC_PATH/graphicsscenedisplay.h \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.h \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.h \
@@ -39,8 +39,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/private/synchronizedscenerenderer.cpp \
     $$VIRIDITY_SRC_PATH/private/moveanalyzerdebugview.cpp \
     $$VIRIDITY_SRC_PATH/private/commandbridge.cpp \
-    $$VIRIDITY_SRC_PATH/graphicssceneinputposthandler.cpp \
-    $$VIRIDITY_SRC_PATH/commandposthandler.cpp \
+    $$VIRIDITY_SRC_PATH/handlers/graphicssceneinputposthandler.cpp \
+    $$VIRIDITY_SRC_PATH/handlers/commandposthandler.cpp \
     $$VIRIDITY_SRC_PATH/graphicsscenedisplay.cpp \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.cpp \

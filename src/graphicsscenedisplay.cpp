@@ -9,8 +9,8 @@
 #include "Tufao/HttpServerRequest"
 
 #include "graphicsscenewebcontrol.h"
-#include "graphicssceneinputposthandler.h"
-#include "commandposthandler.h"
+#include "handlers/graphicssceneinputposthandler.h"
+#include "handlers/commandposthandler.h"
 
 #include <QByteArray>
 #include <QStringList>

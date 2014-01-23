@@ -1,4 +1,4 @@
-#include "commandposthandler.h"
+#include "handlers/commandposthandler.h"
 
 #include "private/commandbridge.h"
 
