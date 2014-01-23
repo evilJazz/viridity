@@ -1,6 +1,8 @@
-import QtQuick 1.0
+import QtQuick 1.1
 
 Item {
+    id: scene
+
     width: 1024
     height: 768
     focus: true
@@ -10,6 +12,8 @@ Item {
         width: 111
         height: 200
         color: "gray"
+
+        objectName: "rect"
 
 
         /*
@@ -26,6 +30,20 @@ Item {
         }
         */
     }
+
+
+    Rectangle {
+        id: rect2
+        width: 111
+        height: 200
+        color: "gray"
+
+        objectName: rect2
+
+        x: 200
+        y: 200
+    }
+
 /*
     Image {
         id: image
@@ -79,6 +97,8 @@ Item {
 
     MouseArea {
         anchors.fill: parent
+
+        preventStealing: true
 
         property variant startX
         property variant startY
@@ -137,7 +157,7 @@ Item {
         {
 //            console.log("command received: " + command + " for session with ID: " + id);
             var paramStartIndex = command.indexOf("("),
-                    paramEndIndex = command.indexOf(")");
+                paramEndIndex = command.indexOf(")");
 
             var cmd = command.substring(0, paramStartIndex).trim(),
                 params = command.substring(paramStartIndex + 1, paramEndIndex),
@@ -149,12 +169,22 @@ Item {
                     mouseX = inputParams[1],
                     mouseY = inputParams[2];
 
-                if (mouseX >= rect.x && mouseX <= rect.x + rect.width &&
-                        mouseY >= rect.y && mouseY <= rect.y + rect.height)
+                var item = scene.childAt(mouseX, mouseY);
+                console.log("Got item " + JSON.stringify(item) + " " + item);
+
+                if (item !== null)
                 {
-                    rect.color = color;
-                    commandBridge.response = "applied color " + color + " to rectangle";
+                    if (item.hasOwnProperty("color"))
+                    {
+                        item.color = color;
+                        commandBridge.response = "applied color " + color + " to " + item.objectName;
+                    }
+                    else
+                    {
+                        commandBridge.response = "applied color " + color + " to an item";
+                    }
                 }
+
             }
             else if (cmd === "switchRectColor")
             {
