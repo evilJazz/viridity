@@ -1,4 +1,5 @@
 import QtQuick 1.1
+import KCL 1.0
 
 Item {
     id: scene
@@ -38,7 +39,7 @@ Item {
         height: 200
         color: "gray"
 
-        objectName: rect2
+        objectName: "rect2"
 
         x: 200
         y: 200
@@ -96,6 +97,8 @@ Item {
 
 
     MouseArea {
+        id: mouseArea
+
         anchors.fill: parent
 
         preventStealing: true
@@ -156,32 +159,33 @@ Item {
         onCommandReceived:
         {
 //            console.log("command received: " + command + " for session with ID: " + id);
-            var paramStartIndex = command.indexOf("("),
-                paramEndIndex = command.indexOf(")");
+            var paramStartIndex = command.indexOf("(");
+            var paramEndIndex = command.indexOf(")");
 
-            var cmd = command.substring(0, paramStartIndex).trim(),
-                params = command.substring(paramStartIndex + 1, paramEndIndex),
-                inputParams = params.split(/[\s,]+/);
+            var cmd = command.substring(0, paramStartIndex).trim();
+            var params = command.substring(paramStartIndex + 1, paramEndIndex);
+            var inputParams = params.split(/[\s,]+/);
 
             if (cmd === "colorDropped")
             {
-                var color = inputParams[0],
-                    mouseX = inputParams[1],
-                    mouseY = inputParams[2];
+                var color = inputParams[0];
+                var mouseX = inputParams[1];
+                var mouseY = inputParams[2];
 
-                var item = scene.childAt(mouseX, mouseY);
-                console.log("Got item " + JSON.stringify(item) + " " + item);
+                var itemsAtXY = sceneUtils.getItemsBelow(mouseArea, mouseX, mouseY);
 
-                if (item !== null)
+                if (itemsAtXY.length > 0)
                 {
-                    if (item.hasOwnProperty("color"))
+                    var itemAtXY = itemsAtXY[0];
+
+                    if (itemAtXY.hasOwnProperty("color"))
                     {
-                        item.color = color;
-                        commandBridge.response = "applied color " + color + " to " + item.objectName;
+                        itemAtXY.color = colorUtils.parseColor(color);
+                        commandBridge.response = "applied color " + color + " to " + itemAtXY.objectName;
                     }
                     else
                     {
-                        commandBridge.response = "applied color " + color + " to an item";
+                        commandBridge.response = "did not apply color " + color + " to the item " + itemAtXY.objectName;
                     }
                 }
 
