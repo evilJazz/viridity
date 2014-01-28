@@ -476,8 +476,9 @@ var DisplayRenderer = function() {
                 event.preventDefault();
             }
 
-            function sendKeyEvent(type, event)
+            function sendKeyEvent(type, event, printableCharacter)
             {
+console.log("Type: " + type);
                 if (!dr.useLongPolling)
                 {
                     if (event.hasOwnProperty("which"))
@@ -493,8 +494,11 @@ var DisplayRenderer = function() {
                         dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + ")");
                 }
 
-                event.stopPropagation();
-                event.preventDefault();
+                if (printableCharacter)
+                {
+                    event.stopPropagation();
+                    event.preventDefault();
+                }
             }
 
             $(dr.frontCanvas).mousedown(function(event)  { sendMouseEvent("mouseDown", event) });
@@ -507,9 +511,9 @@ var DisplayRenderer = function() {
 
             $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
 
-            $(document).keydown(function(event)    { sendKeyEvent("keyDown", event) });
-            $(document).keypress(function(event)   { sendKeyEvent("keyPress", event) });
-            $(document).keyup(function(event)      { sendKeyEvent("keyUp", event) });
+            $(document).keydown(function(event)    { sendKeyEvent("keyDown", event, true) });
+            $(document).keypress(function(event)   { sendKeyEvent("keyPress", event, true) });
+            $(document).keyup(function(event)      { sendKeyEvent("keyUp", event, true) });
 
             if (dr.useLongPolling)
             {
