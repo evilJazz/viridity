@@ -48,6 +48,7 @@ private:
     bool handleMouseExit(const QString &command, const QStringList &params);
     bool handleMouseEvent(const QString &command, const QStringList &params);
     bool handleKeyEvent(const QString &command, const QStringList &params);
+    QString textForKey(int key, Qt::KeyboardModifier modifiers);
 };
 
 #endif // GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H

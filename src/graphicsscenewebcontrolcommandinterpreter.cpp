@@ -233,6 +233,17 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
     }
 }
 
+QString GraphicsSceneWebControlCommandInterpreter::textForKey(int key, Qt::KeyboardModifier modifiers)
+{
+    QString text = QChar(key);
+    if (modifiers & Qt::ShiftModifier)
+        text = text.toUpper();
+    else
+        text = text.toLower();
+
+    return text;
+}
+
 bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &command, const QStringList &params)
 {
     int key = params[0].toInt();
@@ -247,12 +258,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
             return false;
 
         type = QEvent::KeyPress;
-        text = QChar(key); // key is charCode, not keyCode...
-        if (modifiers & Qt::ShiftModifier)
-            text = text.toUpper();
-        else
-            text = text.toLower();
-
+        text = textForKey(key, modifiers);
         key = keyDownKeyCode_; // make key the keyCode from keyDown event
     }
     else if (command.endsWith("Up"))
@@ -264,6 +270,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
     {
         keyDownKeyCode_ = key;
         keyDownKeyCodeHandled_ = true;
+        text = "";
 
         switch (key)
         {
@@ -272,7 +279,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
         case 13 : key = Qt::Key_Return; break;
         case 19 : key = Qt::Key_Pause; break;
         case 27 : key = Qt::Key_Escape; break;
-        //case 32 : key = Qt::Key_Space; break;
+        //case 32 : key = Qt::Key_Space; text = textForKey(key, modifiers); break;
         case 33 : key = Qt::Key_PageUp; break;
         case 34 : key = Qt::Key_PageDown; break;
         case 35 : key = Qt::Key_End; break;
@@ -284,6 +291,8 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
         case 44 : key = Qt::Key_Print; break;
         case 45 : key = Qt::Key_Insert; break;
         case 46 : key = Qt::Key_Delete; break;
+        //case 48 ... 57 : /*key = Qt::Key_0 + (key - 48);*/ text = textForKey(key, modifiers); break; // 0 to 9
+        //case 65 ... 90 : /*key = Qt::Key_A + (key - 64);*/ text = textForKey(key, modifiers); break; // A to Z
         case 96 : key = Qt::Key_0; break;
         case 97 : key = Qt::Key_1; break;
         case 98 : key = Qt::Key_2; break;
@@ -315,7 +324,6 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
             return false;
 
         type = QEvent::KeyPress;
-        text = "";
     }
     else
     {

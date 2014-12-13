@@ -453,24 +453,22 @@ var DisplayRenderer = function() {
                 return modifiers;
             }
 
+            function sendCommand(command)
+            {
+                if (!dr.useLongPolling)
+                    dr.socket.send(command);
+                else
+                    dr.inputEvents.push(command);
+            }
+
             function sendMouseEvent(type, event, other)
             {
                 var pos = getCanvasPos(event)
 
-                if (!dr.useLongPolling)
-                {
-                    if (other)
-                        dr.socket.send(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
-                    else
-                        dr.socket.send(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
-                }
+                if (other)
+                    sendCommand(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
                 else
-                {
-                    if (other)
-                        dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
-                    else
-                        dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
-                }
+                    sendCommand(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
 
                 event.stopPropagation();
                 event.preventDefault();
@@ -478,21 +476,16 @@ var DisplayRenderer = function() {
 
             function sendKeyEvent(type, event, printableCharacter)
             {
-console.log("Type: " + type);
-                if (!dr.useLongPolling)
+                if (debugVerbosity > 1)
                 {
-                    if (event.hasOwnProperty("which"))
-                        dr.socket.send(type + "(" + event.which + "," + getModifiers(event) + ")");
-                    else
-                        dr.socket.send(type + "(" + pos.x + "," + pos.y + ")");
+                    console.log("Type: " + type + " printableCharacter: " + printableCharacter);
+                    console.dir(event);
                 }
+
+                if (event.hasOwnProperty("which"))
+                    sendCommand(type + "(" + event.which + "," + getModifiers(event) + ")");
                 else
-                {
-                    if (event.hasOwnProperty("which"))
-                        dr.inputEvents.push(type + "(" + event.which + "," + getModifiers(event) + ")");
-                    else
-                        dr.inputEvents.push(type + "(" + pos.x + "," + pos.y + ")");
-                }
+                    sendCommand(type + "(" + event.keyCode + "," + getModifiers(event) + ")");
 
                 if (printableCharacter)
                 {
@@ -511,9 +504,9 @@ console.log("Type: " + type);
 
             $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
 
-            $(document).keydown(function(event)    { sendKeyEvent("keyDown", event, true) });
+            $(document).keydown(function(event)    { sendKeyEvent("keyDown", event, false) });
             $(document).keypress(function(event)   { sendKeyEvent("keyPress", event, true) });
-            $(document).keyup(function(event)      { sendKeyEvent("keyUp", event, true) });
+            $(document).keyup(function(event)      { sendKeyEvent("keyUp", event, false) });
 
             if (dr.useLongPolling)
             {

@@ -5,7 +5,9 @@
 #include "Tufao/Headers"
 
 #include <QUrl>
-
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#include <QUrlQuery>
+#endif
 
 CommandPostHandler::CommandPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, QObject *parent) :
     QObject(parent),
@@ -24,7 +26,11 @@ void CommandPostHandler::onData(const QByteArray &chunk)
 void CommandPostHandler::onEnd()
 {
     // handle request
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    QString id = QUrlQuery(request_->url()).queryItemValue("id");
+#else
     QString id = QUrl(request_->url()).queryItemValue("id");
+#endif
     QString command(data_);
 qDebug("Command is %s", data_.constData());
 

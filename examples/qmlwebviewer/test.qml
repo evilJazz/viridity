@@ -1,7 +1,7 @@
 import QtQuick 1.1
 import KCL 1.0
 
-Item {
+FocusScope {
     id: scene
 
     width: 1024
@@ -91,6 +91,8 @@ Item {
 
         onPressed:
         {
+            forceActiveFocus();
+
             mousePressX = mouse.x;
             mousePressY = mouse.y;
 
@@ -152,7 +154,7 @@ Item {
                 var mouseX = inputParams[1];
                 var mouseY = inputParams[2];
 
-                var itemsAtXY = sceneUtils.getItemsBelow(mouseArea, mouseX, mouseY);
+                var itemsAtXY = SceneUtils.getItemsBelow(mouseArea, mouseX, mouseY);
 
                 if (itemsAtXY.length > 0)
                 {
@@ -160,7 +162,7 @@ Item {
 
                     if (itemAtXY.hasOwnProperty("color"))
                     {
-                        itemAtXY.color = colorUtils.parseColor(color);
+                        itemAtXY.color = ColorUtils.parseColor(color);
                         commandBridge.response = "applied color " + color + " to " + itemAtXY.objectName;
                     }
                     else
@@ -191,21 +193,29 @@ Item {
         anchors.top: parent.top
         anchors.topMargin: 10
 
-        border.color: Qt.black
+        border.color: "black"
         border.width: 1
 
         smooth: true
 
-        TextEdit {
-            id: edit
-
+        FocusScope {
             anchors.fill: parent
 
-            focus: true
+            TextEdit {
+                id: edit
 
-            onTextChanged:
-            {
-                console.log("Text changed to \"" + edit.text + "\"");
+                anchors.fill: parent
+                anchors.margins: 2
+
+                focus: true
+                selectByMouse: true
+
+                text: "Hello World!"
+
+                onTextChanged:
+                {
+                    console.log("Text changed to \"" + edit.text + "\"");
+                }
             }
         }
     }

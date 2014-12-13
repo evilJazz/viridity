@@ -1,6 +1,10 @@
 #include "longpollinghandler.h"
 
 #include <QUrl>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#include <QUrlQuery>
+#endif
+
 #include <QStringList>
 
 #include "graphicsscenewebcontrol.h"
@@ -23,7 +27,11 @@ bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     QString url(request->url());
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    QString id = QUrlQuery(request->url()).queryItemValue("id");
+#else
     QString id = QUrl(request->url()).queryItemValue("id");
+#endif
 
     display_ = task_->server()->getDisplay(id);
 

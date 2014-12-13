@@ -45,7 +45,11 @@ void HttpsServer::setPrivateKey(const QSslKey &key)
 void HttpsServer::incomingConnection(int socketDescriptor)
 {
     QSslSocket *socket = new QSslSocket;
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    socket->setProtocol(QSsl::TlsV1_0);
+#else
     socket->setProtocol(QSsl::TlsV1);
+#endif
     socket->setLocalCertificate(priv->localCertificate);
     socket->setPrivateKey(priv->privateKey);
 
