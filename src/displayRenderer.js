@@ -237,7 +237,8 @@ var DisplayRenderer = function() {
                 error: function(xhr, status, exception)
                 {
                     console.log("error receiving display data:\n" + status + " - " + exception + "\n");
-                    setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
+                    //setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
+                    location.reload();
                 }
             };
 
@@ -466,7 +467,11 @@ var DisplayRenderer = function() {
 
             function sendMouseEvent(type, event, other)
             {
-                var pos = getCanvasPos(event)
+                var pos = getCanvasPos(event);
+
+                // Round coordinates, because IE is sending floats...
+                pos.x = Math.round(pos.x);
+                pos.y = Math.round(pos.y);
 
                 if (other)
                     sendCommand(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
