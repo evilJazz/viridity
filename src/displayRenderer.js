@@ -75,7 +75,7 @@ var DisplayRenderer = function() {
         location: "",
 
         timeout: 20000,
-        pause: 50,
+        pause: 1000 / 30 /*fps*/, // Sets frequency for GET and POST when long polling
         connectionId: "",
 
         inputEvents: [],
@@ -264,7 +264,7 @@ var DisplayRenderer = function() {
 
             if (dr.lastFrame !== frame)
             {
-                if (debugVerbosity) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
+                if (debugVerbosity > 1) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
                 dr.lastFrame = frame;
 
                 if (debugDraw)
@@ -274,7 +274,7 @@ var DisplayRenderer = function() {
                 }
             }
 
-            if (debugVerbosity) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
+            if (debugVerbosity > 1) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
             if (debugDraw)
             {
                 var frameCmd =
@@ -366,7 +366,7 @@ var DisplayRenderer = function() {
             }
             else if (command === "end")
             {
-                if (debugVerbosity) console.log("Frame end " + frame + " received...");
+                if (debugVerbosity > 1) console.log("Frame end " + frame + " received...");
                 dr._determineReadyState();
             }
         },
@@ -455,6 +455,9 @@ var DisplayRenderer = function() {
 
             function sendCommand(command)
             {
+                if (debugVerbosity > 0)
+                    console.log(command);
+
                 if (!dr.useLongPolling)
                     dr.socket.send(command);
                 else
@@ -474,12 +477,26 @@ var DisplayRenderer = function() {
                 event.preventDefault();
             }
 
+            function isNonPrintableKey(keyCode)
+            {
+                return keyCode !== 32 && // Space
+                       keyCode !== 0 && // Firefox sends 0 for umlauts in keyDown/keyUp
+                       (
+                           keyCode < 48 || // All control key below key "0"
+                           keyCode === 91 || // Win key
+                           keyCode === 93 || // Menu key
+                           (keyCode >= 112 && keyCode <= 123) || // Function keys
+                           //keyCode === 144 || // NumLock
+                           keyCode === 145 // ScollLock
+                       );
+            }
+
             function sendKeyEvent(type, event, printableCharacter)
             {
-                if (debugVerbosity > 1)
+                if (debugVerbosity > 0)
                 {
-                    console.log("Type: " + type + " printableCharacter: " + printableCharacter);
-                    console.dir(event);
+                    console.log("Type: " + type + " event.which: " + event.which + " event.keyCode: " + event.keyCode + " event.charCode: " + event.charCode + " printableCharacter: " + printableCharacter);
+                    //console.dir(event);
                 }
 
                 if (event.hasOwnProperty("which"))
@@ -487,7 +504,7 @@ var DisplayRenderer = function() {
                 else
                     sendCommand(type + "(" + event.keyCode + "," + getModifiers(event) + ")");
 
-                if (printableCharacter)
+                if (printableCharacter || isNonPrintableKey(event.keyCode))
                 {
                     event.stopPropagation();
                     event.preventDefault();

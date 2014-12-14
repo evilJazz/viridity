@@ -9,6 +9,11 @@ FocusScope {
     focus: true
 
     Rectangle {
+        anchors.fill: parent
+        color: "lightgray"
+    }
+
+    Rectangle {
         id: rect
         width: 111
         height: 200
@@ -20,16 +25,16 @@ FocusScope {
         /*
         SequentialAnimation on x {
             loops: Animation.Infinite
-            PropertyAnimation { to: 900; duration: 20000; easing.type: Easing.InOutQuad }
-            PropertyAnimation { to: 100; duration: 20000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 900; duration: 2000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 100; duration: 2000; easing.type: Easing.InOutQuad }
         }
 
         SequentialAnimation on y {
             loops: Animation.Infinite
-            PropertyAnimation { to: 100; duration: 23000; easing.type: Easing.InOutQuad }
-            PropertyAnimation { to: 500; duration: 23000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 100; duration: 2300; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 500; duration: 2300; easing.type: Easing.InOutQuad }
         }
-        */
+        //*/
     }
 
 
@@ -186,7 +191,7 @@ FocusScope {
 
     Rectangle {
         width: parent.width / 2
-        height: 20
+        height: 90
 
         anchors.left: parent.left
         anchors.leftMargin: 10
