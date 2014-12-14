@@ -516,19 +516,27 @@ var DisplayRenderer = function() {
                 }
             }
 
-            $(dr.frontCanvas).mousedown(function(event)  { sendMouseEvent("mouseDown", event) });
-            $(dr.frontCanvas).mouseup(function(event)    { sendMouseEvent("mouseUp", event) });
-            $(dr.frontCanvas).mousemove(function(event)  { sendMouseEvent("mouseMove", event) });
-            $(dr.frontCanvas).mouseover(function(event)  { sendMouseEvent("mouseEnter", event) });
-            $(dr.frontCanvas).mouseout(function(event)   { sendMouseEvent("mouseExit", event) });
-            $(dr.frontCanvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event) });
-            $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event) });
+            function focusCanvas()
+            {
+                $(document).focus();
+                $(dr.frontCanvas).focus();
+            }
+
+            $(dr.frontCanvas).attr("tabindex", 0); // Make canvas focusable!
+
+            $(dr.frontCanvas).mousedown(function(event)  { focusCanvas(); sendMouseEvent("mouseDown", event); });
+            $(dr.frontCanvas).mouseup(function(event)    { sendMouseEvent("mouseUp", event); });
+            $(dr.frontCanvas).mousemove(function(event)  { sendMouseEvent("mouseMove", event); });
+            $(dr.frontCanvas).mouseover(function(event)  { sendMouseEvent("mouseEnter", event); });
+            $(dr.frontCanvas).mouseout(function(event)   { sendMouseEvent("mouseExit", event); });
+            $(dr.frontCanvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event); });
+            $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event); });
 
             $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
 
-            $(document).keydown(function(event)    { sendKeyEvent("keyDown", event, false) });
-            $(document).keypress(function(event)   { sendKeyEvent("keyPress", event, true) });
-            $(document).keyup(function(event)      { sendKeyEvent("keyUp", event, false) });
+            $(dr.frontCanvas).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
+            $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
+            $(dr.frontCanvas).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
 
             if (dr.useLongPolling)
             {
