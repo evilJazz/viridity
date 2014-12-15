@@ -13,6 +13,11 @@ FocusScope {
         color: "lightgray"
     }
 
+    Text {
+        anchors.centerIn: parent
+        text: scene.width + " x " + scene.height
+    }
+
     Rectangle {
         id: rect
         width: 111

@@ -54,7 +54,7 @@ var Base64Binary = {
 
 var DisplayRenderer = function() {
 
-    var debugVerbosity = 0;
+    var debugVerbosity = 1;
     var debugDraw = 0;
 
     var dr =
@@ -74,7 +74,7 @@ var DisplayRenderer = function() {
 
         location: "",
 
-        timeout: 20000,
+        timeout: 120000,
         pause: 1000 / 30 /*fps*/, // Sets frequency for GET and POST when long polling
         connectionId: "",
 
@@ -197,7 +197,11 @@ var DisplayRenderer = function() {
                     error: function(xhr, status, exception)
                     {
                         console.log("While sending input events \"" + data + "\":\n" + status + " - " + exception + "\n");
-                        setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+
+                        if (status != "timeout")
+                            dr.reconnect();
+                        else
+                            setTimeout(function() { dr.sendInputEvents() }, dr.pause);
                     }
                 };
 
@@ -237,8 +241,11 @@ var DisplayRenderer = function() {
                 error: function(xhr, status, exception)
                 {
                     console.log("error receiving display data:\n" + status + " - " + exception + "\n");
-                    //setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
-                    location.reload();
+
+                    if (status != "timeout")
+                        dr.reconnect();
+                    else
+                        setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
                 }
             };
 
@@ -396,6 +403,27 @@ var DisplayRenderer = function() {
             };
 
             $.ajax(options);
+        },
+
+        reconnect: function()
+        {
+            location.reload(); // For now.
+        },
+
+        resize: function(width, height)
+        {
+            console.log("width: " + width + " height: " + height);
+            $(dr.frontCanvas).css("width", width);
+            $(dr.frontCanvas).css("height", height);
+            dr.frontCanvas.width = dr.canvas.width = width;
+            dr.frontCanvas.height = dr.canvas.height = height;
+
+            if (!dr.useLongPolling)
+                dr.socket.send("resize(" + width + "," + height + ")");
+            else
+                dr.inputEvents.push("resize(" + width + "," + height + ")");
+
+            dr.requestFullUpdate();
         },
 
         init: function(useLongPolling)

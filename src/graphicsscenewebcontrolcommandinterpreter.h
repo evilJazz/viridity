@@ -17,10 +17,7 @@ public:
     void setTargetGraphicsScene(QGraphicsScene *scene);
     QGraphicsScene *targetGraphicsScene() const { return scene_; }
 
-    bool sendCommand(const QString &command, const QStringList &params);
-
-signals:
-    void fullUpdateRequested();
+    Q_INVOKABLE bool sendCommand(const QString &command, const QStringList &params);
 
 private:
     QGraphicsScene *scene_;
@@ -49,6 +46,8 @@ private:
     bool handleMouseEvent(const QString &command, const QStringList &params);
     bool handleKeyEvent(const QString &command, const QStringList &params);
     QString textForKey(int key, Qt::KeyboardModifier modifiers);
+
+    void resizeScene(const QStringList &params);
 };
 
 #endif // GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H

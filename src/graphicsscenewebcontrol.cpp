@@ -122,7 +122,7 @@ GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject
     mapMutex_(QMutex::Recursive),
     taskController_(new TaskProcessingController(this))
 {
-
+    commandInterpreter_.setTargetGraphicsScene(scene_);
 }
 
 GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
@@ -154,6 +154,11 @@ GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::getDisplay(const QStr
         return map_[id];
 
     return NULL;
+}
+
+GraphicsSceneWebControlCommandInterpreter *GraphicsSceneMultiThreadedWebServer::commandInterpreter()
+{
+    return &commandInterpreter_;
 }
 
 void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)

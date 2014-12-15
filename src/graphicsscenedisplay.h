@@ -46,7 +46,7 @@ public:
 
     QString id() const { return id_; }
 
-    bool isUpdateAvailable() { return updateAvailable_; }
+    bool isUpdateAvailable() const { return updateAvailable_; }
     Patch *takePatch(const QString &patchId);
 
     bool sendCommand(const QByteArray &data);
@@ -70,9 +70,6 @@ private:
 private:
     GraphicsSceneMultiThreadedWebServer *server_;
 
-    QStringList commands_;
-    QMutex commandsMutex_;
-
     QString id_;
     bool urlMode_;
     int updateCheckInterval_;
@@ -81,14 +78,13 @@ private:
 
     int frame_;
 
-    GraphicsSceneWebControlCommandInterpreter commandInterpreter_;
-
     QTimer timer_;
 
     GraphicsSceneBufferRenderer *renderer_;
     bool clientReady_;
 
     QHash<QString, Patch *> patches_;
+    QImage patchBuffer_;
     QMutex patchesMutex_;
 };
 

@@ -16,6 +16,8 @@
 
 #include <QGraphicsScene>
 
+#include "graphicsscenewebcontrolcommandinterpreter.h"
+
 class WebSocketHandler;
 class LongPollingHandler;
 class PatchRequestHandler;
@@ -64,6 +66,8 @@ public:
     void removeDisplay(GraphicsSceneDisplay *c);
     GraphicsSceneDisplay *getDisplay(const QString &id);
 
+    GraphicsSceneWebControlCommandInterpreter *commandInterpreter();
+
 protected:
     virtual void incomingConnection(int handle);
 
@@ -71,6 +75,8 @@ private:
     QGraphicsScene *scene_;
     QMutex mapMutex_;
     QHash<QString, GraphicsSceneDisplay *> map_;
+
+    GraphicsSceneWebControlCommandInterpreter commandInterpreter_;
 
     TaskProcessingController *taskController_;
 };

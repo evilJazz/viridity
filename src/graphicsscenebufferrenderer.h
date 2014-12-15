@@ -40,12 +40,17 @@ protected slots:
 protected:
     bool minimizeDamageRegion_;
     bool updatesAvailable_;
+
+    QMutex bufferMutex_;
+
     QImage *workBuffer_;
     QImage *otherBuffer_;
     QImage buffer1_;
     QImage buffer2_;
     QRegion region_;
     ImageComparer *comparer_;
+
+    void setSizeFromScene();
 
     void initComparer();
     void swapWorkBuffer();

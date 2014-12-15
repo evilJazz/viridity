@@ -6,6 +6,8 @@
 #include <QGraphicsSceneMouseEvent>
 #include <QGraphicsItem>
 
+#include <QDeclarativeItem>
+
 #define DEBUG
 #include "KCL/debug.h"
 #include "private/qtestspontaneevent.h"
@@ -131,9 +133,9 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEnter(const QString &
 
 bool GraphicsSceneWebControlCommandInterpreter::handleMouseExit(const QString &command, const QStringList &params)
 {
-    //sendEvent(QEvent::Leave);
+    //postEvent(QEvent::Leave, true);
     //scene_->clearFocus();
-    //sendEvent(QEvent::WindowDeactivate, false);
+    //postEvent(QEvent::WindowDeactivate, false);
     return true;
 }
 
@@ -346,11 +348,28 @@ bool GraphicsSceneWebControlCommandInterpreter::sendCommand(const QString &comma
         return handleMouseEvent(command, params);
     else if (command.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);
-    else if (command.startsWith("requestFullUpdate"))
+    else if (command.startsWith("resize") && params.count() == 2)
     {
-        emit fullUpdateRequested();
-        return true;
+        resizeScene(params);
     }
 
     return false;
+}
+
+void GraphicsSceneWebControlCommandInterpreter::resizeScene(const QStringList &params)
+{
+    int width = params[0].toInt();
+    int height = params[1].toInt();
+
+    DPRINTF("Received new size: %d x %d", width, height);
+
+    if (scene_->items().count() > 0)
+    {
+        QDeclarativeItem *mainItem = dynamic_cast<QDeclarativeItem *>(scene_->items().last());
+        if (mainItem)
+        {
+            mainItem->setWidth(width);
+            mainItem->setHeight(height);
+        }
+    }
 }

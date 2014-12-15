@@ -34,7 +34,6 @@ QString createUniqueID()
 GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent) :
     QObject(),
     server_(parent),
-    commandsMutex_(QMutex::NonRecursive),
     urlMode_(true),
     updateCheckInterval_(1),
     updateAvailable_(true),
@@ -46,19 +45,15 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *
     id_ = createUniqueID();
 
     renderer_ = new GraphicsSceneBufferRenderer();
-
-    commandInterpreter_.setTargetGraphicsScene(server_->scene());
-
     renderer_->setTargetGraphicsScene(server_->scene());
-    renderer_->setEnabled(true);
 
     connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
+
     connect(&timer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
-
-    connect(&commandInterpreter_, SIGNAL(fullUpdateRequested()), renderer_, SLOT(fullUpdate()));
-
     timer_.setSingleShot(false);
     timer_.start(updateCheckInterval_);
+
+    renderer_->setEnabled(true);
 }
 
 GraphicsSceneDisplay::~GraphicsSceneDisplay()
@@ -100,7 +95,20 @@ bool GraphicsSceneDisplay::sendCommand(const QByteArray &data)
 
 bool GraphicsSceneDisplay::sendCommand(const QString &command, const QStringList &params)
 {
-    return commandInterpreter_.sendCommand(command, params);
+    bool result = true;
+
+    if (command.startsWith("requestFullUpdate"))
+        renderer_->fullUpdate();
+    else
+        metaObject()->invokeMethod(
+            server_->commandInterpreter(), "sendCommand",
+            server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+            Q_RETURN_ARG(bool, result),
+            Q_ARG(const QString &, command),
+            Q_ARG(const QStringList &, params)
+        );
+
+    return result;
 }
 
 void GraphicsSceneDisplay::clientReady()
@@ -124,7 +132,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     QImage image(rect.size(), QImage::Format_RGB888);
 
     QPainter p(&image);
-    p.drawImage(0, 0, renderer_->buffer(), rect.x(), rect.y());
+    p.drawImage(0, 0, patchBuffer_, rect.x(), rect.y());
 
     patch->data.open(QIODevice::ReadWrite);
     //image.save(&patch->data, "JPEG", 90);
@@ -179,6 +187,7 @@ QStringList GraphicsSceneDisplay::getUpdateCommandList()
 
     updateAvailable_ = false;
     QList<UpdateOperation> ops = renderer_->updateBufferExt();
+    patchBuffer_ = renderer_->buffer();
 
     DPRINTF("Updates available: %d", ops.count());
 
