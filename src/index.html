@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>QGraphicsScene Web Controller</title>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
     <style type="text/css">
     [draggable]
     {
@@ -17,7 +18,7 @@
 
     .gallery
     {
-        width: 200px;
+        width: auto;
         height: auto;
         position: fixed;
         top: 0;
@@ -26,12 +27,13 @@
 
     .picture
     {
-        width: 200px;
-        height: 50px;
+        width: 60px;
+        height: 20px;
     }
 
     body {
-        margin: 0
+        margin: 0;
+        overflow: hidden;
     }
     </style>
     <script src="http://code.jquery.com/jquery-1.10.2.min.js"></script>
@@ -52,7 +54,6 @@
             resizeToWindow();
 
             document.getElementById('debugDrawCB').checked = displayRenderer.debugDrawEnabled();
-
 
             $('.gallery .picture').each(function()
             {
@@ -99,15 +100,12 @@
         <button onclick="displayRenderer.sendCommand('wrong command')">Send wrong command</button>
         <label id="commandResponse"></label>
     </div>
-    <canvas id="canvas">
-    </canvas>
-    <canvas id="canvasBack" style="visibility:hidden">
-    </canvas>
     <div class="gallery">
         <div class="picture" style="background-color: red">red</div>
         <div class="picture" style="background-color: yellow">yellow</div>
         <div class="picture" style="background-color: green">green</div>
         <div class="picture" style="background-color: blue">blue</div>
     </div>
+    <canvas id="canvas"/>
   </body>
 </html>

@@ -11,6 +11,7 @@ FocusScope {
     Rectangle {
         anchors.fill: parent
         color: "lightgray"
+        anchors.margins: 2
     }
 
     Text {

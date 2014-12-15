@@ -438,7 +438,7 @@ var DisplayRenderer = function() {
             if (!dr.useLongPolling)
                 dr.socket = new WebSocket("ws://" + dr.location + "/display");
 
-            dr.canvas = document.getElementById("canvasBack");
+            dr.canvas = document.createElement("canvas");
             dr.ctx = dr.canvas.getContext("2d");
 
             dr.frontCanvas = document.getElementById("canvas");
