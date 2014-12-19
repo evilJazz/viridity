@@ -57,7 +57,6 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     foreach (const QRect &rect, rects)
     {
         p.eraseRect(rect);
-        //scene_->render(&p, rect, rect, Qt::IgnoreAspectRatio);
         syncedSceneRenderer.render(&p, rect, rect, Qt::IgnoreAspectRatio);
     }
 

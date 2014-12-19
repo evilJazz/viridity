@@ -66,6 +66,7 @@ var DisplayRenderer = function() {
         ctx: 0,
 
         lastFrame: 0,
+        frameEndReceived: true,
         frameImageCount: 0,
         frameCommands: [],
 
@@ -89,7 +90,7 @@ var DisplayRenderer = function() {
         _determineReadyState: function()
         {
             if (debugVerbosity > 1) console.log("_imageDone: " + dr.frameImageCount)
-            if (dr.frameImageCount == 0)
+            if (dr.frameEndReceived && dr.frameImageCount == 0)
             {
                 dr._flipToFront();
                 if (debugDraw)
@@ -275,6 +276,9 @@ var DisplayRenderer = function() {
                     console.log("PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.frameImageCount);
                 }
 
+                // This is to stop _determineReadyState() from sending ready() when image loading is quasi-synchronous, ie. base64 encoded sources.
+                dr.frameEndReceived = false;
+
                 if (debugDraw)
                 {
                     dr._flipToFront(); // overwrite debug rects...
@@ -371,10 +375,12 @@ var DisplayRenderer = function() {
             {
                 $("#connectionId").text(inputParams[0]);
                 dr.connectionId = inputParams[0];
+                dr.frameEndReceived = true;
             }
             else if (command === "end")
             {
                 if (debugVerbosity > 1) console.log("Frame end " + frame + " received...");
+                dr.frameEndReceived = true;
                 dr._determineReadyState();
             }
         },
