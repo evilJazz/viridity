@@ -41,7 +41,7 @@ protected:
     bool minimizeDamageRegion_;
     bool updatesAvailable_;
 
-    QMutex bufferMutex_;
+    QMutex bufferAndRegionMutex_;
 
     QImage *workBuffer_;
     QImage *otherBuffer_;

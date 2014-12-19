@@ -16,7 +16,7 @@ GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
     workBuffer_(&buffer1_),
     otherBuffer_(&buffer2_),
     comparer_(NULL),
-    bufferMutex_(QMutex::Recursive)
+    bufferAndRegionMutex_(QMutex::Recursive)
 {
     initComparer();
 }
@@ -29,7 +29,7 @@ GraphicsSceneBufferRenderer::~GraphicsSceneBufferRenderer()
 
 void GraphicsSceneBufferRenderer::initComparer()
 {
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
 
     if (comparer_)
         delete comparer_;
@@ -45,7 +45,7 @@ void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
 UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
 {
     DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
 
     QVector<QRect> rects = region_.rects();
 
@@ -91,7 +91,7 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
 QRegion GraphicsSceneBufferRenderer::updateBuffer()
 {
     DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
 
     QRegion result;
     if (minimizeDamageRegion_)
@@ -126,7 +126,7 @@ QRegion GraphicsSceneBufferRenderer::updateBuffer()
 void GraphicsSceneBufferRenderer::fullUpdate()
 {
     // TODO: This method is inefficient. Optimize!!
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
     workBuffer_->fill(0);
     region_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
     emitUpdatesAvailable();
@@ -135,10 +135,10 @@ void GraphicsSceneBufferRenderer::fullUpdate()
 void GraphicsSceneBufferRenderer::setSizeFromScene()
 {
     DGUARDMETHODFTIMED("GraphicsSceneBufferRenderer: %p", this);
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
 
-    int width = scene_->width();
-    int height = scene_->height();
+    int width = 1024; //scene_->width();
+    int height = 768; //scene_->height();
 
     if (buffer1_.width() != width || buffer1_.height() != height)
     {
@@ -164,8 +164,8 @@ void GraphicsSceneBufferRenderer::sceneAttached()
 
 void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
 {
-    qDebug("Scene rect changed!");
-    setSizeFromScene();
+    //qDebug("Scene rect changed!");
+    //setSizeFromScene();
 }
 
 //static int updateNo = 0;
@@ -173,6 +173,8 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 {
     //DGUARDMETHODTIMED;
     //DPRINTF("UpDaTe %d", updateNo++);
+
+    QMutexLocker m(&bufferAndRegionMutex_);
 
     QString rectString;
 
@@ -191,7 +193,7 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 
 void GraphicsSceneBufferRenderer::sceneDetached()
 {
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
     buffer1_ = QImage();
     buffer2_ = QImage();
     region_ = QRegion();
@@ -200,7 +202,7 @@ void GraphicsSceneBufferRenderer::sceneDetached()
 void GraphicsSceneBufferRenderer::swapWorkBuffer()
 {
     //DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferMutex_);
+    QMutexLocker m(&bufferAndRegionMutex_);
 
     if (workBuffer_ == &buffer1_)
     {

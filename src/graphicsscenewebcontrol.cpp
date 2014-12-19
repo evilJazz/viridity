@@ -41,6 +41,11 @@ GraphicsSceneWebServerTask::GraphicsSceneWebServerTask(GraphicsSceneMultiThreade
     connect(this, SIGNAL(started(Task*, QThread*)), this, SLOT(setupConnection()));
 }
 
+GraphicsSceneWebServerTask::~GraphicsSceneWebServerTask()
+{
+    DGUARDMETHODTIMED;
+}
+
 void GraphicsSceneWebServerTask::setupConnection()
 {
     DGUARDMETHODTIMED;
@@ -74,7 +79,7 @@ void GraphicsSceneWebServerTask::setupConnection()
 
 void GraphicsSceneWebServerTask::onRequestReady()
 {
-    DGUARDMETHODTIMED;
+    //DGUARDMETHODTIMED;
 
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
 

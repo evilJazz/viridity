@@ -12,6 +12,7 @@ WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerTask *parent) :
     task_(parent),
     display_(NULL)
 {
+    DGUARDMETHODTIMED;
     socket_ = new Tufao::WebSocket(this);
     socket_->setMessagesType(Tufao::WebSocket::TEXT_MESSAGE);
 
@@ -21,6 +22,7 @@ WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerTask *parent) :
 
 WebSocketHandler::~WebSocketHandler()
 {
+    DGUARDMETHODTIMED;
 }
 
 void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QByteArray &head)
@@ -58,7 +60,7 @@ void WebSocketHandler::handleDisplayUpdateAvailable()
 {
     if (display_ && display_->isUpdateAvailable())
     {
-        QStringList commandList = display_->getUpdateCommandList();
+        QStringList commandList = display_->getCommandsForPendingUpdates();
 
         foreach (QString command, commandList)
             socket_->sendMessage(command.toLatin1());
@@ -68,7 +70,7 @@ void WebSocketHandler::handleDisplayUpdateAvailable()
 void WebSocketHandler::clientMessageReceived(QByteArray data)
 {
     if (display_)
-        display_->sendCommand(data);
+        display_->handleReceivedMessage(data);
 }
 
 void WebSocketHandler::clientDisconnected()

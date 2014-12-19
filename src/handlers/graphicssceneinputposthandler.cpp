@@ -23,7 +23,7 @@ void GraphicsSceneInputPostHandler::onEnd()
     QList<QByteArray> commands = data_.split('\n');
 
     foreach (QByteArray command, commands)
-        display_->sendCommand(command);
+        display_->handleReceivedMessage(command);
 
     // handle request
     response_->headers().insert("Content-Type", "text/plain");

@@ -42,6 +42,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *
     clientReady_(true),
     patchesMutex_(QMutex::Recursive)
 {
+    DGUARDMETHODTIMED;
     id_ = createUniqueID();
 
     renderer_ = new GraphicsSceneBufferRenderer();
@@ -58,9 +59,17 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *
 
 GraphicsSceneDisplay::~GraphicsSceneDisplay()
 {
-    qDeleteAll(patches_.values());
-
+    DGUARDMETHODTIMED;
+    clearPatches();
     server_->removeDisplay(this);
+}
+
+void GraphicsSceneDisplay::clearPatches()
+{
+    DGUARDMETHODTIMED;
+    QMutexLocker l(&patchesMutex_);
+    qDeleteAll(patches_.values());
+    patches_.clear();
 }
 
 Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
@@ -68,43 +77,49 @@ Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
     QMutexLocker l(&patchesMutex_);
 
     if (patches_.contains(patchId))
+    {
+        DPRINTF("Taking patch: %s", patchId.toUtf8().constData());
         return patches_.take(patchId);
+    }
     else
+    {
+        DPRINTF("No such patch: %s", patchId.toUtf8().constData());
         return NULL;
+    }
 }
 
-bool GraphicsSceneDisplay::sendCommand(const QByteArray &data)
+bool GraphicsSceneDisplay::handleReceivedMessage(const QByteArray &data)
 {
-    QString rawCommand = data;
+    DGUARDMETHODTIMED;
+    QString rawMsg = data;
 
-    int paramStartIndex = rawCommand.indexOf("(");
-    int paramStopIndex = rawCommand.indexOf(")");
+    int paramStartIndex = rawMsg.indexOf("(");
+    int paramStopIndex = rawMsg.indexOf(")");
 
-    QString command = rawCommand.mid(0, paramStartIndex);
-    QString rawParams = rawCommand.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+    QString command = rawMsg.mid(0, paramStartIndex);
+    QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
 
     QStringList params = rawParams.split(",", QString::KeepEmptyParts);
 
-    //DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", socket_, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
+    DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", this, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
 
-    if (command != "ready")
-        sendCommand(command, params);
-    else
-        clientReady();
+    return handleReceivedMessage(command, params);
 }
 
-bool GraphicsSceneDisplay::sendCommand(const QString &command, const QStringList &params)
+bool GraphicsSceneDisplay::handleReceivedMessage(const QString &msg, const QStringList &params)
 {
     bool result = true;
 
-    if (command.startsWith("requestFullUpdate"))
+    if (msg.startsWith("ready"))
+        clientReady();
+    else if (msg.startsWith("requestFullUpdate"))
         renderer_->fullUpdate();
     else
         metaObject()->invokeMethod(
             server_->commandInterpreter(), "sendCommand",
             server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_RETURN_ARG(bool, result),
-            Q_ARG(const QString &, command),
+            Q_ARG(const QString &, msg),
             Q_ARG(const QStringList &, params)
         );
 
@@ -113,7 +128,17 @@ bool GraphicsSceneDisplay::sendCommand(const QString &command, const QStringList
 
 void GraphicsSceneDisplay::clientReady()
 {
+    DGUARDMETHODTIMED;
     clientReady_ = true;
+
+    if (patches_.count() != 0)
+    {
+        qWarning("CLIENT MISBEHAVING!! Client tells me it is ready, but we still have %d patches. Clearing patches. Expect trouble.", patches_.count());
+        clearPatches();
+    }
+
+    if (renderer_->updatesAvailable())
+        sceneDamagedRegionsAvailable();
 }
 
 void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
@@ -170,7 +195,7 @@ void GraphicsSceneDisplay::sendUpdate()
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
 
-    DPRINTF("connection: %p  thread: %p  clientReady_: %d  patches_.count(): %d", this, QThread::currentThread(), clientReady_, patches_.count());
+    DPRINTF("display: %p id: %s thread: %p  clientReady_: %s  patches_.count(): %d", this, id().toUtf8().constData(), QThread::currentThread(), clientReady_ ? "true" : "false", patches_.count());
     timer_.stop();
 
     if (clientReady_ && patches_.count() == 0)
@@ -181,8 +206,10 @@ void GraphicsSceneDisplay::sendUpdate()
     }
 }
 
-QStringList GraphicsSceneDisplay::getUpdateCommandList()
+QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
 {
+    DGUARDMETHODTIMED;
+
     QStringList commandList;
 
     updateAvailable_ = false;
@@ -208,7 +235,7 @@ QStringList GraphicsSceneDisplay::getUpdateCommandList()
 
             if (urlMode_)
             {
-                Patch *patch = createPatch(rect, true);
+                Patch *patch = createPatch(rect, false);
 
                 QString framePatchId = QString::number(frame_) + "_" + QString::number(i);
 

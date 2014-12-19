@@ -54,7 +54,7 @@ var Base64Binary = {
 
 var DisplayRenderer = function() {
 
-    var debugVerbosity = 1;
+    var debugVerbosity = 0;
     var debugDraw = 0;
 
     var dr =
@@ -89,17 +89,15 @@ var DisplayRenderer = function() {
         _determineReadyState: function()
         {
             if (debugVerbosity > 1) console.log("_imageDone: " + dr.frameImageCount)
-            if (dr.frameImageCount === 0)
+            if (dr.frameImageCount == 0)
             {
                 dr._flipToFront();
                 if (debugDraw)
-                    dr.debugDraw();
+                    dr._debugDraw();
 
-                if (debugVerbosity > 1) console.log("Sending ready...");
-                if (!dr.useLongPolling)
-                    dr.socket.send("ready()");
-                else
-                    dr.inputEvents.push("ready()");
+                if (debugVerbosity > 1) console.log("SENDING READY!!!!");
+
+                dr.sendMessage("ready()", true);
             }
         },
 
@@ -112,10 +110,7 @@ var DisplayRenderer = function() {
 
         requestFullUpdate: function()
         {
-            if (!dr.useLongPolling)
-                dr.socket.send("requestFullUpdate()");
-            else
-                dr.inputEvents.push("requestFullUpdate()");
+            dr.sendMessage("requestFullUpdate()", true);
         },
 
         debugClearCanvas: function()
@@ -141,7 +136,7 @@ var DisplayRenderer = function() {
             debugDraw = value;
         },
 
-        debugDraw: function()
+        _debugDraw: function()
         {
             var alpha = 0.5;
 
@@ -175,7 +170,7 @@ var DisplayRenderer = function() {
             }
         },
 
-        sendInputEvents: function()
+        _longPollingSendInputEvents: function()
         {
             if (dr.inputEvents.length > 0)
             {
@@ -191,7 +186,7 @@ var DisplayRenderer = function() {
 
                     success: function(data)
                     {
-                        setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+                        setTimeout(function() { dr._longPollingSendInputEvents() }, dr.pause);
                     },
 
                     error: function(xhr, status, exception)
@@ -201,7 +196,7 @@ var DisplayRenderer = function() {
                         if (status != "timeout")
                             dr.reconnect();
                         else
-                            setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+                            setTimeout(function() { dr._longPollingSendInputEvents() }, dr.pause);
                     }
                 };
 
@@ -209,11 +204,11 @@ var DisplayRenderer = function() {
             }
             else
             {
-                setTimeout(function() { dr.sendInputEvents() }, dr.pause);
+                setTimeout(function() { dr._longPollingSendInputEvents() }, dr.pause);
             }
         },
 
-        receiveOutputMessages: function()
+        _longPollingReceiveOutputMessages: function()
         {
             var options =
             {
@@ -236,7 +231,7 @@ var DisplayRenderer = function() {
                         dr.processPlainMessage(lines[i]);
                     }
 
-                    setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
+                    setTimeout(function() { dr._longPollingReceiveOutputMessages() }, dr.pause);
                 },
                 error: function(xhr, status, exception)
                 {
@@ -245,7 +240,7 @@ var DisplayRenderer = function() {
                     if (status != "timeout")
                         dr.reconnect();
                     else
-                        setTimeout(function() { dr.receiveOutputMessages() }, dr.pause);
+                        setTimeout(function() { dr._longPollingReceiveOutputMessages() }, dr.pause);
                 }
             };
 
@@ -274,6 +269,11 @@ var DisplayRenderer = function() {
             {
                 if (debugVerbosity > 1) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
                 dr.lastFrame = frame;
+
+                if (dr.frameImageCount != 0)
+                {
+                    console.log("PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.frameImageCount);
+                }
 
                 if (debugDraw)
                 {
@@ -379,6 +379,17 @@ var DisplayRenderer = function() {
             }
         },
 
+        sendMessage: function(msg)
+        {
+            if (debugVerbosity > 0)
+                console.log("Sending message to server: " + msg);
+
+            if (!dr.useLongPolling)
+                dr.socket.send(msg);
+            else
+                dr.inputEvents.push(msg);
+        },
+
         sendCommand: function(command)
         {
             var options =
@@ -418,10 +429,7 @@ var DisplayRenderer = function() {
             dr.frontCanvas.width = dr.canvas.width = width;
             dr.frontCanvas.height = dr.canvas.height = height;
 
-            if (!dr.useLongPolling)
-                dr.socket.send("resize(" + width + "," + height + ")");
-            else
-                dr.inputEvents.push("resize(" + width + "," + height + ")");
+            dr.sendMessage("resize(" + width + "," + height + ")");
 
             dr.requestFullUpdate();
         },
@@ -482,17 +490,6 @@ var DisplayRenderer = function() {
                 return modifiers;
             }
 
-            function sendCommand(command)
-            {
-                if (debugVerbosity > 0)
-                    console.log(command);
-
-                if (!dr.useLongPolling)
-                    dr.socket.send(command);
-                else
-                    dr.inputEvents.push(command);
-            }
-
             function sendMouseEvent(type, event, other)
             {
                 var pos = getCanvasPos(event);
@@ -502,9 +499,9 @@ var DisplayRenderer = function() {
                 pos.y = Math.round(pos.y);
 
                 if (other)
-                    sendCommand(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
+                    dr.sendMessage(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
                 else
-                    sendCommand(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
+                    dr.sendMessage(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
 
                 event.stopPropagation();
                 event.preventDefault();
@@ -533,9 +530,9 @@ var DisplayRenderer = function() {
                 }
 
                 if (event.hasOwnProperty("which"))
-                    sendCommand(type + "(" + event.which + "," + getModifiers(event) + ")");
+                    dr.sendMessage(type + "(" + event.which + "," + getModifiers(event) + ")");
                 else
-                    sendCommand(type + "(" + event.keyCode + "," + getModifiers(event) + ")");
+                    dr.sendMessage(type + "(" + event.keyCode + "," + getModifiers(event) + ")");
 
                 if (printableCharacter || isNonPrintableKey(event.keyCode))
                 {
@@ -568,8 +565,8 @@ var DisplayRenderer = function() {
 
             if (dr.useLongPolling)
             {
-                dr.receiveOutputMessages();
-                dr.sendInputEvents();
+                dr._longPollingReceiveOutputMessages();
+                dr._longPollingSendInputEvents();
             }
             else
             {

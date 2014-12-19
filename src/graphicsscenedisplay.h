@@ -46,26 +46,21 @@ public:
 
     QString id() const { return id_; }
 
-    bool isUpdateAvailable() const { return updateAvailable_; }
+    bool isUpdateAvailable() const { return clientReady_ && patches_.count() == 0 && updateAvailable_; }
     Patch *takePatch(const QString &patchId);
 
-    bool sendCommand(const QByteArray &data);
-    bool sendCommand(const QString &command, const QStringList &params);
+    bool handleReceivedMessage(const QByteArray &data);
+    bool handleReceivedMessage(const QString &msg, const QStringList &params);
 
-    QStringList getUpdateCommandList();
+    QStringList getCommandsForPendingUpdates();
 
 signals:
     void updateAvailable();
 
-public slots:
-    void clientReady();
-
 private slots:
     void sceneDamagedRegionsAvailable();
     void sendUpdate();
-
-private:
-    Patch *createPatch(const QRect &rect, bool createBase64);
+    void clientReady();
 
 private:
     GraphicsSceneMultiThreadedWebServer *server_;
@@ -86,6 +81,9 @@ private:
     QHash<QString, Patch *> patches_;
     QImage patchBuffer_;
     QMutex patchesMutex_;
+
+    Patch *createPatch(const QRect &rect, bool createBase64);
+    void clearPatches();
 };
 
 #endif // GRAPHICSSCENEDISPLAY_H

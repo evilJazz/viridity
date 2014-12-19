@@ -12,11 +12,19 @@
 #include "graphicssceneinputposthandler.h"
 #include "commandposthandler.h"
 
+#include "KCL/debug.h"
+
 LongPollingHandler::LongPollingHandler(GraphicsSceneWebServerTask *parent) :
     QObject(parent),
     task_(parent),
     display_(NULL)
 {
+    DGUARDMETHODTIMED;
+}
+
+LongPollingHandler::~LongPollingHandler()
+{
+    DGUARDMETHODTIMED;
 }
 
 bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
@@ -41,8 +49,6 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
         {
             if (request->method() == "GET") // long polling output
             {
-                display_->sendCommand("ready()");
-
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
@@ -94,7 +100,7 @@ void LongPollingHandler::handleDisplayUpdateAvailable()
 {
     if (response_ && display_ && display_->isUpdateAvailable())
     {
-        QStringList commandList = display_->getUpdateCommandList();
+        QStringList commandList = display_->getCommandsForPendingUpdates();
 
         QByteArray out;
         out = commandList.join("\n").toUtf8();

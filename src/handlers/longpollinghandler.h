@@ -14,6 +14,7 @@ class LongPollingHandler : public QObject
     Q_OBJECT
 public:
     explicit LongPollingHandler(GraphicsSceneWebServerTask *parent);
+    virtual ~LongPollingHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);

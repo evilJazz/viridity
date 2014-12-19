@@ -31,6 +31,7 @@ class GraphicsSceneWebServerTask : public EventLoopTask
     Q_OBJECT
 public:
     explicit GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor);
+    virtual ~GraphicsSceneWebServerTask();
 
     GraphicsSceneMultiThreadedWebServer *server() { return server_; }
 
