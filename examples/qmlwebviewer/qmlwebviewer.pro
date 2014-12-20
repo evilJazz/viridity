@@ -8,7 +8,19 @@ SOURCES += main.cpp
 
 #CONFIG += tufao
 
-DEFINES += DEBUG
+CONFIG(debug, debug|release) {
+    message("Configuring debug mode...")
+    DEFINES += DEBUG
+    QMAKE_CFLAGS += -O0
+    QMAKE_CXXFLAGS += -O0
+}
+
+CONFIG(release, debug|release) {
+    message("Configuring release mode...")
+    DEFINES -= DEBUG
+    QMAKE_CFLAGS -= -g
+    QMAKE_CXXFLAGS -= -g
+}
 
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao.pri)

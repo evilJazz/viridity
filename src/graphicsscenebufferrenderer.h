@@ -25,6 +25,8 @@ public:
     QImage buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
 
+    int tileSize() const { return comparer_ ? comparer_->tileSize() : 0; }
+
 public slots:
     void fullUpdate();
 

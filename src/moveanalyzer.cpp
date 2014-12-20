@@ -12,7 +12,7 @@
 
 //#define USE_MULTITHREADING
 
-#define SHOW_MOVEANALYZER_DEBUGVIEW
+//#define SHOW_MOVEANALYZER_DEBUGVIEW
 
 #ifdef SHOW_MOVEANALYZER_DEBUGVIEW
 #include "private/moveanalyzerdebugview.h"

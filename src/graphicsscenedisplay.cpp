@@ -160,12 +160,21 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     p.drawImage(0, 0, patchBuffer_, rect.x(), rect.y());
 
     patch->data.open(QIODevice::ReadWrite);
-    //image.save(&patch->data, "JPEG", 90);
-    //image.save(&patch->data, "BMP");
-    image.save(&patch->data, "PNG");
-    patch->data.close();
 
-    patch->mimeType = "image/png";
+    if (false && image.width() * image.height() > 9 * 9 * renderer_->tileSize() * renderer_->tileSize())
+    {
+        image.save(&patch->data, "JPEG", 90);
+        patch->mimeType = "image/jpeg";
+    }
+    else
+    {
+        image.save(&patch->data, "PNG");
+        patch->mimeType = "image/png";
+    }
+
+    //image.save(&patch->data, "BMP"); patch->mimeType = "image/bmp";
+
+    patch->data.close();
 
     if (createBase64)
     {

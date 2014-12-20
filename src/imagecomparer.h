@@ -51,6 +51,8 @@ public:
     UpdateOperationList findUpdateOperations(const QRect &searchArea);
     void swap();
 
+    int tileSize() const { return tileWidth_; }
+
 protected:
     friend struct MapProcessRect;
     bool processRect(const QRect &rect, UpdateOperation &op);

@@ -14,9 +14,26 @@ FocusScope {
         anchors.margins: 2
     }
 
-    Text {
-        anchors.centerIn: parent
-        text: scene.width + " x " + scene.height
+    Image {
+        id: image
+
+        source: "lena.png"
+        fillMode: Image.PreserveAspectFit
+
+        SequentialAnimation on x {
+            running: imageAnimationEnabled.checked
+            loops: Animation.Infinite
+            PropertyAnimation { to: 900; duration: 4000; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 50; duration: 4000; easing.type: Easing.InOutQuad }
+        }
+
+        SequentialAnimation on y {
+            running: imageAnimationEnabled.checked
+            loops: Animation.Infinite
+            PropertyAnimation { to: 50; duration: 4300; easing.type: Easing.InOutQuad }
+            PropertyAnimation { to: 500; duration: 4300; easing.type: Easing.InOutQuad }
+        }
+
     }
 
     Rectangle {
@@ -27,20 +44,19 @@ FocusScope {
 
         objectName: "rect"
 
-
-        /*
         SequentialAnimation on x {
+            running: rectAnimationEnabled.checked
             loops: Animation.Infinite
             PropertyAnimation { to: 900; duration: 2000; easing.type: Easing.InOutQuad }
             PropertyAnimation { to: 100; duration: 2000; easing.type: Easing.InOutQuad }
         }
 
         SequentialAnimation on y {
+            running: rectAnimationEnabled.checked
             loops: Animation.Infinite
             PropertyAnimation { to: 100; duration: 2300; easing.type: Easing.InOutQuad }
             PropertyAnimation { to: 500; duration: 2300; easing.type: Easing.InOutQuad }
         }
-        //*/
     }
 
 
@@ -55,37 +71,6 @@ FocusScope {
         x: 200
         y: 200
     }
-
-/*
-    Image {
-        id: image
-
-        x: 1000
-        y: 1000
-
-        width: 1000
-        height: 1000
-
-        source: "http://localhost/~wincent/mona-lisa.png"
-//        source: "http://192.168.56.1/~wincent/mona-lisa.png"
-        fillMode: Image.PreserveAspectFit
-
-        SequentialAnimation on x {
-            loops: Animation.Infinite
-            PropertyAnimation { to: 900; duration: 10000; easing.type: Easing.InOutQuad }
-            PropertyAnimation { to: 100; duration: 10000; easing.type: Easing.InOutQuad }
-        }
-
-        SequentialAnimation on y {
-            loops: Animation.Infinite
-            PropertyAnimation { to: 100; duration: 10000; easing.type: Easing.InOutQuad }
-            PropertyAnimation { to: 500; duration: 10000; easing.type: Easing.InOutQuad }
-        }
-
-    }
-*/
-
-
 
     MouseArea {
         id: mouseArea
@@ -195,6 +180,23 @@ FocusScope {
         }
     }
 
+    Column {
+        x: 10
+        y: 110
+
+        spacing: 5
+
+        CheckBox {
+            id: rectAnimationEnabled
+            text: "Animate rect"
+        }
+
+        CheckBox {
+            id: imageAnimationEnabled
+            text: "Animate image"
+        }
+    }
+
     Rectangle {
         width: parent.width / 2
         height: 90
@@ -231,4 +233,8 @@ FocusScope {
         }
     }
 
+    Text {
+        anchors.centerIn: parent
+        text: scene.width + " x " + scene.height
+    }
 }
