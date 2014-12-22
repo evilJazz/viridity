@@ -78,12 +78,12 @@ Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
 
     if (patches_.contains(patchId))
     {
-        DPRINTF("Taking patch: %s", patchId.toUtf8().constData());
+        DPRINTF("display: %p thread: %p id: %s -> Taking patch: %s", this, this->thread(), id().toUtf8().constData(), patchId.toUtf8().constData());
         return patches_.take(patchId);
     }
     else
     {
-        DPRINTF("No such patch: %s", patchId.toUtf8().constData());
+        DPRINTF("display: %p thread: %p id: %s -> No such patch: %s", this, this->thread(), id().toUtf8().constData(), patchId.toUtf8().constData());
         return NULL;
     }
 }
@@ -101,7 +101,7 @@ bool GraphicsSceneDisplay::handleReceivedMessage(const QByteArray &data)
 
     QStringList params = rawParams.split(",", QString::KeepEmptyParts);
 
-    DPRINTF("%p -> received message: %s, command: %s, rawParams: %s", this, data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
+    DPRINTF("display: %p thread: %p id: %s -> Received message: %s, command: %s, rawParams: %s", this, this->thread(), id().toUtf8().constData(), data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
 
     return handleReceivedMessage(command, params);
 }
@@ -143,6 +143,8 @@ void GraphicsSceneDisplay::clientReady()
 
 void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
 {
+    DPRINTF("display: %p thread: %p id: %s -> Damaged regions in scene available", this, this->thread(), id().toUtf8().constData());
+
     if (!timer_.isActive())
         timer_.start(updateCheckInterval_);
 }
@@ -204,7 +206,7 @@ void GraphicsSceneDisplay::sendUpdate()
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
 
-    DPRINTF("display: %p id: %s thread: %p  clientReady_: %s  patches_.count(): %d", this, id().toUtf8().constData(), QThread::currentThread(), clientReady_ ? "true" : "false", patches_.count());
+    DPRINTF("display: %p thread: %p id: %s UPDATE AVAILABLE! clientReady_: %s  patches_.count(): %d", this, this->thread(), id().toUtf8().constData(), clientReady_ ? "true" : "false", patches_.count());
     timer_.stop();
 
     if (clientReady_ && patches_.count() == 0)

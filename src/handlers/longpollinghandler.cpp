@@ -12,6 +12,7 @@
 #include "graphicssceneinputposthandler.h"
 #include "commandposthandler.h"
 
+#undef DEBUG
 #include "KCL/debug.h"
 
 LongPollingHandler::LongPollingHandler(GraphicsSceneWebServerTask *parent) :
@@ -34,6 +35,8 @@ bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
+    DGUARDMETHODTIMED;
+
     QString url(request->url());
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     QString id = QUrlQuery(request->url()).queryItemValue("id");
@@ -52,7 +55,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-                connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));
+                connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
                 if (!display_->isUpdateAvailable())
                     return;
@@ -98,6 +101,8 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
 void LongPollingHandler::handleDisplayUpdateAvailable()
 {
+    DGUARDMETHODTIMED;
+
     if (response_ && display_ && display_->isUpdateAvailable())
     {
         QStringList commandList = display_->getCommandsForPendingUpdates();
@@ -115,6 +120,8 @@ void LongPollingHandler::handleDisplayUpdateAvailable()
 
 void LongPollingHandler::handleResponseDestroyed()
 {
+    DGUARDMETHODTIMED;
+
     response_ = NULL;
 }
 

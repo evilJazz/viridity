@@ -340,6 +340,8 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
 
 bool GraphicsSceneWebControlCommandInterpreter::sendCommand(const QString &command, const QStringList &params)
 {
+    DGUARDMETHODTIMED;
+
     if (command.startsWith("mouseEnter"))
         return handleMouseEnter(command, params);
     else if (command.startsWith("mouseExit"))

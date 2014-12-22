@@ -2,6 +2,7 @@
 
 #include <QStringList>
 
+#undef DEBUG
 #include "KCL/debug.h"
 
 #include "graphicsscenewebcontrol.h"

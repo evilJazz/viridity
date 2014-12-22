@@ -18,11 +18,15 @@ GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
     comparer_(NULL),
     bufferAndRegionMutex_(QMutex::Recursive)
 {
+    DGUARDMETHODTIMED;
+
     initComparer();
 }
 
 GraphicsSceneBufferRenderer::~GraphicsSceneBufferRenderer()
 {
+    DGUARDMETHODTIMED;
+
     if (comparer_)
         delete comparer_;
 }
@@ -167,12 +171,9 @@ void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
     //setSizeFromScene();
 }
 
-//static int updateNo = 0;
 void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 {
-    //DGUARDMETHODTIMED;
-    //DPRINTF("UpDaTe %d", updateNo++);
-
+    DGUARDMETHODTIMED;
     QMutexLocker m(&bufferAndRegionMutex_);
 
     QString rectString;
@@ -185,7 +186,7 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
         DOP(rectString += QString().sprintf(" %4d,%4d+%4dx%4d", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
     }
 
-    //DPRINTF("rects: %s", rectString.toUtf8().constData());
+    DPRINTF("rects: %s", rectString.toUtf8().constData());
 
     emitUpdatesAvailable();
 }

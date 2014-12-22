@@ -38,6 +38,7 @@ GraphicsSceneWebServerTask::GraphicsSceneWebServerTask(GraphicsSceneMultiThreade
     server_(parent),
     socketDescriptor_(socketDescriptor)
 {
+    DGUARDMETHODTIMED;
     connect(this, SIGNAL(started(Task*, QThread*)), this, SLOT(setupConnection()));
 }
 
