@@ -43,23 +43,36 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *
     patchesMutex_(QMutex::Recursive)
 {
     DGUARDMETHODTIMED;
+
     id_ = createUniqueID();
 
-    renderer_ = new GraphicsSceneBufferRenderer();
+    renderer_ = new GraphicsSceneBufferRenderer(this);
     renderer_->setTargetGraphicsScene(server_->scene());
 
     connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
 
-    connect(&timer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
-    timer_.setSingleShot(false);
-    timer_.start(updateCheckInterval_);
+    timer_ = new QTimer(this);
+    connect(timer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
+    timer_->setSingleShot(false);
+    timer_->start(updateCheckInterval_);
 
     renderer_->setEnabled(true);
+
+    // Finally create worker thread and move display + all children to this new thread's event loop.
+    workerThread_ = new QThread(this);
+
+    DPRINTF("New worker thread %p for display id %s", workerThread_, id_.toLatin1().constData());
+    moveToThread(workerThread_);
+
+    workerThread_->start();
 }
 
 GraphicsSceneDisplay::~GraphicsSceneDisplay()
 {
     DGUARDMETHODTIMED;
+    workerThread_->quit();
+    workerThread_->wait();
+
     clearPatches();
     server_->removeDisplay(this);
 }
@@ -145,8 +158,8 @@ void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
 {
     DPRINTF("display: %p thread: %p id: %s -> Damaged regions in scene available", this, this->thread(), id().toUtf8().constData());
 
-    if (!timer_.isActive())
-        timer_.start(updateCheckInterval_);
+    if (!timer_->isActive())
+        timer_->start(updateCheckInterval_);
 }
 
 Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
@@ -207,7 +220,7 @@ void GraphicsSceneDisplay::sendUpdate()
     QMutexLocker l(&patchesMutex_);
 
     DPRINTF("display: %p thread: %p id: %s UPDATE AVAILABLE! clientReady_: %s  patches_.count(): %d", this, this->thread(), id().toUtf8().constData(), clientReady_ ? "true" : "false", patches_.count());
-    timer_.stop();
+    timer_->stop();
 
     if (clientReady_ && patches_.count() == 0)
     {

@@ -1,6 +1,6 @@
 #include "graphicsscenewebcontrol.h"
 
-//#undef DEBUG
+#undef DEBUG
 #include "KCL/debug.h"
 
 #include "private/commandbridge.h"

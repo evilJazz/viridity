@@ -40,7 +40,6 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
     }
 
     display_ = new GraphicsSceneDisplay(task_->server());
-    display_->moveToThread(QThread::currentThread());
     task_->server()->addDisplay(display_);
 
     connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));

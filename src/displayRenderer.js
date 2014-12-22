@@ -75,7 +75,8 @@ var DisplayRenderer = function() {
 
         location: "",
 
-        timeout: 120000,
+        //timeout: 120000,
+        timeout: 2000,
         pause: 1000 / 30 /*fps*/, // Sets frequency for GET and POST when long polling
         connectionId: "",
 

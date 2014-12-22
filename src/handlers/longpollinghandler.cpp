@@ -57,10 +57,9 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
                 connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
-                if (!display_->isUpdateAvailable())
-                    return;
+                if (display_->isUpdateAvailable())
+                    handleDisplayUpdateAvailable();
 
-                handleDisplayUpdateAvailable();
                 return;
             }
             else if (request->method() == "POST") // long polling input
@@ -78,11 +77,12 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
         return;
     }
-    else if (id.isEmpty()) // start new connection
+    else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/display?")*/) // start new connection
     {
         display_ = new GraphicsSceneDisplay(task_->server());
-        display_->moveToThread(QThread::currentThread());
         task_->server()->addDisplay(display_);
+
+        DPRINTF("NEW DISPLAY: %s", display_->id().toLatin1().constData());
 
         QString info = "info(" + display_->id() + ")";
 
