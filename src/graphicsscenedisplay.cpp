@@ -124,9 +124,15 @@ bool GraphicsSceneDisplay::handleReceivedMessage(const QString &msg, const QStri
     bool result = true;
 
     if (msg.startsWith("ready"))
-        clientReady();
+        metaObject()->invokeMethod(
+            this, "clientReady",
+            server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+        );
     else if (msg.startsWith("requestFullUpdate"))
-        renderer_->fullUpdate();
+        metaObject()->invokeMethod(
+            renderer_, "fullUpdate",
+            server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+        );
     else
         metaObject()->invokeMethod(
             server_->commandInterpreter(), "sendCommand",
