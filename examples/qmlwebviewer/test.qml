@@ -195,6 +195,11 @@ FocusScope {
             id: imageAnimationEnabled
             text: "Animate image"
         }
+
+        CheckBox {
+            id: dummieCheckbox
+            text: "Dummie"
+        }
     }
 
     Rectangle {

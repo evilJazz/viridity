@@ -382,7 +382,7 @@ ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     moveAnalyzer_(NULL),
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true),
-    tileWidth_(20)
+    tileWidth_(50)
 {
 #ifdef USE_MOVE_ANALYZER
     moveAnalyzer_ = new MoveAnalyzer(imageBefore_, imageAfter_, imageBefore_->rect(), tileWidth_);
