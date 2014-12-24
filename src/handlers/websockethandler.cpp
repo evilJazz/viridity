@@ -8,7 +8,7 @@
 #include "graphicsscenewebcontrol.h"
 #include "graphicsscenedisplay.h"
 
-WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerTask *parent) :
+WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
     task_(parent),
     display_(NULL)
@@ -75,5 +75,6 @@ void WebSocketHandler::clientMessageReceived(QByteArray data)
 
 void WebSocketHandler::clientDisconnected()
 {
-
+    if (display_)
+        metaObject()->invokeMethod(display_, "deleteLater");
 }

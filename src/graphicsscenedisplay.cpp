@@ -57,22 +57,11 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *
     timer_->start(updateCheckInterval_);
 
     renderer_->setEnabled(true);
-
-    // Finally create worker thread and move display + all children to this new thread's event loop.
-    workerThread_ = new QThread(this);
-
-    DPRINTF("New worker thread %p for display id %s", workerThread_, id_.toLatin1().constData());
-    moveToThread(workerThread_);
-
-    workerThread_->start();
 }
 
 GraphicsSceneDisplay::~GraphicsSceneDisplay()
 {
     DGUARDMETHODTIMED;
-    workerThread_->quit();
-    workerThread_->wait();
-
     clearPatches();
     server_->removeDisplay(this);
 }

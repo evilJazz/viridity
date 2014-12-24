@@ -3,7 +3,7 @@
 #include "graphicsscenewebcontrol.h"
 #include "graphicsscenedisplay.h"
 
-PatchRequestHandler::PatchRequestHandler(GraphicsSceneWebServerTask *parent) :
+PatchRequestHandler::PatchRequestHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
     task_(parent)
 {

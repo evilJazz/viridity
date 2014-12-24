@@ -578,6 +578,8 @@ var DisplayRenderer = function() {
             else
             {
                 dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
+                dr.socket.onerror = function() { dr.reconnect(); }
+                dr.socket.onclose = function() { dr.reconnect(); }
             }
         }
     }

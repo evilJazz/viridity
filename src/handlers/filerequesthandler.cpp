@@ -3,7 +3,7 @@
 
 #include <QFile>
 
-FileRequestHandler::FileRequestHandler(GraphicsSceneWebServerTask *parent) :
+FileRequestHandler::FileRequestHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
     task_(parent)
 {

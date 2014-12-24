@@ -6,20 +6,20 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class GraphicsSceneWebServerTask;
+class GraphicsSceneWebServerConnection;
 class GraphicsSceneDisplay;
 
 class PatchRequestHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit PatchRequestHandler(GraphicsSceneWebServerTask *parent);
+    explicit PatchRequestHandler(GraphicsSceneWebServerConnection *parent);
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
-    GraphicsSceneWebServerTask *task_;
+    GraphicsSceneWebServerConnection *task_;
 };
 
 #endif // PATCHREQUESTHANDLER_H

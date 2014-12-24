@@ -6,14 +6,14 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class GraphicsSceneWebServerTask;
+class GraphicsSceneWebServerConnection;
 class GraphicsSceneDisplay;
 
 class FileRequestHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit FileRequestHandler(GraphicsSceneWebServerTask *parent);
+    explicit FileRequestHandler(GraphicsSceneWebServerConnection *parent);
 
     void insertFileInformation(const QByteArray &url, const QByteArray &fileName, const QByteArray &mimeType);
 
@@ -21,7 +21,7 @@ public:
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
-    GraphicsSceneWebServerTask *task_;
+    GraphicsSceneWebServerConnection *task_;
 
     QHash<QByteArray, QByteArray> fileNames_;
     QHash<QByteArray, QByteArray> contentTypes_;

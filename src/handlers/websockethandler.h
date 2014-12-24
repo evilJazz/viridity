@@ -7,14 +7,14 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class GraphicsSceneWebServerTask;
+class GraphicsSceneWebServerConnection;
 class GraphicsSceneDisplay;
 
 class WebSocketHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit WebSocketHandler(GraphicsSceneWebServerTask *parent);
+    explicit WebSocketHandler(GraphicsSceneWebServerConnection *parent);
     virtual ~WebSocketHandler();
 
     void handleUpgrade(Tufao::HttpServerRequest *request, const QByteArray &head);
@@ -27,7 +27,7 @@ private slots:
     void clientDisconnected();
 
 private:
-    GraphicsSceneWebServerTask *task_;
+    GraphicsSceneWebServerConnection *task_;
     GraphicsSceneDisplay *display_;
 
     Tufao::WebSocket *socket_;

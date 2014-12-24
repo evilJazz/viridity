@@ -6,14 +6,14 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class GraphicsSceneWebServerTask;
+class GraphicsSceneWebServerConnection;
 class GraphicsSceneDisplay;
 
 class LongPollingHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit LongPollingHandler(GraphicsSceneWebServerTask *parent);
+    explicit LongPollingHandler(GraphicsSceneWebServerConnection *parent);
     virtual ~LongPollingHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
@@ -24,7 +24,7 @@ private slots:
     void handleResponseDestroyed();
 
 private:
-    GraphicsSceneWebServerTask *task_;
+    GraphicsSceneWebServerConnection *task_;
     GraphicsSceneDisplay *display_;
 
     Tufao::HttpServerResponse *response_;

@@ -15,7 +15,7 @@
 #undef DEBUG
 #include "KCL/debug.h"
 
-LongPollingHandler::LongPollingHandler(GraphicsSceneWebServerTask *parent) :
+LongPollingHandler::LongPollingHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
     task_(parent),
     display_(NULL)

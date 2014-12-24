@@ -26,12 +26,17 @@ class FileRequestHandler;
 class GraphicsSceneMultiThreadedWebServer;
 class GraphicsSceneDisplay;
 
-class GraphicsSceneWebServerTask : public EventLoopTask
+class GraphicsSceneWebServerConnection : public QObject
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneWebServerTask(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor);
-    virtual ~GraphicsSceneWebServerTask();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    explicit GraphicsSceneWebServerConnection(GraphicsSceneMultiThreadedWebServer *parent, qintptr socketDescriptor);
+#else
+    explicit GraphicsSceneWebServerConnection(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor);
+#endif
+
+    virtual ~GraphicsSceneWebServerConnection();
 
     GraphicsSceneMultiThreadedWebServer *server() { return server_; }
 
@@ -49,7 +54,12 @@ private:
     FileRequestHandler *fileRequestHandler_;
 
     GraphicsSceneMultiThreadedWebServer *server_;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    qintptr socketDescriptor_;
+#else
     int socketDescriptor_;
+#endif
 };
 
 class GraphicsSceneMultiThreadedWebServer : public QTcpServer
@@ -70,16 +80,23 @@ public:
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter();
 
 protected:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    virtual void incomingConnection(qintptr handle);
+#else
     virtual void incomingConnection(int handle);
+#endif
 
 private:
     QGraphicsScene *scene_;
-    QMutex mapMutex_;
-    QHash<QString, GraphicsSceneDisplay *> map_;
+    QMutex displayMutex_;
+    QHash<QString, GraphicsSceneDisplay *> displays_;
 
     GraphicsSceneWebControlCommandInterpreter commandInterpreter_;
 
-    TaskProcessingController *taskController_;
+    QList<QThread *> connectionThreads_;
+    int incomingConnectionCount_;
+
+    QList<QThread *> displayThreads_;
 };
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

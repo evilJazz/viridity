@@ -74,7 +74,6 @@ private:
     int frame_;
 
     QTimer *timer_;
-    QThread *workerThread_;
 
     GraphicsSceneBufferRenderer *renderer_;
     bool clientReady_;
