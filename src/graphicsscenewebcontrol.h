@@ -13,6 +13,7 @@
 #include <QBuffer>
 #include <QMutex>
 #include <QWaitCondition>
+#include <QElapsedTimer>
 
 #include <QGraphicsScene>
 
@@ -73,9 +74,12 @@ public:
 
     void listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
-    void addDisplay(GraphicsSceneDisplay *c);
-    void removeDisplay(GraphicsSceneDisplay *c);
+    GraphicsSceneDisplay *createDisplay();
+
     GraphicsSceneDisplay *getDisplay(const QString &id);
+
+    GraphicsSceneDisplay *acquireDisplay(const QString &id);
+    void releaseDisplay(GraphicsSceneDisplay *display);
 
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter();
 
@@ -85,6 +89,11 @@ protected:
 #else
     virtual void incomingConnection(int handle);
 #endif
+
+    void removeDisplay(GraphicsSceneDisplay *display);
+
+private slots:
+    void killObsoleteDisplays();
 
 private:
     QGraphicsScene *scene_;
@@ -97,6 +106,15 @@ private:
     int incomingConnectionCount_;
 
     QList<QThread *> displayThreads_;
+
+    struct DisplayResource {
+        GraphicsSceneDisplay *display;
+        QElapsedTimer lastUsed;
+        int useCount;
+    };
+
+    QHash<GraphicsSceneDisplay *, DisplayResource> displayResources_;
+    QTimer cleanupTimer_;
 };
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

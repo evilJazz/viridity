@@ -2,7 +2,7 @@
 
 #include <QStringList>
 
-#undef DEBUG
+//#undef DEBUG
 #include "KCL/debug.h"
 
 #include "graphicsscenewebcontrol.h"
@@ -23,6 +23,9 @@ WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerConnection *parent) :
 
 WebSocketHandler::~WebSocketHandler()
 {
+    if (display_)
+        task_->server()->releaseDisplay(display_);
+
     DGUARDMETHODTIMED;
 }
 
@@ -39,8 +42,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         return;
     }
 
-    display_ = new GraphicsSceneDisplay(task_->server());
-    task_->server()->addDisplay(display_);
+    display_ = task_->server()->createDisplay();
 
     connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));
 
@@ -75,6 +77,4 @@ void WebSocketHandler::clientMessageReceived(QByteArray data)
 
 void WebSocketHandler::clientDisconnected()
 {
-    if (display_)
-        metaObject()->invokeMethod(display_, "deleteLater");
 }

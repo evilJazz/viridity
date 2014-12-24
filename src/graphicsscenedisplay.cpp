@@ -63,7 +63,6 @@ GraphicsSceneDisplay::~GraphicsSceneDisplay()
 {
     DGUARDMETHODTIMED;
     clearPatches();
-    server_->removeDisplay(this);
 }
 
 void GraphicsSceneDisplay::clearPatches()

@@ -25,6 +25,9 @@ LongPollingHandler::LongPollingHandler(GraphicsSceneWebServerConnection *parent)
 
 LongPollingHandler::~LongPollingHandler()
 {
+    if (display_)
+        task_->server()->releaseDisplay(display_);
+
     DGUARDMETHODTIMED;
 }
 
@@ -44,14 +47,16 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     QString id = QUrl(request->url()).queryItemValue("id");
 #endif
 
-    display_ = task_->server()->getDisplay(id);
+    GraphicsSceneDisplay *display = task_->server()->getDisplay(id);
 
-    if (display_)
+    if (display)
     {
         if (url.startsWith("/display?")) // long polling
         {
             if (request->method() == "GET") // long polling output
             {
+                display_ = task_->server()->acquireDisplay(id);
+
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
@@ -64,7 +69,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
             }
             else if (request->method() == "POST") // long polling input
             {
-                GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, display_);
+                GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, display);
                 connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
                 return;
             }
@@ -79,12 +84,13 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     }
     else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/display?")*/) // start new connection
     {
-        display_ = new GraphicsSceneDisplay(task_->server());
-        task_->server()->addDisplay(display_);
+        display = task_->server()->createDisplay();
 
-        DPRINTF("NEW DISPLAY: %s", display_->id().toLatin1().constData());
+        DPRINTF("NEW DISPLAY: %s", display->id().toLatin1().constData());
 
-        QString info = "info(" + display_->id() + ")";
+        QString info = "info(" + display->id() + ")";
+
+        task_->server()->releaseDisplay(display);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "text/plain; charset=utf8");
@@ -106,6 +112,9 @@ void LongPollingHandler::handleDisplayUpdateAvailable()
     if (response_ && display_ && display_->isUpdateAvailable())
     {
         QStringList commandList = display_->getCommandsForPendingUpdates();
+
+        task_->server()->releaseDisplay(display_);
+        display_ = NULL;
 
         QByteArray out;
         out = commandList.join("\n").toUtf8();

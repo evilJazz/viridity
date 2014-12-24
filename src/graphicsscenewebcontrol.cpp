@@ -1,6 +1,6 @@
 #include "graphicsscenewebcontrol.h"
 
-#undef DEBUG
+//#undef DEBUG
 #include "KCL/debug.h"
 
 #include "private/commandbridge.h"
@@ -138,6 +138,9 @@ GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject
     incomingConnectionCount_(0)
 {
     commandInterpreter_.setTargetGraphicsScene(scene_);
+
+    connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
+    cleanupTimer_.start(10000);
 }
 
 GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
@@ -182,22 +185,37 @@ void GraphicsSceneMultiThreadedWebServer::listen(const QHostAddress &address, qu
     QTcpServer::listen(address, port);
 }
 
-void GraphicsSceneMultiThreadedWebServer::addDisplay(GraphicsSceneDisplay *c)
+GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::createDisplay()
 {
     QMutexLocker l(&displayMutex_);
-    displays_.insert(c->id(), c);
+
+    GraphicsSceneDisplay *display = new GraphicsSceneDisplay(this);
+
+    displays_.insert(display->id(), display);
+
+    DisplayResource res;
+    res.display = display;
+    res.lastUsed.restart();
+    res.useCount = 1;
+
+    displayResources_.insert(display, res);
 
     int threadIndex = displays_.count() % displayThreads_.count();
     QThread *workerThread = displayThreads_.at(threadIndex);
-    c->moveToThread(workerThread); // Move display to thread's event loop
+    display->moveToThread(workerThread); // Move display to thread's event loop
 
-    DPRINTF("New worker thread %p for display id %s", workerThread, c->id().toLatin1().constData());
+    DPRINTF("New worker thread %p for display id %s", workerThread, display->id().toLatin1().constData());
+
+    return display;
 }
 
-void GraphicsSceneMultiThreadedWebServer::removeDisplay(GraphicsSceneDisplay *c)
+void GraphicsSceneMultiThreadedWebServer::removeDisplay(GraphicsSceneDisplay *display)
 {
     QMutexLocker l(&displayMutex_);
-    displays_.remove(c->id());
+    displays_.remove(display->id());
+    displayResources_.remove(display);
+
+    metaObject()->invokeMethod(display, "deleteLater");
 }
 
 GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::getDisplay(const QString &id)
@@ -207,6 +225,43 @@ GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::getDisplay(const QStr
         return displays_[id];
 
     return NULL;
+}
+
+GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::acquireDisplay(const QString &id)
+{
+    QMutexLocker l(&displayMutex_);
+
+    GraphicsSceneDisplay *display = getDisplay(id);
+
+    if (display)
+    {
+        DisplayResource &res = displayResources_[display];
+        ++res.useCount;
+        res.lastUsed.restart();
+    }
+
+    return display;
+}
+
+void GraphicsSceneMultiThreadedWebServer::releaseDisplay(GraphicsSceneDisplay *display)
+{
+    QMutexLocker l(&displayMutex_);
+
+    if (display)
+    {
+        DisplayResource &res = displayResources_[display];
+        --res.useCount;
+        res.lastUsed.restart();
+    }
+}
+
+void GraphicsSceneMultiThreadedWebServer::killObsoleteDisplays()
+{
+    QMutexLocker l(&displayMutex_);
+
+    foreach (const DisplayResource &res, displayResources_.values())
+        if (res.useCount == 0 && res.lastUsed.elapsed() > 30000)
+            removeDisplay(res.display);
 }
 
 GraphicsSceneWebControlCommandInterpreter *GraphicsSceneMultiThreadedWebServer::commandInterpreter()

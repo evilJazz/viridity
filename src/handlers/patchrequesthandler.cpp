@@ -18,7 +18,7 @@ bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     QString id = QString(request->url()).mid(1, 40);
-    GraphicsSceneDisplay *display = task_->server()->getDisplay(id);
+    GraphicsSceneDisplay *display = task_->server()->acquireDisplay(id);
 
     if (display)
     {
@@ -31,6 +31,8 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
             patchId = url.mid(indexOfSlash + 1);
 
         Patch *patch = display->takePatch(patchId);
+
+        task_->server()->releaseDisplay(display);
 
         if (patch)
         {
