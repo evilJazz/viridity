@@ -27,7 +27,6 @@ public:
     virtual ~SynchronizedSceneChangedHandler()
     {
         DGUARDMETHODTIMED;
-        disconnect(scene_, SIGNAL(changed(QList<QRectF>)));
     }
 
 signals:

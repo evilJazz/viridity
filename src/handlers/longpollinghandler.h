@@ -24,7 +24,7 @@ private slots:
     void handleResponseDestroyed();
 
 private:
-    GraphicsSceneWebServerConnection *task_;
+    GraphicsSceneWebServerConnection *connection_;
     GraphicsSceneDisplay *display_;
 
     Tufao::HttpServerResponse *response_;

@@ -3,39 +3,24 @@
 //#undef DEBUG
 #include "KCL/debug.h"
 
-#include "private/commandbridge.h"
-
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
-
-#include "graphicsscenewebcontrol.h"
-#include "handlers/graphicssceneinputposthandler.h"
-#include "handlers/commandposthandler.h"
-
 #include <QByteArray>
 #include <QStringList>
 #include <QBuffer>
 #include <QFile>
 #include <QThread>
 
-#include <QUuid>
-#include <QCryptographicHash>
 #include <QMutexLocker>
 #include <QUrl>
 
-QString createUniqueID()
-{
-    QString uuid = QUuid::createUuid().toString();
-    return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
-}
-
 /* GraphicsSceneDisplay */
 
-GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent) :
+GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
     QObject(),
-    server_(parent),
+    scene_(scene),
+    id_(id),
+    commandInterpreter_(commandInterpreter),
     urlMode_(true),
-    updateCheckInterval_(1),
+    updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),
     renderer_(NULL),
@@ -44,25 +29,31 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *
 {
     DGUARDMETHODTIMED;
 
-    id_ = createUniqueID();
-
     renderer_ = new GraphicsSceneBufferRenderer(this);
-    renderer_->setTargetGraphicsScene(server_->scene());
+    renderer_->setTargetGraphicsScene(scene_);
 
     connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
 
-    timer_ = new QTimer(this);
-    connect(timer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
-    timer_->setSingleShot(false);
-    timer_->start(updateCheckInterval_);
+    updateCheckTimer_ = new QTimer(this);
+    connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
+    updateCheckTimer_->setSingleShot(false);
+    updateCheckTimer_->start(updateCheckInterval_);
 
     renderer_->setEnabled(true);
 }
 
 GraphicsSceneDisplay::~GraphicsSceneDisplay()
 {
-    DGUARDMETHODTIMED;
+    DGUARDMETHODTIMED;   
+    updateCheckTimer_->stop();
+
     clearPatches();
+
+    // Explicitly delete renderer so we can use destroyed() signal from a different thread without
+    // fearing to delete scene when children of display are still alive and accessing scene.
+    // Remember: children will get deleted after destroyed() signal was fired...
+    delete renderer_;
+    renderer_ = NULL;
 }
 
 void GraphicsSceneDisplay::clearPatches()
@@ -114,17 +105,17 @@ bool GraphicsSceneDisplay::handleReceivedMessage(const QString &msg, const QStri
     if (msg.startsWith("ready"))
         metaObject()->invokeMethod(
             this, "clientReady",
-            server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+            this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else if (msg.startsWith("requestFullUpdate"))
         metaObject()->invokeMethod(
             renderer_, "fullUpdate",
-            server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+            renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else
         metaObject()->invokeMethod(
-            server_->commandInterpreter(), "sendCommand",
-            server_->scene()->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+            commandInterpreter_, "sendCommand",
+            commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_RETURN_ARG(bool, result),
             Q_ARG(const QString &, msg),
             Q_ARG(const QStringList &, params)
@@ -152,15 +143,14 @@ void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
 {
     DPRINTF("display: %p thread: %p id: %s -> Damaged regions in scene available", this, this->thread(), id().toUtf8().constData());
 
-    if (!timer_->isActive())
-        timer_->start(updateCheckInterval_);
+    if (!updateCheckTimer_->isActive())
+        updateCheckTimer_->start(updateCheckInterval_);
 }
 
 Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
 {
     Patch *patch = new Patch;
 
-    patch->id = createUniqueID();
     patch->rect = rect;
 
     QImage image(rect.size(), QImage::Format_RGB888);
@@ -214,7 +204,7 @@ void GraphicsSceneDisplay::sendUpdate()
     QMutexLocker l(&patchesMutex_);
 
     DPRINTF("display: %p thread: %p id: %s UPDATE AVAILABLE! clientReady_: %s  patches_.count(): %d", this, this->thread(), id().toUtf8().constData(), clientReady_ ? "true" : "false", patches_.count());
-    timer_->stop();
+    updateCheckTimer_->stop();
 
     if (clientReady_ && patches_.count() == 0)
     {
@@ -254,18 +244,17 @@ QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
             if (urlMode_)
             {
                 Patch *patch = createPatch(rect, false);
-
-                QString framePatchId = QString::number(frame_) + "_" + QString::number(i);
+                patch->id = QString::number(frame_) + "_" + QString::number(i);
 
                 QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
                     frame_,
                     rect.x(), rect.y(), rect.width(), rect.height(),
                     patch->mimeType.toLatin1().constData(),
-                    QString("fb:" + id() + "/" + framePatchId).toLatin1().constData()
+                    QString("fb:" + id() + "/" + patch->id).toLatin1().constData()
                 );
 
                 QMutexLocker l(&patchesMutex_);
-                patches_.insert(framePatchId, patch);
+                patches_.insert(patch->id, patch);
 
                 commandList += cmd;
             }

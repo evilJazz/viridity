@@ -5,7 +5,7 @@
 
 FileRequestHandler::FileRequestHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
-    task_(parent)
+    connection_(parent)
 {
 }
 

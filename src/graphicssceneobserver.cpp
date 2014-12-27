@@ -4,7 +4,7 @@
 
 #include "private/synchronizedscenechangedhandler.h"
 
-#undef DEBUG
+//#undef DEBUG
 #include "KCL/debug.h"
 
 GraphicsSceneObserver::GraphicsSceneObserver(QObject *parent) :
@@ -13,10 +13,12 @@ GraphicsSceneObserver::GraphicsSceneObserver(QObject *parent) :
     scene_(NULL),
     sceneChangedHandler_(NULL)
 {
+    DGUARDMETHODTIMED;
 }
 
 GraphicsSceneObserver::~GraphicsSceneObserver()
 {
+    DGUARDMETHODTIMED;
     setEnabled(false);
 }
 
@@ -50,6 +52,7 @@ void GraphicsSceneObserver::setEnabled(bool value)
 
             //disconnect(scene_, SIGNAL(changed(QList<QRectF>)));
             disconnect(scene_, SIGNAL(sceneRectChanged(QRectF)));
+            disconnect(scene_, SIGNAL(destroyed()));
 
             sceneDetached();
         }
@@ -69,6 +72,7 @@ void GraphicsSceneObserver::setEnabled(bool value)
             }
 
             connect(scene_, SIGNAL(sceneRectChanged(QRectF)), this, SLOT(sceneSceneRectChanged(QRectF)));
+            connect(scene_, SIGNAL(destroyed()), this, SLOT(sceneDestroyed()));
         }
     }
 }
@@ -96,4 +100,12 @@ void GraphicsSceneObserver::sceneDetaching()
 void GraphicsSceneObserver::sceneDetached()
 {
     DGUARDMETHODTIMED;
+}
+
+void GraphicsSceneObserver::sceneDestroyed()
+{
+    DGUARDMETHODTIMED;
+    scene_ = NULL;
+    sceneDetached();
+    setEnabled(false);
 }

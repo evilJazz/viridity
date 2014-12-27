@@ -5,20 +5,20 @@
 
 PatchRequestHandler::PatchRequestHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
-    task_(parent)
+    connection_(parent)
 {
 }
 
 bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = QString(request->url()).mid(1, 40);
-    return task_->server()->getDisplay(id) != NULL;
+    return connection_->server()->sessionManager()->getDisplay(id) != NULL;
 }
 
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     QString id = QString(request->url()).mid(1, 40);
-    GraphicsSceneDisplay *display = task_->server()->acquireDisplay(id);
+    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->acquireDisplay(id);
 
     if (display)
     {
@@ -32,7 +32,7 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
 
         Patch *patch = display->takePatch(patchId);
 
-        task_->server()->releaseDisplay(display);
+        connection_->server()->sessionManager()->releaseDisplay(display);
 
         if (patch)
         {

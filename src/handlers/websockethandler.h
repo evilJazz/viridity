@@ -27,7 +27,7 @@ private slots:
     void clientDisconnected();
 
 private:
-    GraphicsSceneWebServerConnection *task_;
+    GraphicsSceneWebServerConnection *connection_;
     GraphicsSceneDisplay *display_;
 
     Tufao::WebSocket *socket_;

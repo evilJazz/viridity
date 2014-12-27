@@ -29,6 +29,7 @@ protected slots:
     virtual void sceneSceneRectChanged(QRectF newRect);
     virtual void sceneDetaching();
     virtual void sceneDetached();
+    virtual void sceneDestroyed();
 
 protected:
     bool enabled_;

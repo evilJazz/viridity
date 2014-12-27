@@ -131,16 +131,12 @@ void GraphicsSceneWebServerConnection::onUpgrade(const QByteArray &head)
 
 /* GraphicsSceneMultiThreadedWebServer */
 
-GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject *parent, QGraphicsScene *scene) :
+GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject *parent, GraphicsSceneDisplaySessionManager *sessionManager) :
     QTcpServer(parent),
-    scene_(scene),
-    displayMutex_(QMutex::Recursive),
+    sessionManager_(sessionManager),
     incomingConnectionCount_(0)
 {
-    commandInterpreter_.setTargetGraphicsScene(scene_);
-
-    connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
-    cleanupTimer_.start(10000);
+    connect(sessionManager_, SIGNAL(newDisplayCreated(GraphicsSceneDisplay*)), this, SLOT(newDisplayCreated(GraphicsSceneDisplay*)));
 }
 
 GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
@@ -185,88 +181,20 @@ void GraphicsSceneMultiThreadedWebServer::listen(const QHostAddress &address, qu
     QTcpServer::listen(address, port);
 }
 
-GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::createDisplay()
+GraphicsSceneDisplaySessionManager *GraphicsSceneMultiThreadedWebServer::sessionManager()
 {
-    QMutexLocker l(&displayMutex_);
+    return sessionManager_;
+}
 
-    GraphicsSceneDisplay *display = new GraphicsSceneDisplay(this);
+void GraphicsSceneMultiThreadedWebServer::newDisplayCreated(GraphicsSceneDisplay *display)
+{
+    DGUARDMETHODTIMED;
 
-    displays_.insert(display->id(), display);
-
-    DisplayResource res;
-    res.display = display;
-    res.lastUsed.restart();
-    res.useCount = 1;
-
-    displayResources_.insert(display, res);
-
-    int threadIndex = displays_.count() % displayThreads_.count();
+    int threadIndex = sessionManager_->displayCount() % displayThreads_.count();
     QThread *workerThread = displayThreads_.at(threadIndex);
     display->moveToThread(workerThread); // Move display to thread's event loop
 
     DPRINTF("New worker thread %p for display id %s", workerThread, display->id().toLatin1().constData());
-
-    return display;
-}
-
-void GraphicsSceneMultiThreadedWebServer::removeDisplay(GraphicsSceneDisplay *display)
-{
-    QMutexLocker l(&displayMutex_);
-    displays_.remove(display->id());
-    displayResources_.remove(display);
-
-    metaObject()->invokeMethod(display, "deleteLater");
-}
-
-GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::getDisplay(const QString &id)
-{
-    QMutexLocker l(&displayMutex_);
-    if (displays_.contains(id))
-        return displays_[id];
-
-    return NULL;
-}
-
-GraphicsSceneDisplay *GraphicsSceneMultiThreadedWebServer::acquireDisplay(const QString &id)
-{
-    QMutexLocker l(&displayMutex_);
-
-    GraphicsSceneDisplay *display = getDisplay(id);
-
-    if (display)
-    {
-        DisplayResource &res = displayResources_[display];
-        ++res.useCount;
-        res.lastUsed.restart();
-    }
-
-    return display;
-}
-
-void GraphicsSceneMultiThreadedWebServer::releaseDisplay(GraphicsSceneDisplay *display)
-{
-    QMutexLocker l(&displayMutex_);
-
-    if (display)
-    {
-        DisplayResource &res = displayResources_[display];
-        --res.useCount;
-        res.lastUsed.restart();
-    }
-}
-
-void GraphicsSceneMultiThreadedWebServer::killObsoleteDisplays()
-{
-    QMutexLocker l(&displayMutex_);
-
-    foreach (const DisplayResource &res, displayResources_.values())
-        if (res.useCount == 0 && res.lastUsed.elapsed() > 30000)
-            removeDisplay(res.display);
-}
-
-GraphicsSceneWebControlCommandInterpreter *GraphicsSceneMultiThreadedWebServer::commandInterpreter()
-{
-    return &commandInterpreter_;
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)

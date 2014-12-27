@@ -8,23 +8,18 @@
 
 #include "private/commandbridge.h"
 
-
-int main(int argc, char *argv[])
+QGraphicsScene *createScene()
 {
-    QApplication a(argc, argv);
+    QDeclarativeEngine *engine = new QDeclarativeEngine();
 
-    const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
+    KCLPlugin *kcl = new KCLPlugin;
+    kcl->initializeEngine(engine, "KCL");
+    kcl->registerTypes("KCL");
 
-    QDeclarativeEngine engine;
-
-    KCLPlugin kcl;
-    kcl.initializeEngine(&engine, "KCL");
-    kcl.registerTypes("KCL");
-
-    QDeclarativeContext *rootContext = engine.rootContext();
+    QDeclarativeContext *rootContext = engine->rootContext();
     rootContext->setContextProperty("commandBridge", &globalCommandBridge);
 
-    QDeclarativeComponent component(&engine, QUrl("qrc:/qml/test.qml"));
+    QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
 
     if (component.status() != QDeclarativeComponent::Ready)
         qFatal("Component is not ready.");
@@ -36,11 +31,38 @@ int main(int argc, char *argv[])
 
     QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
 
-    QGraphicsScene scene;
-    scene.addItem(item);
+    QGraphicsScene *scene = new QGraphicsScene(engine);
+    scene->addItem(item);
 
-    GraphicsSceneMultiThreadedWebServer server(&a, &scene);
-    server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount() * 2);
+    QObject::connect(scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
+
+    return scene;
+}
+
+class MySessionManager : public MultiGraphicsSceneDisplaySessionManager
+{
+protected:
+    QGraphicsScene *getScene(const QString &id)
+    {
+        return createScene();
+    }
+};
+
+int main(int argc, char *argv[])
+{
+    QApplication a(argc, argv);
+
+    const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
+
+    /*
+    QGraphicsScene *scene = createScene();
+    SingleGraphicsSceneDisplaySessionManager sessionManager(&a, scene);
+    */
+
+    MySessionManager sessionManager;
+
+    GraphicsSceneMultiThreadedWebServer server(&a, &sessionManager);
+    server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount());
 
     qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
 

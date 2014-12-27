@@ -14,9 +14,6 @@
 #include <QWaitCondition>
 #include <QThread>
 
-#include <Tufao/HttpServer>
-#include <Tufao/WebSocket>
-
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
@@ -32,16 +29,13 @@ public:
     QBuffer data;
     QString mimeType;
     QByteArray dataBase64;
-    QDateTime deadline;
 };
 
 class GraphicsSceneDisplay : public QObject
 {
     Q_OBJECT
-
-    friend class GraphicsSceneInputPostHandler;
 public:
-    explicit GraphicsSceneDisplay(GraphicsSceneMultiThreadedWebServer *parent);
+    explicit GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter);
     virtual ~GraphicsSceneDisplay();
 
     QString id() const { return id_; }
@@ -63,7 +57,8 @@ private slots:
     void clientReady();
 
 private:
-    GraphicsSceneMultiThreadedWebServer *server_;
+    QGraphicsScene *scene_;
+    GraphicsSceneWebControlCommandInterpreter *commandInterpreter_;
 
     QString id_;
     bool urlMode_;
@@ -73,7 +68,7 @@ private:
 
     int frame_;
 
-    QTimer *timer_;
+    QTimer *updateCheckTimer_;
 
     GraphicsSceneBufferRenderer *renderer_;
     bool clientReady_;

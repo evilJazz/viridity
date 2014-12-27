@@ -21,7 +21,7 @@ public:
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
-    GraphicsSceneWebServerConnection *task_;
+    GraphicsSceneWebServerConnection *connection_;
 
     QHash<QByteArray, QByteArray> fileNames_;
     QHash<QByteArray, QByteArray> contentTypes_;

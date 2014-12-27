@@ -8,6 +8,8 @@ FocusScope {
     height: 768
     focus: true
 
+    Component.onDestruction: console.log("GOODBYE WORLD!")
+
     Rectangle {
         anchors.fill: parent
         color: "lightgray"

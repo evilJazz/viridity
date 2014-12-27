@@ -10,7 +10,7 @@
 
 WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerConnection *parent) :
     QObject(parent),
-    task_(parent),
+    connection_(parent),
     display_(NULL)
 {
     DGUARDMETHODTIMED;
@@ -24,7 +24,7 @@ WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerConnection *parent) :
 WebSocketHandler::~WebSocketHandler()
 {
     if (display_)
-        task_->server()->releaseDisplay(display_);
+        connection_->server()->sessionManager()->releaseDisplay(display_);
 
     DGUARDMETHODTIMED;
 }
@@ -42,7 +42,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         return;
     }
 
-    display_ = task_->server()->createDisplay();
+    display_ = connection_->server()->sessionManager()->getNewDisplay();
 
     connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));
 
@@ -55,7 +55,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = QString(request->url()).mid(1, 40);
-    return task_->server()->getDisplay(id) != NULL;
+    return connection_->server()->sessionManager()->getDisplay(id) != NULL;
 }
 
 void WebSocketHandler::handleDisplayUpdateAvailable()

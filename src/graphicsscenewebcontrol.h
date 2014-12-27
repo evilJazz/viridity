@@ -13,11 +13,11 @@
 #include <QBuffer>
 #include <QMutex>
 #include <QWaitCondition>
-#include <QElapsedTimer>
 
 #include <QGraphicsScene>
 
 #include "graphicsscenewebcontrolcommandinterpreter.h"
+#include "graphicsscenedisplaysessionmanager.h"
 
 class WebSocketHandler;
 class LongPollingHandler;
@@ -67,21 +67,12 @@ class GraphicsSceneMultiThreadedWebServer : public QTcpServer
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneMultiThreadedWebServer(QObject *parent, QGraphicsScene *scene);
-    QGraphicsScene *scene() const { return scene_; }
-
+    explicit GraphicsSceneMultiThreadedWebServer(QObject *parent, GraphicsSceneDisplaySessionManager *sessionManager);
     virtual ~GraphicsSceneMultiThreadedWebServer();
 
     void listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
-    GraphicsSceneDisplay *createDisplay();
-
-    GraphicsSceneDisplay *getDisplay(const QString &id);
-
-    GraphicsSceneDisplay *acquireDisplay(const QString &id);
-    void releaseDisplay(GraphicsSceneDisplay *display);
-
-    GraphicsSceneWebControlCommandInterpreter *commandInterpreter();
+    GraphicsSceneDisplaySessionManager *sessionManager();
 
 protected:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -90,31 +81,16 @@ protected:
     virtual void incomingConnection(int handle);
 #endif
 
-    void removeDisplay(GraphicsSceneDisplay *display);
-
 private slots:
-    void killObsoleteDisplays();
+    void newDisplayCreated(GraphicsSceneDisplay *display);
 
 private:
-    QGraphicsScene *scene_;
-    QMutex displayMutex_;
-    QHash<QString, GraphicsSceneDisplay *> displays_;
-
-    GraphicsSceneWebControlCommandInterpreter commandInterpreter_;
+    GraphicsSceneDisplaySessionManager *sessionManager_;
 
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;
 
     QList<QThread *> displayThreads_;
-
-    struct DisplayResource {
-        GraphicsSceneDisplay *display;
-        QElapsedTimer lastUsed;
-        int useCount;
-    };
-
-    QHash<GraphicsSceneDisplay *, DisplayResource> displayResources_;
-    QTimer cleanupTimer_;
 };
 
 #endif // GRAPHICSSCENEWEBCONTROL_H
