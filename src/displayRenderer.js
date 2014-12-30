@@ -270,6 +270,19 @@ var DisplayRenderer = function() {
             $.ajax(options);
         },
 
+        _serverSentEventsMessageReceived: function(e)
+        {
+            var lines = e.data.split("\n");
+
+            for (var i = 0, ii = lines.length; i < ii; i++)
+            {
+                //console.log("line " + i + ": " + lines[i] + "\n");
+                dr.processPlainMessage(lines[i]);
+            }
+
+            dr._longPollingCheckInputEventsStarted();
+        },
+
         processPlainMessage: function(data, useBlobBuilder)
         {
             var msg = {};
@@ -604,27 +617,16 @@ var DisplayRenderer = function() {
             else if (dr.connectionMethod === ConnectionMethod.ServerSentEvents)
             {
                 dr.eventSource = new EventSource("events");
-
-                dr.eventSource.addEventListener("message", function(e)
-                {
-                    var lines = e.data.split("\n");
-
-                    for (var i = 0, ii = lines.length; i < ii; i++)
-                    {
-                        //console.log("line " + i + ": " + lines[i] + "\n");
-                        dr.processPlainMessage(lines[i]);
-                    }
-
-                    dr._longPollingCheckInputEventsStarted();
-                });
+                dr.eventSource.onmessage = dr._serverSentEventsMessageReceived;
+                dr.eventSource.onerror = dr.reconnect;
             }
             else if (dr.connectionMethod === ConnectionMethod.WebSockets)
             {
                 dr.socket = new WebSocket("ws://" + dr.location + "/display");
 
                 dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
-                dr.socket.onerror = function() { dr.reconnect(); }
-                dr.socket.onclose = function() { dr.reconnect(); }
+                dr.socket.onerror = dr.reconnect;
+                dr.socket.onclose = dr.reconnect;
             }
         }
     }
