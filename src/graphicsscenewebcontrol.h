@@ -20,6 +20,7 @@
 #include "graphicsscenedisplaysessionmanager.h"
 
 class WebSocketHandler;
+class SSEHandler;
 class LongPollingHandler;
 class PatchRequestHandler;
 class FileRequestHandler;
@@ -50,6 +51,7 @@ private slots:
 
 private:
     WebSocketHandler *webSocketHandler_;
+    SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
     PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;

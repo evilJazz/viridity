@@ -41,8 +41,8 @@
     <script src="displayRenderer.js"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            var usingLongPolling = true;
-            displayRenderer.init(usingLongPolling);
+            displayRenderer.init(ConnectionMethod.ServerSentEvents);
+            //displayRenderer.init(ConnectionMethod.LongPolling);
 
             function resizeToWindow()
             {

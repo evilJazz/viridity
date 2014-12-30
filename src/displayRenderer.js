@@ -52,6 +52,13 @@ var Base64Binary = {
             }
 }
 
+var ConnectionMethod = {
+    Auto: -1,
+    LongPolling: 0,
+    ServerSentEvents: 1,
+    WebSockets: 2
+};
+
 var DisplayRenderer = function() {
 
     var debugVerbosity = 0;
@@ -59,9 +66,12 @@ var DisplayRenderer = function() {
 
     var dr =
     {
-        useLongPolling: true,
+        connectionMethod: ConnectionMethod.Auto,
 
         socket: 0,
+
+        eventSource: 0,
+
         canvas: 0,
         ctx: 0,
 
@@ -81,6 +91,7 @@ var DisplayRenderer = function() {
         connectionId: "",
 
         inputEvents: [],
+        inputEventsStarted: false,
 
         _imageDone: function()
         {
@@ -210,6 +221,15 @@ var DisplayRenderer = function() {
             }
         },
 
+        _longPollingCheckInputEventsStarted: function()
+        {
+            if (!dr.inputEventsStarted)
+            {
+                dr._longPollingSendInputEvents();
+                dr.inputEventsStarted = true;
+            }
+        },
+
         _longPollingReceiveOutputMessages: function()
         {
             var options =
@@ -234,6 +254,7 @@ var DisplayRenderer = function() {
                     }
 
                     setTimeout(function() { dr._longPollingReceiveOutputMessages() }, dr.pause);
+                    dr._longPollingCheckInputEventsStarted();
                 },
                 error: function(xhr, status, exception)
                 {
@@ -391,9 +412,10 @@ var DisplayRenderer = function() {
             if (debugVerbosity > 0)
                 console.log("Sending message to server: " + msg);
 
-            if (!dr.useLongPolling)
+            if (dr.connectionMethod === ConnectionMethod.WebSockets)
                 dr.socket.send(msg);
-            else
+            else if (dr.connectionMethod === ConnectionMethod.LongPolling || 
+                     dr.connectionMethod === ConnectionMethod.ServerSentEvents)
                 dr.inputEvents.push(msg);
         },
 
@@ -441,17 +463,22 @@ var DisplayRenderer = function() {
             dr.requestFullUpdate();
         },
 
-        init: function(useLongPolling)
+        init: function(connectionMethod)
         {
-            useLongPolling = useLongPolling || false;
-            dr.useLongPolling = useLongPolling;
+            dr.connectionMethod = connectionMethod;
+
+            if (dr.connectionMethod === ConnectionMethod.Auto)
+                dr.connectionMethod = ConnectionMethod.WebSockets;
+
+            if (dr.connectionMethod === ConnectionMethod.WebSockets && !window.hasOwnProperty("WebSocket"))
+                dr.connectionMethod = ConnectionMethod.ServerSentEvents;
+
+            if (dr.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
+                dr.connectionMethod = ConnectionMethod.LongPolling;
 
             var hostWithPath = window.location.host + window.location.pathname;
             hostWithPath = hostWithPath.replace(/\/$/, "");
             dr.location = hostWithPath;
-
-            if (!dr.useLongPolling)
-                dr.socket = new WebSocket("ws://" + dr.location + "/display");
 
             dr.canvas = document.createElement("canvas");
             dr.ctx = dr.canvas.getContext("2d");
@@ -570,13 +597,31 @@ var DisplayRenderer = function() {
             $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
             $(dr.frontCanvas).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
 
-            if (dr.useLongPolling)
+            if (dr.connectionMethod === ConnectionMethod.LongPolling)
             {
                 dr._longPollingReceiveOutputMessages();
-                dr._longPollingSendInputEvents();
             }
-            else
+            else if (dr.connectionMethod === ConnectionMethod.ServerSentEvents)
             {
+                dr.eventSource = new EventSource("events");
+
+                dr.eventSource.addEventListener("message", function(e)
+                {
+                    var lines = e.data.split("\n");
+
+                    for (var i = 0, ii = lines.length; i < ii; i++)
+                    {
+                        //console.log("line " + i + ": " + lines[i] + "\n");
+                        dr.processPlainMessage(lines[i]);
+                    }
+
+                    dr._longPollingCheckInputEventsStarted();
+                });
+            }
+            else if (dr.connectionMethod === ConnectionMethod.WebSockets)
+            {
+                dr.socket = new WebSocket("ws://" + dr.location + "/display");
+
                 dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
                 dr.socket.onerror = function() { dr.reconnect(); }
                 dr.socket.onclose = function() { dr.reconnect(); }

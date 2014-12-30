@@ -23,6 +23,7 @@
 #include "handlers/graphicssceneinputposthandler.h"
 #include "handlers/commandposthandler.h"
 #include "handlers/websockethandler.h"
+#include "handlers/ssehandler.h"
 #include "handlers/longpollinghandler.h"
 #include "handlers/patchrequesthandler.h"
 #include "handlers/filerequesthandler.h"
@@ -36,6 +37,7 @@ GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(GraphicsScene
 #endif
     QObject(),
     webSocketHandler_(NULL),
+    sseHandler_(NULL),
     longPollingHandler_(NULL),
     patchRequestHandler_(NULL),
     fileRequestHandler_(NULL),
@@ -78,6 +80,7 @@ void GraphicsSceneWebServerConnection::setupConnection()
     connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 
     webSocketHandler_ = new WebSocketHandler(this);
+    sseHandler_ = new SSEHandler(this);
     longPollingHandler_ = new LongPollingHandler(this);
     patchRequestHandler_ = new PatchRequestHandler(this);
     fileRequestHandler_ = new FileRequestHandler(this);
@@ -105,6 +108,10 @@ void GraphicsSceneWebServerConnection::onRequestReady()
     if (fileRequestHandler_->doesHandleRequest(request))
     {
         fileRequestHandler_->handleRequest(request, response);
+    }
+    else if (sseHandler_->doesHandleRequest(request))
+    {
+        sseHandler_->handleRequest(request, response);
     }
     else if (longPollingHandler_->doesHandleRequest(request))
     {
