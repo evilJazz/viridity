@@ -187,12 +187,13 @@ var DisplayRenderer = function() {
         {
             if (dr.inputEvents.length > 0)
             {
-                var data = dr.inputEvents.splice(0).join("\n");
+                var data = dr.inputEvents.join("\n");
+                dr.inputEvents = [];
                 var options =
                 {
                     type: "POST",
                     url: "display?id=" + dr.connectionId,
-                    async: false,
+                    async: true,
                     cache: false,
                     timeout: dr.timeout,
                     data: data,
