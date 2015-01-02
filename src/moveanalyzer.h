@@ -64,6 +64,11 @@ private:
     void internalUpdateFromImage(QImage *image, const QRect &rect, int startIndex);
 };
 
+struct AreaFingerPrintsPositionMatcher
+{
+    virtual bool positionMatches(const QPoint &pos) = 0;
+};
+
 class VIRIDITY_EXPORT AreaFingerPrints
 {
 public:
@@ -89,8 +94,8 @@ public:
 
     int templateWidth() const { return hashedArea_.width() - width_ + 1; }
 
-    bool findPosition(const AreaFingerPrint &needle, QPoint &result);
-    bool findPosition(const AreaFingerPrint &needle, const QRect &searchArea, QPoint &result);
+    bool findPosition(const AreaFingerPrint &needle, QPoint &result, AreaFingerPrintsPositionMatcher *matcher = 0);
+    bool findPosition(const AreaFingerPrint &needle, const QRect &searchArea, QPoint &result, AreaFingerPrintsPositionMatcher *matcher = 0);
 
 private:
     int width_;
@@ -109,7 +114,8 @@ public:
     virtual ~MoveAnalyzer();
 
     QRect findMovedRect(const QRect &searchArea, const QRect &templateRect);
-    QRect findMovedRectNaive(const QRect &searchArea, const QRect &templateRect);
+    QRect findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect);
+    QRect findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect);
 
     void swap();
     void updateArea(const QRect &rect);

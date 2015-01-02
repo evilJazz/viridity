@@ -29,7 +29,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.h \
     $$VIRIDITY_SRC_PATH/graphicsscenedisplaysessionmanager.h \
-    $$VIRIDITY_SRC_PATH/handlers/ssehandler.h
+    $$VIRIDITY_SRC_PATH/handlers/ssehandler.h \
+    $$VIRIDITY_SRC_PATH/tiledregion.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/moveanalyzer.cpp \
@@ -50,7 +51,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.cpp \
     $$VIRIDITY_SRC_PATH/graphicsscenedisplaysessionmanager.cpp \
-    $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp
+    $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp \
+    $$VIRIDITY_SRC_PATH/tiledregion.cpp
 
 OTHER_FILES += \
     $$VIRIDITY_SRC_PATH/displayRenderer.js \

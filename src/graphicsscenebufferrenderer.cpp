@@ -85,12 +85,13 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
         }
     }
 
-    region_ = QRegion();
+    region_.clear();
     updatesAvailable_ = false;
 
     return ops;
 }
 
+/*
 QRegion GraphicsSceneBufferRenderer::updateBuffer()
 {
     DGUARDMETHODTIMED;
@@ -120,11 +121,12 @@ QRegion GraphicsSceneBufferRenderer::updateBuffer()
         }
     }
 
-    region_ = QRegion();
+    region_ = TiledRegion();
     updatesAvailable_ = false;
 
     return result;
 }
+*/
 
 void GraphicsSceneBufferRenderer::fullUpdate()
 {
@@ -155,7 +157,7 @@ void GraphicsSceneBufferRenderer::setSizeFromScene()
         otherBuffer_ = &buffer2_;
 
         initComparer();
-        region_ = QRegion();
+        region_.clear();
         fullUpdate();
     }
 }
@@ -196,7 +198,7 @@ void GraphicsSceneBufferRenderer::sceneDetached()
     QMutexLocker m(&bufferAndRegionMutex_);
     buffer1_ = QImage();
     buffer2_ = QImage();
-    region_ = QRegion();
+    region_.clear();
 }
 
 void GraphicsSceneBufferRenderer::swapWorkBuffer()

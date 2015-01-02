@@ -399,7 +399,7 @@ void AreaFingerPrints::initFromImageThreaded(QImage *image, const QRect &area, i
 }
 */
 
-bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, QPoint &result)
+bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, QPoint &result, AreaFingerPrintsPositionMatcher *matcher)
 {
     DGUARDMETHODPROFILED;
 
@@ -410,14 +410,15 @@ bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, QPoint &resul
         if (index > -1)
         {
             result = QPoint(line, index);
-            return true;
+            if (!matcher || (matcher && matcher->positionMatches(result)))
+                return true;
         }
     }
 
     return false;
 }
 
-bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &searchArea, QPoint &result)
+bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &searchArea, QPoint &result, AreaFingerPrintsPositionMatcher *matcher)
 {
     DGUARDMETHODPROFILED;
 
@@ -441,7 +442,8 @@ bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, const QRect &
         if (index > -1)
         {
             result = QPoint(column, index);
-            return true;
+            if (!matcher || (matcher && matcher->positionMatches(result)))
+                return true;
         }
     }
 
@@ -601,27 +603,46 @@ QRect MoveAnalyzer::processRect(const QRect &rect)
     return movedSrcRect;
 }
 
+struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPositionMatcher
+{
+    QImage *imageBefore;
+    QImage *imageAfter;
+    QRect templateRect;
+
+    virtual bool positionMatches(const QPoint &pos)
+    {
+        return contentMatches(imageBefore, imageAfter, pos, templateRect);
+    }
+};
+
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
 {
     DGUARDMETHODTIMED;
     //return findMovedRectNaive(searchArea, templateRect);
 
     if (templateRect.width() % searchAreaFingerPrints_.templateWidth() != 0)
-        return findMovedRectNaive(searchArea, templateRect);
+        return findMovedRectExhaustive(searchArea, templateRect);
     else
-    {
-        AreaFingerPrint templateFingerPrint(imageAfter_, templateRect);
-
-        QPoint result;
-
-        if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result))
-            return QRect(hashArea_.topLeft() + result, templateRect.size());
-        else
-            return QRect();
-    }
+        return findMovedRectAreaFingerPrint(searchArea, templateRect);
 }
 
-QRect MoveAnalyzer::findMovedRectNaive(const QRect &searchArea, const QRect &templateRect)
+QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect)
+{
+    AreaFingerPrint templateFingerPrint(imageAfter_, templateRect);
+
+    QPoint result;
+    MoveAnalyzerAreaFingerPrintsPositionMatcher matcher;
+    matcher.imageAfter = imageAfter_;
+    matcher.imageBefore = imageBefore_;
+    matcher.templateRect = templateRect;
+
+    if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result, &matcher))
+        return QRect(hashArea_.topLeft() + result, templateRect.size());
+    else
+        return QRect();
+}
+
+QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect)
 {
     //DGUARDMETHODTIMED;
     QRect roi = searchArea.intersected(imageBefore_->rect()).intersected(imageAfter_->rect());

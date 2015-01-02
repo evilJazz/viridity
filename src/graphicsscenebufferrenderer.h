@@ -10,6 +10,7 @@
 
 #include "graphicssceneobserver.h"
 #include "imagecomparer.h"
+#include "tiledregion.h"
 
 class VIRIDITY_EXPORT GraphicsSceneBufferRenderer : public GraphicsSceneObserver
 {
@@ -21,7 +22,7 @@ public:
     void setMinimizeDamageRegion(bool value);
     bool minimizeDamageRegion() { return minimizeDamageRegion_; }
 
-    QRegion updateBuffer();
+    //QRegion updateBuffer();
     UpdateOperationList updateBufferExt();
     QImage buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
@@ -50,7 +51,7 @@ protected:
     QImage *otherBuffer_;
     QImage buffer1_;
     QImage buffer2_;
-    QRegion region_;
+    TiledRegion region_;
     ImageComparer *comparer_;
 
     void setSizeFromScene();
