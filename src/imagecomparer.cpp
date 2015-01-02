@@ -6,7 +6,7 @@
 #undef DEBUG
 #include "KCL/debug.h"
 
-//#define USE_MOVE_ANALYZER
+#define USE_MOVE_ANALYZER
 #define USE_FILL_ANALYZER
 //#define USE_MULTITHREADING
 
@@ -507,7 +507,7 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op)
     damagedAreas_.append(rect); // used for updating MoveAnalyzer instance in swap()
     l.unlock();
 
-    if (movedRectSearchEnabled_ && rect.width() == tileWidth_)
+    if (movedRectSearchEnabled_)
     {
         QRect movedSrcRect;
         QRect movedRectSearchArea;

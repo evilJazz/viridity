@@ -151,7 +151,7 @@ var DisplayRenderer = function() {
 
         _debugDraw: function()
         {
-            var alpha = 0.5;
+            var alpha = 0.2;
 
             for (var i = 0; i < dr.frameCommands.length; ++i)
             {
@@ -162,23 +162,83 @@ var DisplayRenderer = function() {
                 dr.frontCtx.strokeStyle = "rgba(0, 0, 0, 0.8)";
                 dr.frontCtx.lineWidth = 0.2;
 
+                var x1 = parseInt(inputParams[1]);
+                var y1 = parseInt(inputParams[2]);
+                var w = parseInt(inputParams[3]);
+                var h = parseInt(inputParams[4]);
+
                 if (command === "fillRect")
                 {
                     dr.frontCtx.fillStyle = "rgba(0, 255, 0, " + alpha + ")";
-                    dr.frontCtx.fillRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
-                    dr.frontCtx.strokeRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                    dr.frontCtx.fillRect(x1, y1, w, h);
+                    dr.frontCtx.strokeRect(x1, y1, w, h);
                 }
                 else if (command === "moveImage")
                 {
+                    var x2 = parseInt(inputParams[5]);
+                    var y2 = parseInt(inputParams[6]);
+
+                    var centerX1 = x1 + w / 2;
+                    var centerY1 = y1 + h / 2;
+
+                    var centerX2 = x2 + w / 2;
+                    var centerY2 = y2 + h / 2;
+
+                    // Draw source rect
+                    dr.frontCtx.fillStyle = "rgba(255, 0, 255, " + alpha + ")";
+                    dr.frontCtx.fillRect(x1, y1, w, h);
+                    dr.frontCtx.strokeRect(x1, y1, w, h);
+
+                    dr.frontCtx.moveTo(x1, y1)
+                    dr.frontCtx.lineTo(x1 + w, y1 + h);
+                    dr.frontCtx.moveTo(x1 + w, y1)
+                    dr.frontCtx.lineTo(x1, y1 + h);
+                    dr.frontCtx.stroke();
+
+                    // Draw destination rect
                     dr.frontCtx.fillStyle = "rgba(0, 0, 255, " + alpha + ")";
-                    dr.frontCtx.fillRect(inputParams[5], inputParams[6], inputParams[3], inputParams[4]);
-                    dr.frontCtx.strokeRect(inputParams[5], inputParams[6], inputParams[3], inputParams[4]);
+                    dr.frontCtx.fillRect(x2, y2, w, h);
+                    dr.frontCtx.strokeRect(x2, y2, w, h);
+
+                    dr.frontCtx.moveTo(x2, y2)
+                    dr.frontCtx.lineTo(x2 + w, y2 + h);
+                    dr.frontCtx.moveTo(x2 + w, y2)
+                    dr.frontCtx.lineTo(x2, y2 + h);
+                    dr.frontCtx.stroke();
+
+                    // Draw vector
+                    dr.frontCtx.strokeStyle = "rgba(255, 255, 255, 1)";
+                    dr.frontCtx.fillStyle = "rgba(255, 255, 255, 1)";
+
+                    // Draw vector line butt
+                    dr.frontCtx.beginPath();
+                    dr.frontCtx.arc(centerX1, centerY1, 2, 0, 2 * Math.PI, false);
+                    dr.frontCtx.fill();
+                    dr.frontCtx.stroke();
+
+                    // Draw vector line with arrow
+                    dr.frontCtx.beginPath();
+                    dr.frontCtx.lineWidth = 1;
+
+                    function drawArrow(context, fromx, fromy, tox, toy)
+                    {
+                        var headlen = 5;   // length of head in pixels
+                        var angle = Math.atan2(toy - fromy, tox - fromx);
+                        context.moveTo(fromx, fromy);
+                        context.lineTo(tox, toy);
+                        context.lineTo(tox - headlen * Math.cos(angle - Math.PI / 6), toy - headlen * Math.sin(angle - Math.PI / 6));
+                        context.moveTo(tox, toy);
+                        context.lineTo(tox - headlen * Math.cos(angle + Math.PI / 6), toy - headlen * Math.sin(angle + Math.PI / 6));
+                    }
+
+                    drawArrow(dr.frontCtx, centerX1, centerY1, centerX2, centerY2);
+                    dr.frontCtx.stroke();
                 }
                 else if (command === "drawImage")
                 {
                     dr.frontCtx.fillStyle = "rgba(255, 0, 0, " + alpha + ")";
-                    dr.frontCtx.fillRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
-                    dr.frontCtx.strokeRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                    dr.frontCtx.fillRect(x1, y1, w, h);
+                    dr.frontCtx.strokeRect(x1, y1, w, h);
                 }
             }
         },

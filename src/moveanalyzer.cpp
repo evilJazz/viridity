@@ -7,8 +7,8 @@
 #include "KCL/debug.h"
 
 #define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))
-#define OPTIMIZE_UNROLL_LOOPS
-#define OPTIMIZE_CONDITIONAL_OPT
+//#define OPTIMIZE_UNROLL_LOOPS
+//#define OPTIMIZE_CONDITIONAL_OPT
 
 //#define USE_MULTITHREADING
 
@@ -62,7 +62,7 @@ void AreaFingerPrint::initFromSize(int height)
     {
         clear();
         size_ = height;
-        data_ = new quint32[height];
+        data_ = new AreaFingerPrintHash[height];
     }
 }
 
@@ -70,50 +70,7 @@ void AreaFingerPrint::initFromImage(QImage *image, const QRect &area)
 {
     QRect rect = area.intersected(image->rect());
     initFromSize(rect.height());
-
-    quint32 *pBuf;
-#ifdef OPTIMIZE_UNROLL_LOOPS
-    int lim = roundDownToMultipleOf(rect.width(), 16);
-#endif
-
-    for (int y = 0; y < rect.height(); ++y)
-    {
-        pBuf = (quint32 *)image->scanLine(rect.top() + y) + rect.left();
-
-        quint32 hash = 0;
-        int x = 0;
-
-#ifdef OPTIMIZE_UNROLL_LOOPS
-        for (; x < lim; x += 16)
-        {
-            hash += pBuf[x + 0];
-            hash += pBuf[x + 1];
-            hash += pBuf[x + 2];
-            hash += pBuf[x + 3];
-            hash += pBuf[x + 4];
-            hash += pBuf[x + 5];
-            hash += pBuf[x + 6];
-            hash += pBuf[x + 7];
-            hash += pBuf[x + 8];
-            hash += pBuf[x + 9];
-            hash += pBuf[x + 10];
-            hash += pBuf[x + 11];
-            hash += pBuf[x + 12];
-            hash += pBuf[x + 13];
-            hash += pBuf[x + 14];
-            hash += pBuf[x + 15];
-        }
-
-        pBuf += x;
-#endif
-        for (; x < rect.width(); ++x)
-        {
-            hash += (*pBuf);
-            ++pBuf;
-        }
-
-        data_[y] = hash;
-    }
+    internalUpdateFromImage(image, rect, 0);
 }
 
 void AreaFingerPrint::updateFromImage(QImage *image, const QRect &area, int startIndex)
@@ -122,13 +79,12 @@ void AreaFingerPrint::updateFromImage(QImage *image, const QRect &area, int star
         return;
 
     QRect rect = area.intersected(image->rect());
+    internalUpdateFromImage(image, rect, startIndex);
+}
 
-    //int endIndex = qMin(size() - 1, startIndex + rect.height() - 1);
-
+void AreaFingerPrint::internalUpdateFromImage(QImage *image, const QRect &rect, int startIndex)
+{
     quint32 *pBuf;
-#ifdef OPTIMIZE_UNROLL_LOOPS
-    int limX = roundDownToMultipleOf(rect.width(), 16);
-#endif
 
     int limY = qMin(rect.height(), size_ - startIndex);
 
@@ -136,35 +92,12 @@ void AreaFingerPrint::updateFromImage(QImage *image, const QRect &area, int star
     {
         pBuf = (quint32 *)image->scanLine(rect.top() + y) + rect.left();
 
-        quint32 hash = 0;
+        AreaFingerPrintHash hash;
         int x = 0;
 
-#ifdef OPTIMIZE_UNROLL_LOOPS
-        for (; x < limX; x += 16)
-        {
-            hash += pBuf[x + 0];
-            hash += pBuf[x + 1];
-            hash += pBuf[x + 2];
-            hash += pBuf[x + 3];
-            hash += pBuf[x + 4];
-            hash += pBuf[x + 5];
-            hash += pBuf[x + 6];
-            hash += pBuf[x + 7];
-            hash += pBuf[x + 8];
-            hash += pBuf[x + 9];
-            hash += pBuf[x + 10];
-            hash += pBuf[x + 11];
-            hash += pBuf[x + 12];
-            hash += pBuf[x + 13];
-            hash += pBuf[x + 14];
-            hash += pBuf[x + 15];
-        }
-
-        pBuf += x;
-#endif
         for (; x < rect.width(); ++x)
         {
-            hash += (*pBuf);
+            hash.add(*pBuf);
             ++pBuf;
         }
 
@@ -190,12 +123,12 @@ int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int 
     if (endIndex < startIndex)
         return -1;
 
-    const quint32 *haystackData = constData();
-    const quint32 *needleData = needle.constData();
+    const AreaFingerPrintHash *haystackData = constData();
+    const AreaFingerPrintHash *needleData = needle.constData();
 
     if (needleSize > 1)
     {
-        int needleSizeBytes = needleSize * sizeof(quint32);
+        int needleSizeBytes = needleSize * sizeof(AreaFingerPrintHash);
 
         int index = startIndex;
         for (; index <= endIndex; ++index)
@@ -328,6 +261,7 @@ void AreaFingerPrints::updateFromImageSlow(QImage *image, const QRect &area)
     }
 }
 
+/*
 void AreaFingerPrints::initFromImageFast(QImage *image, const QRect &area, int templateWidth)
 {
     DGUARDMETHODPROFILED;
@@ -463,6 +397,7 @@ void AreaFingerPrints::initFromImageThreaded(QImage *image, const QRect &area, i
 #endif
     }
 }
+*/
 
 bool AreaFingerPrints::findPosition(const AreaFingerPrint &needle, QPoint &result)
 {
@@ -523,7 +458,7 @@ bool AreaFingerPrints::isEqual(const AreaFingerPrints &other)
         if (fingerPrints_[y]->size() != other.fingerPrints_[y]->size())
             return false;
 
-        if (memcmp(fingerPrints_[y]->data(), other.fingerPrints_[y]->data(), fingerPrints_[y]->size() * sizeof(quint32)) != 0)
+        if (memcmp(fingerPrints_[y]->data(), other.fingerPrints_[y]->data(), fingerPrints_[y]->size() * sizeof(AreaFingerPrintHash)) != 0)
             return false;
     }
 
@@ -577,17 +512,22 @@ void MoveAnalyzer::updateArea(const QRect &rect)
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
 {
-    //DGUARDMETHODTIMED;
+    DGUARDMETHODTIMED;
     //return findMovedRectNaive(searchArea, templateRect);
 
-    AreaFingerPrint templateFingerPrint(imageAfter_, templateRect);
-
-    QPoint result;
-
-    if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result))
-        return QRect(hashArea_.topLeft() + result, templateRect.size());
+    if (templateRect.width() % searchAreaFingerPrints_.templateWidth() != 0)
+        return findMovedRectNaive(searchArea, templateRect);
     else
-        return QRect();
+    {
+        AreaFingerPrint templateFingerPrint(imageAfter_, templateRect);
+
+        QPoint result;
+
+        if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result))
+            return QRect(hashArea_.topLeft() + result, templateRect.size());
+        else
+            return QRect();
+    }
 }
 
 QRect MoveAnalyzer::findMovedRectNaive(const QRect &searchArea, const QRect &templateRect)

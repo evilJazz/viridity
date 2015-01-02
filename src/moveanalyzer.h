@@ -8,13 +8,43 @@
 #include <QRect>
 #include <QImage>
 
+//typedef quint64 AreaFingerPrintHash;
+
+
+struct AreaFingerPrintHash
+{
+    AreaFingerPrintHash() : hash_(0), average_(0) {}
+
+    inline void add(const quint32 &pixel)
+    {
+        hash_ += pixel;
+        average_ = (average_ + pixel) / 2;
+    }
+
+    void reset()
+    {
+        hash_ = 0;
+        average_ = 0;
+    }
+
+    inline bool operator==(const AreaFingerPrintHash &other) const
+    {
+        return other.average_ == this->average_ &&
+               other.hash_ == this->hash_;
+    }
+
+    quint32 hash_;
+    quint32 average_;
+};
+
+
 class VIRIDITY_EXPORT AreaFingerPrint
 {
 public:
     explicit AreaFingerPrint();
     explicit AreaFingerPrint(QImage *image, const QRect &area);
     explicit AreaFingerPrint(int height);
-    virtual ~AreaFingerPrint();
+    ~AreaFingerPrint();
 
     void clear();
 
@@ -26,29 +56,31 @@ public:
     int size() const { return size_; }
     int indexOf(const AreaFingerPrint &needle, int startIndex = 0, int endIndex = -1);
 
-    inline quint32 *data() { return data_; }
-    inline const quint32 *constData() const { return data_; }
+    inline AreaFingerPrintHash *data() { return data_; }
+    inline const AreaFingerPrintHash *constData() const { return data_; }
 
 private:
     int size_;
-    quint32 *data_;
+    AreaFingerPrintHash *data_;
+
+    void internalUpdateFromImage(QImage *image, const QRect &rect, int startIndex);
 };
 
 class VIRIDITY_EXPORT AreaFingerPrints
 {
 public:
     explicit AreaFingerPrints();
-    virtual ~AreaFingerPrints();
+    ~AreaFingerPrints();
 
     void clear();
 
     void initFromSize(int width, int height, int templateWidth);
     void initFromImageSlow(QImage *image, const QRect &area, int templateWidth);
-    void initFromImageFast(QImage *image, const QRect &area, int templateWidth);
-    void initFromImageThreaded(QImage *image, const QRect &area, int templateWidth);
+    //void initFromImageFast(QImage *image, const QRect &area, int templateWidth);
+    //void initFromImageThreaded(QImage *image, const QRect &area, int templateWidth);
 
     void updateFromImageSlow(QImage *image, const QRect &area);
-    void updateFromImageFast(QImage *image, const QRect &area);
+    //void updateFromImageFast(QImage *image, const QRect &area);
 
     int width() const { return width_; }
     int height() const { return height_; }

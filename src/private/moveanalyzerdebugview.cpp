@@ -40,8 +40,8 @@ void MoveAnalyzerDebugView::moveAnalyzerChanged()
     {
         for (int x = 0; x < image_.width(); ++x)
         {
-            quint32 value = fps->fingerPrints()[x]->data()[y];
-            image_.setPixel(x, y, value);
+            //quint32 value = fps->fingerPrints()[x]->data()[y];
+            //image_.setPixel(x, y, value);
         }
     }
 
