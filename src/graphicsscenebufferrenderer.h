@@ -6,6 +6,7 @@
 #include <QImage>
 #include <QPainter>
 #include <QRegion>
+#include <QMutex>
 
 #include "graphicssceneobserver.h"
 #include "imagecomparer.h"

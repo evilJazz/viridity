@@ -7,9 +7,7 @@
 #include <QVector>
 #include <QRect>
 #include <QImage>
-
-//typedef quint64 AreaFingerPrintHash;
-
+#include <QMutex>
 
 struct AreaFingerPrintHash
 {
@@ -116,6 +114,9 @@ public:
     void swap();
     void updateArea(const QRect &rect);
 
+    void startNewSearch();
+    QRect processRect(const QRect &rect);
+
 signals:
     void changed();
 
@@ -128,6 +129,13 @@ private:
     int templateWidth_;
     AreaFingerPrints searchAreaFingerPrints_;
     MoveAnalyzerDebugView *debugView_;
+
+    QList<QRect> damagedAreas_;
+
+    QMutex mutex_;
+    int movedRectSearchMisses_;
+    bool movedRectSearchEnabled_;
+    QList<QPoint> lastSuccessfulMoveVectors_;
 };
 
 #endif // MOVEANALYZER_H

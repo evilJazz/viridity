@@ -474,7 +474,10 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
     imageAfter_(imageAfter),
     hashArea_(hashArea),
     templateWidth_(templateWidth),
-    debugView_(NULL)
+    debugView_(NULL),
+    mutex_(QMutex::Recursive),
+    movedRectSearchMisses_(0),
+    movedRectSearchEnabled_(true)
 {
     //hashArea_ = imageBefore_->rect();
     searchAreaFingerPrints_.initFromImageSlow(imageBefore_, hashArea_, templateWidth);
@@ -496,9 +499,22 @@ MoveAnalyzer::~MoveAnalyzer()
 
 void MoveAnalyzer::swap()
 {
+    QRegion region;
+    foreach (const QRect &rect, damagedAreas_)
+        region += rect;
+
+    damagedAreas_.clear();
+
+    while (lastSuccessfulMoveVectors_.count() > 10)
+        lastSuccessfulMoveVectors_.removeLast();
+
     QImage *temp = imageBefore_;
     imageBefore_ = imageAfter_;
     imageAfter_ = temp;
+
+    const QVector<QRect> rects = region.rects();
+    foreach (const QRect &rect, rects)
+        updateArea(rect);
 
     emit changed();
 }
@@ -508,6 +524,81 @@ void MoveAnalyzer::updateArea(const QRect &rect)
     searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, rect);
     //searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, imageBefore_->rect());
     emit changed();
+}
+
+void MoveAnalyzer::startNewSearch()
+{
+    movedRectSearchMisses_ = 0;
+    movedRectSearchEnabled_ = true;
+}
+
+QRect MoveAnalyzer::processRect(const QRect &rect)
+{
+    QMutexLocker l(&mutex_);
+    damagedAreas_.append(rect); // used for updating MoveAnalyzer instance in swap()
+    l.unlock();
+
+    QRect movedSrcRect;
+
+    if (movedRectSearchEnabled_)
+    {
+        QRect movedRectSearchArea;
+        if (lastSuccessfulMoveVectors_.count() == 0)
+            movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
+        else
+        {
+            QMutexLocker l(&mutex_);
+            QList<QPoint> list = lastSuccessfulMoveVectors_;
+            list.detach();
+            l.unlock();
+
+            foreach (const QPoint &moveVector, list)
+            {
+                movedRectSearchArea = rect;
+                movedRectSearchArea.translate(-moveVector);
+                //movedRectSearchArea.adjust(-5, -5, 5, 5);
+                movedSrcRect = findMovedRect(movedRectSearchArea, rect);
+
+                if (!movedSrcRect.isEmpty())
+                {
+                    DPRINTF("Found move area with existing vector %d x %d", moveVector.x(), moveVector.y());
+                    break;
+                }
+            }
+
+            if (movedSrcRect.isEmpty())
+                movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
+        }
+
+        if (movedSrcRect.isNull())
+            movedSrcRect = findMovedRect(movedRectSearchArea, rect);
+
+        if (movedSrcRect.isNull())
+        {
+            QMutexLocker l(&mutex_);
+            ++movedRectSearchMisses_;
+            //if (movedRectSearchMisses == 10)
+            //    movedRectSearchEnabled = false;
+        }
+
+        if (!movedSrcRect.isEmpty())
+        {
+            QPoint currentMoveVector = rect.topLeft() - movedSrcRect.topLeft();
+
+            QMutexLocker l(&mutex_);
+
+            int index = lastSuccessfulMoveVectors_.indexOf(currentMoveVector);
+
+            if (index == -1)
+                lastSuccessfulMoveVectors_.prepend(currentMoveVector);
+            else
+                lastSuccessfulMoveVectors_.move(index, 0);
+
+            l.unlock();
+        }
+    }
+
+    return movedSrcRect;
 }
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)

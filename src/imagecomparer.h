@@ -11,7 +11,6 @@
 #include <QRect>
 #include <QColor>
 #include <QImage>
-#include <QMutex>
 
 enum UpdateOperationType { uotUpdate, uotMove, uotFill, uotNoOp };
 
@@ -61,14 +60,8 @@ private:
     QImage *imageBefore_;
     QImage *imageAfter_;
 
-    QMutex mutex_;
-    QList<QPoint> lastSuccessfulMoveVectors_;
     MoveAnalyzer *moveAnalyzer_;
-    int movedRectSearchMisses_;
-    bool movedRectSearchEnabled_;
     int tileWidth_;
-
-    QList<QRect> damagedAreas_;
 };
 
 #endif // IMAGECOMPARER_H

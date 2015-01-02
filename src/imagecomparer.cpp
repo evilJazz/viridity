@@ -378,10 +378,7 @@ UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops)
 ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
-    mutex_(QMutex::Recursive),
     moveAnalyzer_(NULL),
-    movedRectSearchMisses_(0),
-    movedRectSearchEnabled_(true),
     tileWidth_(50)
 {
 #ifdef USE_MOVE_ANALYZER
@@ -453,8 +450,7 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea)
     UpdateOperation op;
 
 #ifdef USE_MOVE_ANALYZER
-    movedRectSearchMisses_ = 0;
-    movedRectSearchEnabled_ = true;
+    moveAnalyzer_->startNewSearch();
 #endif
 
     QList<QRect> tiles = splitRectIntoTiles(searchArea, tileWidth_, tileWidth_);
@@ -479,20 +475,7 @@ void ImageComparer::swap()
     imageAfter_ = temp;
 
 #ifdef USE_MOVE_ANALYZER
-    QRegion region;
-    foreach (const QRect &rect, damagedAreas_)
-        region += rect;
-
-    damagedAreas_.clear();
-
-    while (lastSuccessfulMoveVectors_.count() > 10)
-        lastSuccessfulMoveVectors_.removeLast();
-
     moveAnalyzer_->swap();
-
-    const QVector<QRect> rects = region.rects();
-    foreach (const QRect &rect, rects)
-        moveAnalyzer_->updateArea(rect);
 #endif
 }
 
@@ -503,79 +486,20 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op)
         return false;
 
 #ifdef USE_MOVE_ANALYZER
-    QMutexLocker l(&mutex_);
-    damagedAreas_.append(rect); // used for updating MoveAnalyzer instance in swap()
-    l.unlock();
-
-    if (movedRectSearchEnabled_)
+    QRect movedSrcRect = moveAnalyzer_->processRect(rect);
+    if (!movedSrcRect.isEmpty())
     {
-        QRect movedSrcRect;
-        QRect movedRectSearchArea;
-        if (lastSuccessfulMoveVectors_.count() == 0)
-            movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
-        else
-        {
-            QMutexLocker l(&mutex_);
-            QList<QPoint> list = lastSuccessfulMoveVectors_;
-            list.detach();
-            l.unlock();
+        op.type = uotMove;
+        op.srcRect = movedSrcRect;
+        op.dstPoint = rect.topLeft();
 
-            foreach (const QPoint &moveVector, list)
-            {
-                movedRectSearchArea = rect;
-                movedRectSearchArea.translate(-moveVector);
-                //movedRectSearchArea.adjust(-5, -5, 5, 5);
-                movedSrcRect = moveAnalyzer_->findMovedRect(movedRectSearchArea, rect);
+        DPRINTF("Move  %d, %d + %d x %d  ->  %d, %d + %d x %d  (vec %d %d)",
+                movedSrcRect.left(), movedSrcRect.top(), rect.width(), rect.height(),
+                rect.left(), rect.top(), rect.width(), rect.height(),
+                currentMoveVector.x(), currentMoveVector.y()
+                );
 
-                if (!movedSrcRect.isEmpty())
-                {
-                    DPRINTF("Found move area with existing vector %d x %d", moveVector.x(), moveVector.y());
-                    break;
-                }
-            }
-
-            if (movedSrcRect.isEmpty())
-                movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
-        }
-
-        if (movedSrcRect.isNull())
-            movedSrcRect = moveAnalyzer_->findMovedRect(movedRectSearchArea, rect);
-
-        if (movedSrcRect.isNull())
-        {
-            QMutexLocker l(&mutex_);
-            ++movedRectSearchMisses_;
-            //if (movedRectSearchMisses == 10)
-            //    movedRectSearchEnabled = false;
-        }
-
-        if (!movedSrcRect.isEmpty())
-        {
-            QPoint currentMoveVector = rect.topLeft() - movedSrcRect.topLeft();
-
-            QMutexLocker l(&mutex_);
-
-            int index = lastSuccessfulMoveVectors_.indexOf(currentMoveVector);
-
-            if (index == -1)
-                lastSuccessfulMoveVectors_.prepend(currentMoveVector);
-            else
-                lastSuccessfulMoveVectors_.move(index, 0);
-
-            l.unlock();
-
-            op.type = uotMove;
-            op.srcRect = movedSrcRect;
-            op.dstPoint = rect.topLeft();
-
-            DPRINTF("Move  %d, %d + %d x %d  ->  %d, %d + %d x %d  (vec %d %d)",
-                    movedSrcRect.left(), movedSrcRect.top(), rect.width(), rect.height(),
-                    rect.left(), rect.top(), rect.width(), rect.height(),
-                    currentMoveVector.x(), currentMoveVector.y()
-                    );
-
-            return true;
-        }
+        return true;
     }
 #endif
 
