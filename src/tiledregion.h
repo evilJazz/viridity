@@ -16,6 +16,8 @@ public:
 
     TiledRegion &operator+=(const QRect &r);
 
+    static QVector<QRect> verticallyUniteRects(QVector<QRect> rects);
+
 private:
     QRegion region_;
     int tileWidth_;

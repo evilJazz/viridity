@@ -19,7 +19,7 @@ void TiledRegion::clear()
 
 QVector<QRect> TiledRegion::rects() const
 {
-    return region_.rects();
+    return TiledRegion::verticallyUniteRects(region_.rects());
 }
 
 TiledRegion &TiledRegion::operator+=(const QRect &r)
@@ -34,4 +34,40 @@ TiledRegion &TiledRegion::operator+=(const QRect &r)
 
     region_ += newRect;
     return *this;
+}
+
+QVector<QRect> TiledRegion::verticallyUniteRects(QVector<QRect> rects)
+{
+    QVector<QRect> result;
+
+    // QRegion::rects outputs always horizontally united rects. However rectangles are not always united vertically due to the nature of the algorithm.
+    // Try to find vertically adjacent rectangles with identical width and unite them...
+
+    while (rects.count() > 0)
+    {
+        QRect inputRect = rects.at(0);
+        rects.removeFirst();
+
+        bool united = false;
+
+        for (int i = 0; i < result.count(); ++i)
+        {
+            QRect compareRect = result.at(i);
+
+            //qDebug("compareRect.bottom(): %d, inputRect.top(): %d, compareRect.top(): %d, inputRect.bottom(): %d", compareRect.bottom(), inputRect.top(), compareRect.top(), inputRect.bottom());
+
+            if ((compareRect.bottom() + 1 == inputRect.top() || compareRect.top() == inputRect.bottom() + 1) &&
+                (compareRect.left() == inputRect.left() || compareRect.right() == inputRect.right()) &&
+                compareRect.width() == inputRect.width())
+            {
+                result[i] = compareRect.united(inputRect);
+                united = true;
+            }
+        }
+
+        if (!united)
+            result.append(inputRect);
+    }
+
+    return result;
 }

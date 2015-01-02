@@ -1,5 +1,6 @@
 #include "imagecomparer.h"
 #include "moveanalyzer.h"
+#include "tiledregion.h"
 
 #include <QtConcurrentMap>
 
@@ -268,7 +269,7 @@ UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const
         foreach (const UpdateOperation &op, ops)
             region += op.srcRect;
 
-        QVector<QRect> rects = region.rects();
+        QVector<QRect> rects = TiledRegion::verticallyUniteRects(region.rects());
 
         foreach (const QRect &rect, rects)
         {
@@ -299,7 +300,7 @@ UpdateOperationList optimizeFillOperations(const ColorHashUpdateOperationList &f
         foreach (const UpdateOperation &op, ops)
             region += op.srcRect;
 
-        QVector<QRect> rects = region.rects();
+        QVector<QRect> rects = TiledRegion::verticallyUniteRects(region.rects());
 
         foreach (const QRect &rect, rects)
         {
