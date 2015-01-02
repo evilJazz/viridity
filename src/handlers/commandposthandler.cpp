@@ -27,7 +27,7 @@ void CommandPostHandler::onEnd()
 {
     // handle request
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    QString id = QUrlQuery(request_->url()).queryItemValue("id");
+    QString id = QUrlQuery(QUrl(request_->url())).queryItemValue("id");
 #else
     QString id = QUrl(request_->url()).queryItemValue("id");
 #endif
