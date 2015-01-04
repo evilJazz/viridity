@@ -51,7 +51,7 @@ protected:
     QImage *otherBuffer_;
     QImage buffer1_;
     QImage buffer2_;
-    TiledRegion region_;
+    TiledRegion damageRegion_;
     ImageComparer *comparer_;
 
     void setSizeFromScene();

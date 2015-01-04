@@ -51,18 +51,15 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     DGUARDMETHODTIMED;
     QMutexLocker m(&bufferAndRegionMutex_);
 
-    QVector<QRect> rects = region_.rects();
-
     swapWorkBuffer();
     QPainter p(workBuffer_);
 
-    SynchronizedSceneRenderer syncedSceneRenderer(scene_);
-
+    QVector<QRect> rects = damageRegion_.rects();
     foreach (const QRect &rect, rects)
-    {
         p.eraseRect(rect);
-        syncedSceneRenderer.render(&p, rect, rect, Qt::IgnoreAspectRatio);
-    }
+
+    SynchronizedSceneRenderer syncedSceneRenderer(scene_);
+    syncedSceneRenderer.render(&p, rects);
 
     UpdateOperationList ops;
 
@@ -85,7 +82,7 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
         }
     }
 
-    region_.clear();
+    damageRegion_.clear();
     updatesAvailable_ = false;
 
     return ops;
@@ -133,7 +130,7 @@ void GraphicsSceneBufferRenderer::fullUpdate()
     // TODO: This method is inefficient. Optimize!!
     QMutexLocker m(&bufferAndRegionMutex_);
     workBuffer_->fill(0);
-    region_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
+    damageRegion_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
     emitUpdatesAvailable();
 }
 
@@ -157,7 +154,7 @@ void GraphicsSceneBufferRenderer::setSizeFromScene()
         otherBuffer_ = &buffer2_;
 
         initComparer();
-        region_.clear();
+        damageRegion_.clear();
         fullUpdate();
     }
 }
@@ -184,7 +181,7 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
     {
         QRect newRect = rect.toAlignedRect();
         newRect.adjust(-2, -2, 2, 2); // similar to void QGraphicsView::updateScene(const QList<QRectF> &rects)
-        region_ += newRect.intersected(workBuffer_->rect());
+        damageRegion_ += newRect.intersected(workBuffer_->rect());
         DOP(rectString += QString().sprintf(" %4d,%4d+%4dx%4d", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
     }
 
@@ -198,7 +195,7 @@ void GraphicsSceneBufferRenderer::sceneDetached()
     QMutexLocker m(&bufferAndRegionMutex_);
     buffer1_ = QImage();
     buffer2_ = QImage();
-    region_.clear();
+    damageRegion_.clear();
 }
 
 void GraphicsSceneBufferRenderer::swapWorkBuffer()

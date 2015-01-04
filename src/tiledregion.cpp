@@ -46,7 +46,7 @@ QVector<QRect> TiledRegion::verticallyUniteRects(QVector<QRect> rects)
     while (rects.count() > 0)
     {
         QRect inputRect = rects.at(0);
-        rects.removeFirst();
+        rects.remove(0);
 
         bool united = false;
 
