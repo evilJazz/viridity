@@ -8,7 +8,6 @@
 
 #include <QDeclarativeItem>
 
-#define DEBUG
 #include "KCL/debug.h"
 #include "private/qtestspontaneevent.h"
 

@@ -106,6 +106,30 @@ private:
 
 class MoveAnalyzerDebugView;
 
+struct MoveOperation
+{
+    QRect srcRect;
+    QPoint dstPoint;
+};
+
+typedef QList<MoveOperation> MoveOperationList;
+
+struct VectorEstimate
+{
+    QPoint vector;
+    int extentX;
+    int extentY;
+
+    inline bool operator==(const VectorEstimate &other) const
+    {
+        return other.vector == this->vector &&
+               other.extentX == this->extentX &&
+               other.extentY == this->extentY;
+    }
+};
+
+typedef QList<VectorEstimate> VectorEstimates;
+
 class VIRIDITY_EXPORT MoveAnalyzer : public QObject
 {
     Q_OBJECT
@@ -113,18 +137,27 @@ public:
     MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth);
     virtual ~MoveAnalyzer();
 
-    QRect findMovedRect(const QRect &searchArea, const QRect &templateRect);
-    QRect findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect);
-    QRect findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect);
+    int searchRadius() const { return searchRadius_; }
+    void setSearchRadius(int newRadius);
+
+    int searchMissesThreshold() const { return searchMissesThreshold_; }
+    void setSearchMissesThreshold(int newThreshold);
 
     void swap();
     void updateArea(const QRect &rect);
 
     void startNewSearch();
-    QRect processRect(const QRect &rect);
+    QRect processRect(const QRect &rect, QVector<QRect> *additionalSearchAreas = NULL);
+
+    MoveOperationList findMoveOperations(const QRect &rect, QRegion &leftovers, QVector<QRect> *additionalSearchAreas = NULL);
 
 signals:
     void changed();
+
+protected:
+    QRect findMovedRect(const QRect &searchArea, const QRect &templateRect);
+    QRect findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect);
+    QRect findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect);
 
 private:
     friend class MoveAnalyzerDebugView;
@@ -133,15 +166,17 @@ private:
     QImage *imageAfter_;
     QRect hashArea_;
     int templateWidth_;
+    int searchRadius_;
     AreaFingerPrints searchAreaFingerPrints_;
     MoveAnalyzerDebugView *debugView_;
 
     QList<QRect> damagedAreas_;
 
     QMutex mutex_;
+    int searchMissesThreshold_;
     int movedRectSearchMisses_;
     bool movedRectSearchEnabled_;
-    QList<QPoint> lastSuccessfulMoveVectors_;
+    VectorEstimates lastSuccessfulMoveVectors_;
 };
 
 #endif // MOVEANALYZER_H

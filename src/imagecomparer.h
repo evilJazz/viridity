@@ -31,11 +31,8 @@ typedef QHash<QColor, UpdateOperationList> ColorHashUpdateOperationList;
 typedef QHashIterator<QColor, UpdateOperationList> ColorHashUpdateOperationListIterator;
 
 QList<QRect> splitRectIntoTiles(const QRect &rect, int tileWidth, int tileHeight);
-QList<QRect> findUpdateRects(QImage *buffer1, QImage *buffer2, const QRect &searchArea);
-
 bool contentMatches(QImage *buffer1, QImage *buffer2, const QPoint &point, const QRect &rect);
 
-QRect findMovedRect(QImage *imageBefore, QImage *imageAfter, const QRect &searchArea, const QRect &templateRect);
 UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps);
 UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops);
 
@@ -47,14 +44,16 @@ public:
     ImageComparer(QImage *imageBefore, QImage *imageAfter);
     virtual ~ImageComparer();
 
-    UpdateOperationList findUpdateOperations(const QRect &searchArea);
+    QVector<QRect> findDifferences();
+
+    UpdateOperationList findUpdateOperations(const QRect &searchArea, QVector<QRect> *additionalSearchAreas = NULL);
     void swap();
 
     int tileSize() const { return tileWidth_; }
 
 protected:
     friend struct MapProcessRect;
-    bool processRect(const QRect &rect, UpdateOperation &op);
+    bool processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas = NULL);
 
 private:
     QImage *imageBefore_;

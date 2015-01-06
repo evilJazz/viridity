@@ -4,7 +4,10 @@
 
 #include "private/synchronizedscenerenderer.h"
 
+//#define USE_SCENE_DAMAGEREGION
+
 //#undef DEBUG
+//#define DIAGNOSTIC_OUTPUT
 #include "KCL/debug.h"
 
 /* GraphicsSceneBufferRenderer */
@@ -52,23 +55,39 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     QMutexLocker m(&bufferAndRegionMutex_);
 
     swapWorkBuffer();
+
+    DTIMERINIT(paintTimer);
     QPainter p(workBuffer_);
 
+#ifdef USE_SCENE_DAMAGEREGION
     QVector<QRect> rects = damageRegion_.rects();
     foreach (const QRect &rect, rects)
         p.eraseRect(rect);
 
     SynchronizedSceneRenderer syncedSceneRenderer(scene_);
     syncedSceneRenderer.render(&p, rects);
+#else
+    p.eraseRect(workBuffer_->rect());
+
+    SynchronizedSceneRenderer syncedSceneRenderer(scene_);
+    syncedSceneRenderer.render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
+
+    QVector<QRect> rects = comparer_->findDifferences();
+#endif
+    DTIMERPRINT(paintTimer, "Damage region paint");
 
     UpdateOperationList ops;
 
     if (minimizeDamageRegion_)
     {
+        DTIMERINIT(optTimer);
+
         foreach (const QRect &rect, rects)
-            ops += comparer_->findUpdateOperations(rect);
+            ops += comparer_->findUpdateOperations(rect, &rects);
 
         ops = optimizeUpdateOperations(ops);
+
+        DTIMERPRINT(optTimer, "Damage region optimization");
     }
     else
     {
@@ -172,7 +191,8 @@ void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
 
 void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 {
-    DGUARDMETHODTIMED;
+    //DGUARDMETHODTIMED;
+#ifdef USE_SCENE_DAMAGEREGION
     QMutexLocker m(&bufferAndRegionMutex_);
 
     QString rectString;
@@ -182,11 +202,11 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
         QRect newRect = rect.toAlignedRect();
         newRect.adjust(-2, -2, 2, 2); // similar to void QGraphicsView::updateScene(const QList<QRectF> &rects)
         damageRegion_ += newRect.intersected(workBuffer_->rect());
-        DOP(rectString += QString().sprintf(" %4d,%4d+%4dx%4d", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
+        //DOP(rectString += QString().sprintf(" %4d,%4d+%4dx%4d", newRect.left(), newRect.top(), newRect.width(), newRect.height()));
     }
 
-    DPRINTF("rects: %s", rectString.toUtf8().constData());
-
+    //DPRINTF("rects: %s", rectString.toUtf8().constData());
+#endif
     emitUpdatesAvailable();
 }
 

@@ -3,7 +3,6 @@
 
 #include <QtConcurrentFilter>
 
-#define DEBUG
 #include "KCL/debug.h"
 
 #define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))
@@ -475,9 +474,11 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
     hashArea_(hashArea),
+    searchRadius_(100),
     templateWidth_(templateWidth),
     debugView_(NULL),
     mutex_(QMutex::Recursive),
+    searchMissesThreshold_(10),
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true)
 {
@@ -499,6 +500,16 @@ MoveAnalyzer::~MoveAnalyzer()
 #endif
 }
 
+void MoveAnalyzer::setSearchRadius(int newRadius)
+{
+    searchRadius_ = newRadius;
+}
+
+void MoveAnalyzer::setSearchMissesThreshold(int newThreshold)
+{
+    searchMissesThreshold_ = newThreshold;
+}
+
 void MoveAnalyzer::swap()
 {
     QRegion region;
@@ -507,7 +518,7 @@ void MoveAnalyzer::swap()
 
     damagedAreas_.clear();
 
-    while (lastSuccessfulMoveVectors_.count() > 10)
+    while (lastSuccessfulMoveVectors_.count() > 20)
         lastSuccessfulMoveVectors_.removeLast();
 
     QImage *temp = imageBefore_;
@@ -534,7 +545,7 @@ void MoveAnalyzer::startNewSearch()
     movedRectSearchEnabled_ = true;
 }
 
-QRect MoveAnalyzer::processRect(const QRect &rect)
+QRect MoveAnalyzer::processRect(const QRect &rect, QVector<QRect> *additionalSearchAreas)
 {
     QMutexLocker l(&mutex_);
     damagedAreas_.append(rect); // used for updating MoveAnalyzer instance in swap()
@@ -545,32 +556,48 @@ QRect MoveAnalyzer::processRect(const QRect &rect)
     if (movedRectSearchEnabled_)
     {
         QRect movedRectSearchArea;
-        if (lastSuccessfulMoveVectors_.count() == 0)
-            movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
-        else
+
+        if (lastSuccessfulMoveVectors_.count() > 0)
         {
             QMutexLocker l(&mutex_);
-            QList<QPoint> list = lastSuccessfulMoveVectors_;
+            VectorEstimates list = lastSuccessfulMoveVectors_;
             list.detach();
             l.unlock();
 
-            foreach (const QPoint &moveVector, list)
+            foreach (const VectorEstimate &moveVector, list)
             {
                 movedRectSearchArea = rect;
-                movedRectSearchArea.translate(-moveVector);
-                //movedRectSearchArea.adjust(-5, -5, 5, 5);
+                movedRectSearchArea.translate(-moveVector.vector);
+                if (moveVector.extentX > 0 || moveVector.extentY > 0)
+                    movedRectSearchArea.adjust(-moveVector.extentX, -moveVector.extentY, moveVector.extentX, moveVector.extentY);
+
                 movedSrcRect = findMovedRect(movedRectSearchArea, rect);
 
                 if (!movedSrcRect.isEmpty())
                 {
-                    DPRINTF("Found move area with existing vector %d x %d", moveVector.x(), moveVector.y());
+                    DPRINTF("Found move area with existing vector %d, %d", moveVector.vector.x(), moveVector.vector.y());
                     break;
                 }
             }
-
-            if (movedSrcRect.isEmpty())
-                movedRectSearchArea = rect.adjusted(-100, -100, 100, 100);
         }
+
+        if (movedSrcRect.isNull() && additionalSearchAreas && additionalSearchAreas->count() > 0)
+        {
+            foreach (const QRect &searchArea, *additionalSearchAreas)
+            {
+                movedRectSearchArea = searchArea;
+                movedSrcRect = findMovedRect(movedRectSearchArea, rect);
+
+                if (!movedSrcRect.isEmpty())
+                {
+                    DPRINTF("Found move area with additional search area %d, %d %d x %d", searchArea.x(), searchArea.y(), searchArea.width(), searchArea.height());
+                    break;
+                }
+            }
+        }
+
+        if (movedSrcRect.isNull())
+            movedRectSearchArea = rect.adjusted(-searchRadius_, -searchRadius_, searchRadius_, searchRadius_);
 
         if (movedSrcRect.isNull())
             movedSrcRect = findMovedRect(movedRectSearchArea, rect);
@@ -579,13 +606,17 @@ QRect MoveAnalyzer::processRect(const QRect &rect)
         {
             QMutexLocker l(&mutex_);
             ++movedRectSearchMisses_;
-            //if (movedRectSearchMisses == 10)
-            //    movedRectSearchEnabled = false;
+
+            if (movedRectSearchMisses_ == searchMissesThreshold_)
+                movedRectSearchEnabled_ = false;
         }
 
         if (!movedSrcRect.isEmpty())
         {
-            QPoint currentMoveVector = rect.topLeft() - movedSrcRect.topLeft();
+            VectorEstimate currentMoveVector;
+            currentMoveVector.vector = rect.topLeft() - movedSrcRect.topLeft();
+            currentMoveVector.extentX = 0;
+            currentMoveVector.extentY = 0;
 
             QMutexLocker l(&mutex_);
 
@@ -603,6 +634,32 @@ QRect MoveAnalyzer::processRect(const QRect &rect)
     return movedSrcRect;
 }
 
+MoveOperationList MoveAnalyzer::findMoveOperations(const QRect &searchArea, QRegion &leftovers, QVector<QRect> *additionalSearchAreas)
+{
+    MoveOperationList result;
+
+    startNewSearch();
+
+    QList<QRect> tiles = splitRectIntoTiles(searchArea, templateWidth_, templateWidth_);
+
+    foreach (const QRect &rect, tiles)
+    {
+        QRect movedSrcRect = processRect(rect, additionalSearchAreas);
+
+        if (movedSrcRect.isEmpty())
+            leftovers += rect;
+        else
+        {
+            MoveOperation op;
+            op.srcRect = movedSrcRect;
+            op.dstPoint = rect.topLeft();
+            result += op;
+        }
+    }
+
+    return result;
+}
+
 struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPositionMatcher
 {
     QImage *imageBefore;
@@ -617,7 +674,7 @@ struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPosi
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
 {
-    DGUARDMETHODTIMED;
+    //DGUARDMETHODTIMED;
     //return findMovedRectNaive(searchArea, templateRect);
 
     if (templateRect.width() % searchAreaFingerPrints_.templateWidth() != 0)
