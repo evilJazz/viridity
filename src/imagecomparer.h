@@ -57,12 +57,12 @@ template<typename T> inline bool contentMatches(QImage *buffer1, QImage *buffer2
         pBuf1 = (T *)buffer1->scanLine(rect1.top() + y) + rect1.left();
         pBuf2 = (T *)buffer2->scanLine(rect2.top() + y) + rect2.left();
 
-        /*
+        //*
         if (memcmp(pBuf1, pBuf2, width * sizeof(T)) != 0)
             return false;
         //*/
 
-        //*
+        /*
         for (x = 0; x < width; ++x)
         {
             if (*pBuf1 != *pBuf2)

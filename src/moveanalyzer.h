@@ -166,6 +166,7 @@ protected:
 
 private:
     friend class MoveAnalyzerDebugView;
+    friend class MoveAnalyzerAreaFingerPrintsPositionMatcher;
 
     QImage *imageBefore_;
     QImage *imageAfter_;

@@ -89,21 +89,22 @@ void AreaFingerPrint::internalUpdateFromImage(QImage *image, const QRect &rect, 
     quint32 *pBuf;
 
     int limY = qMin(rect.height(), size_ - startIndex);
+    int width = rect.width();
+
+    AreaFingerPrintHash hash;
 
     for (int y = 0; y < limY; ++y)
     {
         pBuf = (quint32 *)image->scanLine(rect.top() + y) + rect.left();
 
-        AreaFingerPrintHash hash;
-        int x = 0;
-
-        for (; x < rect.width(); ++x)
+        for (int x = width; x > 0; --x)
         {
             hash.add(*pBuf);
             ++pBuf;
         }
 
         data_[startIndex + y] = hash;
+        hash.reset();
     }
 }
 
@@ -666,13 +667,12 @@ MoveOperationList MoveAnalyzer::findMoveOperations(const QRect &searchArea, QReg
 
 struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPositionMatcher
 {
-    QImage *imageBefore;
-    QImage *imageAfter;
+    MoveAnalyzer *moveAnalyzer;
     QRect templateRect;
 
     virtual bool positionMatches(const QPoint &pos)
     {
-        return contentMatches<QRgb>(imageBefore, imageAfter, pos, templateRect);
+        return contentMatches<QRgb>(moveAnalyzer->imageBefore_, moveAnalyzer->imageAfter_, pos, templateRect);
     }
 };
 
@@ -693,8 +693,7 @@ QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const 
 
     QPoint result;
     MoveAnalyzerAreaFingerPrintsPositionMatcher matcher;
-    matcher.imageAfter = imageAfter_;
-    matcher.imageBefore = imageBefore_;
+    matcher.moveAnalyzer = this;
     matcher.templateRect = templateRect;
 
     if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result, &matcher))
