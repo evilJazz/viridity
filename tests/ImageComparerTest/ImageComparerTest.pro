@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui declarative testlib
 
 TARGET = ImageComparerTest
 
@@ -13,4 +13,9 @@ TEMPLATE = app
 
 SOURCES += main.cpp
 
+include(../../3rdparty/kcl/kcl.pri)
+include(../../3rdparty/tufao/tufao.pri)
 include(../../viridity.pri)
+
+RESOURCES += \
+    ../testdata/test.qrc

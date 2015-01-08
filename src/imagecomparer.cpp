@@ -196,67 +196,6 @@ QList<QRect> findUpdateRects(QImage *buffer1, QImage *buffer2, const QRect &sear
 }
 */
 
-bool contentMatches(QImage *buffer1, QImage *buffer2, const QPoint &point, const QRect &rect)
-{
-    QRect rect1 = QRect(point, rect.size()).intersected(buffer1->rect());
-    QRect rect2 = rect.intersected(buffer2->rect());
-
-    if (rect1.size() != rect.size() || rect2.size() != rect.size())
-        return false;
-
-    QRgb *pBuf1, *pBuf2;
-
-    for (int y = 0; y < rect1.height(); ++y)
-    {
-        pBuf1 = (QRgb *)buffer1->scanLine(rect1.top() + y) + rect1.left();
-        pBuf2 = (QRgb *)buffer2->scanLine(rect2.top() + y) + rect2.left();
-
-        for (int x = 0; x < rect1.width(); ++x)
-        {
-            if (*pBuf1 != *pBuf2)
-                return false;
-
-            ++pBuf1;
-            ++pBuf2;
-        }
-    }
-
-    return true;
-}
-
-inline bool fastContentMatches(QImage *buffer1, QImage *buffer2, const QPoint &point, const QRect &rect)
-{
-    QRect rect1 = QRect(point, rect.size()).intersected(buffer1->rect());
-    QRect rect2 = rect.intersected(buffer2->rect());
-
-    if (rect1.size() != rect.size() || rect2.size() != rect.size())
-        return false;
-
-    QRgb *pBuf1, *pBuf2;
-
-    const int stepWidth = 5;
-
-    for (int s = 0; s < stepWidth; ++s)
-    {
-        for (int y = s; y < rect1.height(); y += stepWidth)
-        {
-            pBuf1 = (QRgb *)buffer1->scanLine(rect1.top() + y) + rect1.left();
-            pBuf2 = (QRgb *)buffer2->scanLine(rect2.top() + y) + rect2.left();
-
-            for (int x = s; x < rect1.width(); x += stepWidth)
-            {
-                if (*pBuf1 != *pBuf2)
-                    return false;
-
-                pBuf1 += stepWidth;
-                pBuf2 += stepWidth;
-            }
-        }
-    }
-
-    return true;
-}
-
 UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps)
 {
     UpdateOperationList newOps;
@@ -383,7 +322,7 @@ ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
     moveAnalyzer_(NULL),
-    tileWidth_(50)
+    tileWidth_(64)
 {
 #ifdef USE_MOVE_ANALYZER
 #ifdef USE_MOVE_ANALYZER_FINEGRAINED
@@ -415,7 +354,7 @@ QVector<QRect> ImageComparer::findDifferences()
         {
             QRect rect = QRect(x * tileWidth_, y * tileWidth_, tileWidth_, tileWidth_);
 
-            if (!contentMatches(imageBefore_, imageAfter_, rect.topLeft(), rect))
+            if (!contentMatches<QRgb>(imageBefore_, imageAfter_, rect.topLeft(), rect))
                 region += rect;
         }
     }
@@ -426,8 +365,9 @@ QVector<QRect> ImageComparer::findDifferences()
 #ifdef USE_MULTITHREADING
 struct MapProcessRect
 {
-    MapProcessRect(ImageComparer *comparer) :
-        comparer(comparer)
+    MapProcessRect(ImageComparer *comparer, QVector<QRect> *additionalSearchAreas) :
+        comparer(comparer),
+        additionalSearchAreas(additionalSearchAreas)
     {
     }
 
@@ -443,6 +383,7 @@ struct MapProcessRect
     }
 
     ImageComparer *comparer;
+    QVector<QRect> *additionalSearchAreas;
 };
 
 struct ReduceProcessRect
@@ -510,7 +451,7 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea,
 #endif
 
 #ifdef USE_MULTITHREADING
-    result = QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
+    result = QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this, additionalSearchAreas), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
 #else
     foreach (const QRect &rect, tiles)
     {

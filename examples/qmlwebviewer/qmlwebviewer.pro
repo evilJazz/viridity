@@ -30,7 +30,8 @@ OTHER_FILES += \
     test.qml
 
 RESOURCES += \
-    qmlresource.qrc
+    qmlresource.qrc \
+    ../../tests/testdata/test.qrc
 
 linux-* {
     target.path = /opt/bin

@@ -18,8 +18,9 @@ FocusScope {
 
     Image {
         id: image
+        visible: true
 
-        source: "lena.png"
+        source: "qrc:/testimages/lena.png"
         fillMode: Image.PreserveAspectFit
 
         SequentialAnimation on x {
@@ -38,11 +39,31 @@ FocusScope {
 
     }
 
+    Flickable {
+        clip: true
+
+        z: 400000
+        x: 200
+        y: 200
+        height: 400
+        width: 400
+
+        contentWidth: contentImage.width
+        contentHeight: contentImage.height
+        Image {
+            id: contentImage
+            source: "qrc:/testimages/lena.png"
+        }
+    }
+
     Rectangle {
         id: rect
         width: 111
         height: 200
         color: "gray"
+
+        x: 80
+        y: 200
 
         objectName: "rect"
 

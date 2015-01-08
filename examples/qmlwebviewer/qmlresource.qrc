@@ -1,7 +1,6 @@
 <RCC>
     <qresource prefix="/qml">
         <file>test.qml</file>
-        <file>lena.png</file>
         <file>CheckBox.qml</file>
     </qresource>
 </RCC>

@@ -16,10 +16,10 @@ struct AreaFingerPrintHash
     inline void add(const quint32 &pixel)
     {
         hash_ += pixel;
-        average_ = (average_ + pixel) / 2;
+        average_ = (average_ + pixel) >> 1;
     }
 
-    void reset()
+    inline void reset()
     {
         hash_ = 0;
         average_ = 0;
@@ -29,6 +29,11 @@ struct AreaFingerPrintHash
     {
         return other.average_ == this->average_ &&
                other.hash_ == this->hash_;
+    }
+
+    inline bool operator!=(const AreaFingerPrintHash &other) const
+    {
+        return !(other == *this);
     }
 
     quint32 hash_;
@@ -78,12 +83,11 @@ public:
     void clear();
 
     void initFromSize(int width, int height, int templateWidth);
-    void initFromImageSlow(QImage *image, const QRect &area, int templateWidth);
-    //void initFromImageFast(QImage *image, const QRect &area, int templateWidth);
-    //void initFromImageThreaded(QImage *image, const QRect &area, int templateWidth);
+    void initFromImage(QImage *image, const QRect &area, int templateWidth);
+    void initFromImageThreaded(QImage *image, const QRect &area, int templateWidth);
 
-    void updateFromImageSlow(QImage *image, const QRect &area);
-    //void updateFromImageFast(QImage *image, const QRect &area);
+    void updateFromImage(QImage *image, const QRect &area);
+    void updateFromImageThreaded(QImage *image, const QRect &area);
 
     int width() const { return width_; }
     int height() const { return height_; }
@@ -155,6 +159,7 @@ signals:
     void changed();
 
 protected:
+    friend class ImageComparerTest;
     QRect findMovedRect(const QRect &searchArea, const QRect &templateRect);
     QRect findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect);
     QRect findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect);
@@ -164,6 +169,10 @@ private:
 
     QImage *imageBefore_;
     QImage *imageAfter_;
+
+    QImage imageBeforeGray_;
+    QImage imageAfterGray_;
+
     QRect hashArea_;
     int templateWidth_;
     int searchRadius_;
@@ -177,6 +186,8 @@ private:
     int movedRectSearchMisses_;
     bool movedRectSearchEnabled_;
     VectorEstimates lastSuccessfulMoveVectors_;
+
+    void ensureImagesUpdated();
 };
 
 #endif // MOVEANALYZER_H
