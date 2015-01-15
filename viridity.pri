@@ -1,4 +1,4 @@
-QT += core gui network
+QT += core gui network concurrent
 
 VIRIDITY_SRC_PATH = $$PWD/src
 VIRIDITY_RES_PATH = $$PWD/resources
