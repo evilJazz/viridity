@@ -4,33 +4,6 @@
     <title>QGraphicsScene Web Controller</title>
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
     <style type="text/css">
-    [draggable]
-    {
-        cursor: move;
-        user-select: none;
-        -moz-user-select: none;
-        -khtml-user-select: none;
-        -webkit-user-select: none;
-        /* Required for old Webkit. */
-        -khtml-user-drag: element;
-        -webkit-user-drag: element;
-    }
-
-    .gallery
-    {
-        width: auto;
-        height: auto;
-        position: fixed;
-        top: 0;
-        right: 0;
-    }
-
-    .picture
-    {
-        width: 60px;
-        height: 20px;
-    }
-
     body {
         margin: 0;
         overflow: hidden;
@@ -41,72 +14,22 @@
     <script src="displayRenderer.js"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            //displayRenderer.init(ConnectionMethod.WebSockets);
-            displayRenderer.init(ConnectionMethod.ServerSentEvents);
-            //displayRenderer.init(ConnectionMethod.LongPolling);
+            //$("#displayContainer").viridity({ connectionMethod: ConnectionMethod.WebSockets });
+            $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
 
             function resizeToWindow()
             {
-                var debugControlsHeight = $("#debugControls").height();
-                displayRenderer.resize($(window).width(), $(window).height() - debugControlsHeight);
+                var elem = $(window);
+                $("#displayContainer").width(elem.width()).height(elem.height());
+                $("#displayContainer").triggerHandler("resize"); // Don't bubble event up.
             }
 
             $(window).resize(function(event) { resizeToWindow(); });
             resizeToWindow();
-
-            document.getElementById('debugDrawCB').checked = displayRenderer.debugDrawEnabled();
-
-            $('.gallery .picture').each(function()
-            {
-                $(this).attr('draggable', 'true')
-                       .on('dragstart', function(ev)
-                                        {
-                                            $(this).css('opacity', '0.4');
-
-                                            ev.originalEvent.dataTransfer.effectAllowed = 'copy';
-                                            ev.originalEvent.dataTransfer.setData('text/plain', $(this).text());
-                                        })
-                       .on('dragend', function(ev)
-                                      {
-                                          $(this).css('opacity', '1.0');
-                                      });
-            });
-
-            $('#canvas').on('dragover', function(ev)
-                                        {
-                                            ev.preventDefault();
-                                        })
-                        .on('drop', function(ev)
-                                    {
-                                        ev.preventDefault();
-
-                                        var canvasOffset = $(this).offset();
-                                        var mouseX = ev.originalEvent.clientX - canvasOffset.left;
-                                        var mouseY = ev.originalEvent.clientY - canvasOffset.top;
-                                        var command = 'colorDropped(' + ev.originalEvent.dataTransfer.getData('text/plain') + ',' + mouseX + ',' + mouseY + ')';
-
-                                        displayRenderer.sendCommand(command);
-                                    });
         });
     </script>
   </head>
   <body>
-    <div id="debugControls">
-        <button onclick="displayRenderer.debugClearCanvas()">Clear Canvas</button>
-        <button onclick="displayRenderer.requestFullUpdate()">Request full frame</button>
-        <input type="checkbox" id="debugDrawCB" onchange="displayRenderer.setDebugDrawEnabled(this.checked)" />
-        <label for="debugDrawCB">Debug drawing </label>
-        <strong>ID: </strong><span id="connectionId"></span>
-        <button onclick="displayRenderer.sendCommand('switchRectColor()')">Switch rect color</button>
-        <button onclick="displayRenderer.sendCommand('wrong command')">Send wrong command</button>
-        <label id="commandResponse"></label>
-    </div>
-    <div class="gallery">
-        <div class="picture" style="background-color: red">red</div>
-        <div class="picture" style="background-color: yellow">yellow</div>
-        <div class="picture" style="background-color: green">green</div>
-        <div class="picture" style="background-color: blue">blue</div>
-    </div>
-    <canvas id="canvas"/>
+    <div id="displayContainer"/>
   </body>
 </html>

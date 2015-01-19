@@ -59,7 +59,8 @@ var ConnectionMethod = {
     WebSockets: 2
 };
 
-var DisplayRenderer = function() {
+$.fn.viridity = function(options) {
+    var containerElement = this;
 
     var debugVerbosity = 0;
     var debugDraw = 0;
@@ -126,6 +127,30 @@ var DisplayRenderer = function() {
             dr.sendMessage("requestFullUpdate()", true);
         },
 
+        createDebugOverlay: function()
+        {
+            var container = $(containerElement);
+
+            var debugControls = $("<div/>")
+                .css("position", "absolute")
+                .css("left", 0)
+                .css("top", 0)
+                .css("padding", 10)
+                .css("background", "rgba(255, 255, 255, 0.9)")
+                .css("z-index", 2);
+
+            debugControls.append("<button>Clear Canvas</button>").click(dr.debugClearCanvas);
+            debugControls.append("<button>Request full frame</button>").click(dr.requestFullUpdate);
+
+            var debugDrawCheckbox = $("<input type='checkbox'/>");
+            debugDrawCheckbox.change(function() { dr.setDebugDrawEnabled(this.checked); });
+            debugDrawCheckbox.appendTo(debugControls);
+
+            debugControls.append("<label> Debug drawing </label>");
+
+            debugControls.appendTo(container);
+        },
+
         debugClearCanvas: function()
         {
             // Store the current transformation matrix
@@ -133,7 +158,7 @@ var DisplayRenderer = function() {
 
             // Use the identity matrix while clearing the canvas
             dr.ctx.setTransform(1, 0, 0, 1, 0, 0);
-            dr.ctx.clearRect(0, 0, canvas.width, canvas.height);
+            dr.ctx.clearRect(0, 0, dr.frontCanvas.width, dr.frontCanvas.height);
 
             // Restore the transform
             dr.ctx.restore();
@@ -487,10 +512,26 @@ var DisplayRenderer = function() {
                 console.log("Sending message to server: " + msg);
 
             if (dr.connectionMethod === ConnectionMethod.WebSockets)
-                dr.socket.send(msg);
+            {
+                if (dr.socket.readyState === WebSocket.OPEN)
+                    dr.socket.send(msg);
+                else
+                    dr.inputEvents.push(msg);
+            }
             else if (dr.connectionMethod === ConnectionMethod.LongPolling || 
                      dr.connectionMethod === ConnectionMethod.ServerSentEvents)
                 dr.inputEvents.push(msg);
+        },
+
+        _sendQueuedMessages: function()
+        {
+            if (dr.socket.readyState === WebSocket.OPEN)
+            {
+                for (var i = 0, ii = dr.inputEvents.length; i < ii; i++)
+                    dr.sendMessage(dr.inputEvents[i]);
+
+                dr.inputEvents = [];
+            }
         },
 
         sendCommand: function(command)
@@ -526,15 +567,18 @@ var DisplayRenderer = function() {
 
         resize: function(width, height)
         {
-            console.log("width: " + width + " height: " + height);
-            $(dr.frontCanvas).css("width", width);
-            $(dr.frontCanvas).css("height", height);
-            dr.frontCanvas.width = dr.canvas.width = width;
-            dr.frontCanvas.height = dr.canvas.height = height;
+            if (dr.frontCanvas.width != width || dr.frontCanvas.height != height)
+            {
+                console.log("width: " + width + " height: " + height);
+                $(dr.frontCanvas).css("width", width);
+                $(dr.frontCanvas).css("height", height);
+                dr.frontCanvas.width = dr.canvas.width = width;
+                dr.frontCanvas.height = dr.canvas.height = height;
 
-            dr.sendMessage("resize(" + width + "," + height + ")");
+                dr.sendMessage("resize(" + width + "," + height + ")");
 
-            dr.requestFullUpdate();
+                dr.requestFullUpdate();
+            }
         },
 
         init: function(connectionMethod)
@@ -558,18 +602,28 @@ var DisplayRenderer = function() {
             dr.ctx = dr.canvas.getContext("2d");
 
             dr.frontCanvas = document.getElementById("canvas");
+            dr.frontCanvas = document.createElement("canvas");
             dr.frontCtx = dr.frontCanvas.getContext("2d");
-
-            var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
-            var URL = window.URL || window.webKitURL;
-            var useBlobBuilder = BlobBuilder && URL;
-            //var useBlobBuilder = false;
 
             if (dr.canvas.width != 1024 || dr.canvas.height != 768)
             {
                 dr.frontCanvas.width = dr.canvas.width = 1024;
                 dr.frontCanvas.height = dr.canvas.height = 768;
             }
+
+            $(containerElement).append(dr.frontCanvas);
+            $(containerElement).resize(function()
+            {
+                var container = $(this);
+                dr.resize(container.width(), container.height());
+            });
+
+            dr.createDebugOverlay();
+
+            var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
+            var URL = window.URL || window.webKitURL;
+            var useBlobBuilder = BlobBuilder && URL;
+            //var useBlobBuilder = false;
 
             function getCanvasPos(event)
             {
@@ -686,13 +740,15 @@ var DisplayRenderer = function() {
                 dr.socket = new WebSocket("ws://" + dr.location + "/display");
 
                 dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
+                dr.socket.onopen = dr._sendQueuedMessages;
                 dr.socket.onerror = dr.reconnect;
                 dr.socket.onclose = dr.reconnect;
             }
         }
     }
 
+    dr.init(options.connectionMethod);
+
     return dr;
 }
 
-var displayRenderer = new DisplayRenderer();
