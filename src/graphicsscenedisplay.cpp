@@ -19,7 +19,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     scene_(scene),
     id_(id),
     commandInterpreter_(commandInterpreter),
-    urlMode_(true),
+    urlMode_(false),
     updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),
@@ -35,7 +35,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
 
     updateCheckTimer_ = new QTimer(this);
-    connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(sendUpdate()));
+    connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
     updateCheckTimer_->setSingleShot(false);
     updateCheckTimer_->start(updateCheckInterval_);
 
@@ -62,6 +62,12 @@ void GraphicsSceneDisplay::clearPatches()
     QMutexLocker l(&patchesMutex_);
     qDeleteAll(patches_.values());
     patches_.clear();
+}
+
+void GraphicsSceneDisplay::triggerUpdateCheckTimer()
+{
+    if (!updateCheckTimer_->isActive())
+        updateCheckTimer_->start(updateCheckInterval_);
 }
 
 Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
@@ -103,17 +109,17 @@ bool GraphicsSceneDisplay::handleReceivedMessage(const QString &msg, const QStri
     bool result = true;
 
     if (msg.startsWith("ready"))
-        metaObject()->invokeMethod(
+        QMetaObject::invokeMethod(
             this, "clientReady",
             this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else if (msg.startsWith("requestFullUpdate"))
-        metaObject()->invokeMethod(
+        QMetaObject::invokeMethod(
             renderer_, "fullUpdate",
             renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else
-        metaObject()->invokeMethod(
+        QMetaObject::invokeMethod(
             commandInterpreter_, "sendCommand",
             commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_RETURN_ARG(bool, result),
@@ -142,9 +148,7 @@ void GraphicsSceneDisplay::clientReady()
 void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
 {
     DPRINTF("display: %p thread: %p id: %s -> Damaged regions in scene available", this, this->thread(), id().toUtf8().constData());
-
-    if (!updateCheckTimer_->isActive())
-        updateCheckTimer_->start(updateCheckInterval_);
+    triggerUpdateCheckTimer();
 }
 
 Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
@@ -155,14 +159,38 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
 
     QImage image(rect.size(), QImage::Format_RGB888);
 
-    QPainter p(&image);
+    QPainter p;
+    p.begin(&image);
     p.drawImage(0, 0, patchBuffer_, rect.x(), rect.y());
+    p.end();
 
+    /*
+    QBuffer pngBuffer;
+    pngBuffer.open(QIODevice::ReadWrite);
+    image.save(&pngBuffer, "PNG");
+
+    QBuffer jpgBuffer;
+    jpgBuffer.open(QIODevice::ReadWrite);
+    image.save(&jpgBuffer, "JPEG", 50);
+
+    if (pngBuffer.size() < jpgBuffer.size())
+    {
+        patch->data.setData(pngBuffer.data());
+        patch->mimeType = "image/png";
+    }
+    else
+    {
+        patch->data.setData(jpgBuffer.data());
+        patch->mimeType = "image/jpg";
+    }
+    //*/
+
+    //*
     patch->data.open(QIODevice::ReadWrite);
 
     if (false && image.width() * image.height() > 9 * 9 * renderer_->tileSize() * renderer_->tileSize())
     {
-        image.save(&patch->data, "JPEG", 90);
+        image.save(&patch->data, "JPEG", 50);
         patch->mimeType = "image/jpeg";
     }
     else
@@ -170,6 +198,11 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
         image.save(&patch->data, "PNG");
         patch->mimeType = "image/png";
     }
+    //*/
+
+    //image = image.convertToFormat(QImage::Format_Indexed8);
+    //image.save(&patch->data, "PNG");
+    //patch->mimeType = "image/png";
 
     //image.save(&patch->data, "BMP"); patch->mimeType = "image/bmp";
 
@@ -198,7 +231,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     return patch;
 }
 
-void GraphicsSceneDisplay::sendUpdate()
+void GraphicsSceneDisplay::updateCheckTimerTimeout()
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
@@ -303,5 +336,17 @@ QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
     if (ops.count() > 0)
         commandList += QString().sprintf("end(%d):", frame_);
 
+    if (additionalCommands_.count() > 0)
+    {
+        commandList += additionalCommands_;
+        additionalCommands_.clear();
+    }
+
     return commandList;
+}
+
+void GraphicsSceneDisplay::dispatchAdditionalCommands(const QStringList &commands)
+{
+    additionalCommands_ += commands;
+    triggerUpdateCheckTimer();
 }

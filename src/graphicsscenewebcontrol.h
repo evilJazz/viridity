@@ -3,8 +3,6 @@
 
 #include "viridity_global.h"
 
-#include "KCL/backgroundtasks.h"
-
 #include <QTimer>
 
 #include <QtNetwork/QTcpSocket>

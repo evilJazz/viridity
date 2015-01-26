@@ -15,7 +15,13 @@
     <script type="text/javascript">
         $(document).ready(function() {
             //$("#displayContainer").viridity({ connectionMethod: ConnectionMethod.WebSockets });
-            $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+            var display = $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+
+            display.onNewCommandReceived = function (input)
+            {
+                alert("Input received: " + input);
+                return "Test!";
+            }
 
             function resizeToWindow()
             {

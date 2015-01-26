@@ -48,12 +48,14 @@ public:
 
     QStringList getCommandsForPendingUpdates();
 
+    void dispatchAdditionalCommands(const QStringList &commands);
+
 signals:
     void updateAvailable();
 
 private slots:
     void sceneDamagedRegionsAvailable();
-    void sendUpdate();
+    void updateCheckTimerTimeout();
     void clientReady();
 
 private:
@@ -77,8 +79,12 @@ private:
     QImage patchBuffer_;
     QMutex patchesMutex_;
 
+    QStringList additionalCommands_;
+
     Patch *createPatch(const QRect &rect, bool createBase64);
     void clearPatches();
+
+    void triggerUpdateCheckTimer();
 };
 
 #endif // GRAPHICSSCENEDISPLAY_H

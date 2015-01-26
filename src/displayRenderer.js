@@ -68,6 +68,8 @@ var ConnectionMethod = {
         var debugVerbosity = 0;
         var debugDraw = 0;
 
+        var originHref = window.location.href;
+
         var dr =
         {
             connectionMethod: ConnectionMethod.Auto,
@@ -88,6 +90,7 @@ var ConnectionMethod = {
             frontCtx: 0,
 
             location: "",
+            fullLocation: "",
 
             timeout: 120000,
             //timeout: 2000,
@@ -96,6 +99,8 @@ var ConnectionMethod = {
 
             inputEvents: [],
             inputEventsStarted: false,
+
+            onNewCommandReceived: undefined,
 
             _imageDone: function()
             {
@@ -280,7 +285,7 @@ var ConnectionMethod = {
                     var options =
                     {
                         type: "POST",
-                        url: "display?id=" + dr.connectionId,
+                        url: dr.fullLocation + "/display?id=" + dr.connectionId,
                         async: true,
                         cache: false,
                         timeout: dr.timeout,
@@ -497,9 +502,18 @@ var ConnectionMethod = {
                 }
                 else if (command === "info")
                 {
-                    $("#connectionId").text(inputParams[0]);
                     dr.connectionId = inputParams[0];
                     dr.frameEndReceived = true;
+                }
+                else if (command === "command")
+                {
+                    var responseId = inputParams[0];
+                    var input = inputParams[1];
+                    if (typeof(dr.onNewCommandReceived) == "function")
+                    {
+                        var result = dr.onNewCommandReceived(input);
+                        sendMessage("commandReponse(" + responseId + "," + result + ")");
+                    }
                 }
                 else if (command === "end")
                 {
@@ -537,26 +551,26 @@ var ConnectionMethod = {
                 }
             },
 
-            sendCommand: function(command)
+            sendCommand: function(command, callback)
             {
                 var options =
                 {
                     type: "POST",
-                    url: "command?id=" + dr.connectionId,
+                    url: dr.fullLocation + "/command?id=" + dr.connectionId,
                     async: true,
                     timeout: dr.timeout,
                     data: command,
 
                     success: function(data)
                     {
-                        console.log("command " + command + "answered with " + data);
-                        $("#commandResponse").show().text(data).fadeOut(2000);
+                        console.log("command " + command + "answered with " + data);                       
+                        if (typeof(callback) == "function")
+                            callback(data);
                     },
 
                     error: function(xhr, status, exception)
                     {
                         console.log("error while sending command:\n" + status + " - " + exception + "\n");
-                        $("#commandResponse").show().text(status + " " + exception).fadeOut(2000);
                     }
                 };
 
@@ -597,9 +611,11 @@ var ConnectionMethod = {
                 if (dr.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
                     dr.connectionMethod = ConnectionMethod.LongPolling;
 
+                dr.fullLocation = window.location.href.replace(/\/$/, "");
+                console.log("dr.fullLocation: " + dr.fullLocation);
+
                 var hostWithPath = window.location.host + window.location.pathname;
-                hostWithPath = hostWithPath.replace(/\/$/, "");
-                dr.location = hostWithPath;
+                dr.location = hostWithPath.replace(/\/$/, "");
 
                 dr.canvas = document.createElement("canvas");
                 dr.ctx = dr.canvas.getContext("2d");
