@@ -46,9 +46,9 @@ public:
     bool handleReceivedMessage(const QByteArray &data);
     bool handleReceivedMessage(const QString &msg, const QStringList &params);
 
-    QStringList getCommandsForPendingUpdates();
+    QStringList getMessagesForPendingUpdates();
 
-    void dispatchAdditionalCommands(const QStringList &commands);
+    void dispatchAdditionalMessages(const QStringList &messages);
 
 signals:
     void updateAvailable();
@@ -79,7 +79,7 @@ private:
     QImage patchBuffer_;
     QMutex patchesMutex_;
 
-    QStringList additionalCommands_;
+    QStringList additionalMessages_;
 
     Patch *createPatch(const QRect &rect, bool createBase64);
     void clearPatches();

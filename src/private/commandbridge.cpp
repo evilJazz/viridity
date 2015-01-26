@@ -17,8 +17,26 @@ CommandBridge &CommandBridge::singleton()
     return *instance;
 }
 
+int CommandBridge::getNewResponseId()
+{
+    ++responseId_;
+    return responseId_;
+}
+
+QVariant CommandBridge::sendCommand(const QString &command)
+{
+    int result = getNewResponseId();
+
+    QString message = QString("command(%1,%2)").arg(result).arg(command);
+
+    // Display dispatch message...
+
+    return result;
+}
+
 CommandBridge::CommandBridge(QObject *parent) :
     QObject(parent),
+    responseId_(0),
     response_(QString::null)
 {
 }
@@ -33,4 +51,3 @@ qDebug("CommandBridge answers with %s for display ID %s", response_.toUtf8().con
     response_ = QString::null;
     return result;
 }
-

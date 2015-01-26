@@ -111,7 +111,7 @@ void LongPollingHandler::handleDisplayUpdateAvailable()
 
     if (response_ && display_ && display_->isUpdateAvailable())
     {
-        QStringList commandList = display_->getCommandsForPendingUpdates();
+        QStringList commandList = display_->getMessagesForPendingUpdates();
 
         connection_->server()->sessionManager()->releaseDisplay(display_);
         display_ = NULL;

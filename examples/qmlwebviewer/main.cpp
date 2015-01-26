@@ -17,7 +17,7 @@ QGraphicsScene *createScene()
     kcl->registerTypes("KCL");
 
     QDeclarativeContext *rootContext = engine->rootContext();
-    rootContext->setContextProperty("commandBridge", &globalCommandBridge);
+    rootContext->setContextProperty("CommandBridge", &globalCommandBridge);
 
     QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
 

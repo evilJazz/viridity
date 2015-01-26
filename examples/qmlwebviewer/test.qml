@@ -1,6 +1,8 @@
 import QtQuick 1.1
 import KCL 1.0
 
+import "qrc:/webcontrol/WebCommand.js" as WebCommand
+
 FocusScope {
     id: scene
 
@@ -222,6 +224,19 @@ FocusScope {
         CheckBox {
             id: dummieCheckbox
             text: "Dummie"
+        }
+
+        CheckBox {
+            id: alertCheckbox
+            text: "Alert"
+
+            onCheckedChanged:
+            {
+                WebCommand.sendCommand("Hello World! " + checked, function (response)
+                {
+                    console.log("Response from client: " + response);
+                });
+            }
         }
     }
 

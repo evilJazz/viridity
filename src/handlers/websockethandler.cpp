@@ -62,7 +62,7 @@ void WebSocketHandler::handleDisplayUpdateAvailable()
 {
     if (display_ && display_->isUpdateAvailable())
     {
-        QStringList commandList = display_->getCommandsForPendingUpdates();
+        QStringList commandList = display_->getMessagesForPendingUpdates();
 
         foreach (QString command, commandList)
             socket_->sendMessage(command.toLatin1());

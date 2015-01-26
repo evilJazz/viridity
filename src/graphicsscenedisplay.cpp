@@ -247,11 +247,11 @@ void GraphicsSceneDisplay::updateCheckTimerTimeout()
     }
 }
 
-QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
+QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
 {
     DGUARDMETHODTIMED;
 
-    QStringList commandList;
+    QStringList messageList;
 
     updateAvailable_ = false;
     QList<UpdateOperation> ops = renderer_->updateBufferExt();
@@ -279,7 +279,7 @@ QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
                 Patch *patch = createPatch(rect, false);
                 patch->id = QString::number(frame_) + "_" + QString::number(i);
 
-                QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
+                QString msg = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
                     frame_,
                     rect.x(), rect.y(), rect.width(), rect.height(),
                     patch->mimeType.toLatin1().constData(),
@@ -289,20 +289,20 @@ QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
                 QMutexLocker l(&patchesMutex_);
                 patches_.insert(patch->id, patch);
 
-                commandList += cmd;
+                messageList += msg;
             }
             else
             {
                 Patch *patch = createPatch(rect, true);
 
                 QString format = patch->mimeType + ";base64";
-                QString cmd = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):",
+                QString msg = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):",
                     frame_,
                     rect.x(), rect.y(), rect.width(), rect.height(),
                     format.toLatin1().constData()
                 );
 
-                commandList += cmd + patch->dataBase64;
+                messageList += msg + patch->dataBase64;
 
                 delete patch;
             }
@@ -311,42 +311,42 @@ QStringList GraphicsSceneDisplay::getCommandsForPendingUpdates()
         {
             const QRect &rect = op.srcRect;
 
-            QString cmd = QString().sprintf("moveImage(%d,%d,%d,%d,%d,%d,%d):",
+            QString msg = QString().sprintf("moveImage(%d,%d,%d,%d,%d,%d,%d):",
                 frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.dstPoint.x(), op.dstPoint.y()
             );
 
-            commandList += cmd;
+            messageList += msg;
         }
         else if (op.type == uotFill)
         {
             const QRect &rect = op.srcRect;
 
-            QString cmd = QString().sprintf("fillRect(%d,%d,%d,%d,%d,%s):",
+            QString msg = QString().sprintf("fillRect(%d,%d,%d,%d,%d,%s):",
                 frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.fillColor.name().toLatin1().constData()
             );
 
-            commandList += cmd;
+            messageList += msg;
         }
     }
 
     if (ops.count() > 0)
-        commandList += QString().sprintf("end(%d):", frame_);
+        messageList += QString().sprintf("end(%d):", frame_);
 
-    if (additionalCommands_.count() > 0)
+    if (additionalMessages_.count() > 0)
     {
-        commandList += additionalCommands_;
-        additionalCommands_.clear();
+        messageList += additionalMessages_;
+        additionalMessages_.clear();
     }
 
-    return commandList;
+    return messageList;
 }
 
-void GraphicsSceneDisplay::dispatchAdditionalCommands(const QStringList &commands)
+void GraphicsSceneDisplay::dispatchAdditionalMessages(const QStringList &messages)
 {
-    additionalCommands_ += commands;
+    additionalMessages_ += messages;
     triggerUpdateCheckTimer();
 }
