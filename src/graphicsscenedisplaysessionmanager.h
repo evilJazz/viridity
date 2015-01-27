@@ -6,6 +6,22 @@
 
 #include "graphicsscenedisplay.h"
 
+class GraphicsSceneDisplaySessionManager;
+
+struct GraphicsSceneDisplaySession
+{
+    QString id;
+
+    GraphicsSceneDisplaySessionManager *sessionManager;
+    QGraphicsScene *scene;
+    GraphicsSceneDisplay *display;
+    GraphicsSceneWebControlCommandInterpreter *commandInterpreter;
+    QList<CommandHandler *> commandHandlers;
+
+    QElapsedTimer lastUsed;
+    int useCount;
+};
+
 class GraphicsSceneDisplaySessionManager : public QObject
 {
     Q_OBJECT
@@ -20,6 +36,8 @@ public:
     GraphicsSceneDisplay *acquireDisplay(const QString &id);
     void releaseDisplay(GraphicsSceneDisplay *display);
 
+    QStringList displaysIds(QGraphicsScene *scene = 0);
+
     int displayCount() const { return displays_.count(); }
 
 signals:
@@ -29,8 +47,12 @@ signals:
 protected:
     void removeDisplay(GraphicsSceneDisplay *display);
 
+    virtual GraphicsSceneDisplaySession *createNewSessionInstance();
+    virtual void setScene(GraphicsSceneDisplaySession *session) = 0;
+
 protected slots:
-    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id) = 0; // Always executed in thread of session manager
+    virtual void registerHandlers(GraphicsSceneDisplaySession *session);
+    virtual GraphicsSceneDisplaySession *createSession(const QString &id) = 0; // Always executed in thread of session manager
 
 private slots:
     void killObsoleteDisplays();
@@ -39,13 +61,7 @@ private:
     QMutex displayMutex_;
     QHash<QString, GraphicsSceneDisplay *> displays_;
 
-    struct DisplayResource {
-        GraphicsSceneDisplay *display;
-        QElapsedTimer lastUsed;
-        int useCount;
-    };
-
-    QHash<GraphicsSceneDisplay *, DisplayResource> displayResources_;
+    QHash<GraphicsSceneDisplay *, GraphicsSceneDisplaySession *> sessions_;
     QTimer cleanupTimer_;
 };
 
@@ -53,18 +69,14 @@ class SingleGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySess
 {
     Q_OBJECT
 public:
-    SingleGraphicsSceneDisplaySessionManager(QObject *parent, QGraphicsScene *scene);
-    virtual ~SingleGraphicsSceneDisplaySessionManager() {}
-
-    QGraphicsScene *scene() const { return scene_; }
-    GraphicsSceneWebControlCommandInterpreter *commandInterpreter() const { return commandInterpreter_; }
+    SingleGraphicsSceneDisplaySessionManager(QObject *parent = 0);
+    virtual ~SingleGraphicsSceneDisplaySessionManager();
 
 protected slots:
-    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id);
+    virtual GraphicsSceneDisplaySession *createSession(const QString &id);
 
 private:
-    QGraphicsScene *scene_;
-    GraphicsSceneWebControlCommandInterpreter *commandInterpreter_;
+    GraphicsSceneDisplaySession *protoSession_;
 };
 
 class MultiGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySessionManager
@@ -75,8 +87,7 @@ public:
     virtual ~MultiGraphicsSceneDisplaySessionManager() {}
 
 protected slots:
-    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id);
-    virtual QGraphicsScene *getScene(const QString &id) = 0;
+    virtual GraphicsSceneDisplaySession *createSession(const QString &id);
 };
 
 #endif // GRAPHICSSCENEDISPLAYSESSIONMANAGER_H

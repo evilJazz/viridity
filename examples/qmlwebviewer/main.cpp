@@ -8,7 +8,7 @@
 
 #include "private/commandbridge.h"
 
-QGraphicsScene *createScene()
+void createScene(GraphicsSceneDisplaySession *session)
 {
     QDeclarativeEngine *engine = new QDeclarativeEngine();
 
@@ -16,8 +16,10 @@ QGraphicsScene *createScene()
     kcl->initializeEngine(engine, "KCL");
     kcl->registerTypes("KCL");
 
-    QDeclarativeContext *rootContext = engine->rootContext();
-    rootContext->setContextProperty("CommandBridge", &globalCommandBridge);
+    CommandBridge *commandBridge = new CommandBridge(session, engine);
+    engine->rootContext()->setContextProperty("CommandBridge", commandBridge);
+
+    session->commandHandlers.append(commandBridge);
 
     QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
 
@@ -31,21 +33,20 @@ QGraphicsScene *createScene()
 
     QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
 
-    QGraphicsScene *scene = new QGraphicsScene(engine);
-    scene->addItem(item);
+    session->scene = new QGraphicsScene(engine);
+    session->scene->addItem(item);
 
-    QObject::connect(scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
-
-    return scene;
+    QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 }
 
-class MySessionManager : public MultiGraphicsSceneDisplaySessionManager
+class MySingleSessionManager : public SingleGraphicsSceneDisplaySessionManager
 {
-protected:
-    QGraphicsScene *getScene(const QString &id)
-    {
-        return createScene();
-    }
+    void setScene(GraphicsSceneDisplaySession *session) { createScene(session); }
+};
+
+class MyMultiSessionManager : public MultiGraphicsSceneDisplaySessionManager
+{
+    void setScene(GraphicsSceneDisplaySession *session) { createScene(session); }
 };
 
 int main(int argc, char *argv[])
@@ -54,12 +55,8 @@ int main(int argc, char *argv[])
 
     const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
 
-    /*
-    QGraphicsScene *scene = createScene();
-    SingleGraphicsSceneDisplaySessionManager sessionManager(&a, scene);
-    */
-
-    MySessionManager sessionManager;
+    //MySingleSessionManager sessionManager;
+    MyMultiSessionManager sessionManager;
 
     GraphicsSceneMultiThreadedWebServer server(&a, &sessionManager);
     server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount());

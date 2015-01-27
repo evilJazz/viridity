@@ -120,11 +120,12 @@ bool GraphicsSceneDisplay::handleReceivedMessage(const QString &msg, const QStri
         );
     else
         QMetaObject::invokeMethod(
-            commandInterpreter_, "sendCommand",
+            commandInterpreter_, "dispatchCommand",
             commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_RETURN_ARG(bool, result),
             Q_ARG(const QString &, msg),
-            Q_ARG(const QStringList &, params)
+            Q_ARG(const QStringList &, params),
+            Q_ARG(const QString &, this->id())
         );
 
     return result;

@@ -7,7 +7,15 @@
 #include <QEvent>
 #include <QGraphicsScene>
 
-class GraphicsSceneWebControlCommandInterpreter : public QObject
+class CommandHandler
+{
+public:
+    virtual ~CommandHandler() {}
+    virtual bool canHandleCommand(const QString &command, const QStringList &params, const QString &displayId) = 0;
+    virtual bool handleCommand(const QString &command, const QStringList &params, const QString &displayId) = 0;
+};
+
+class GraphicsSceneWebControlCommandInterpreter : public QObject, public CommandHandler
 {
     Q_OBJECT
 public:
@@ -17,10 +25,21 @@ public:
     void setTargetGraphicsScene(QGraphicsScene *scene);
     QGraphicsScene *targetGraphicsScene() const { return scene_; }
 
-    Q_INVOKABLE bool sendCommand(const QString &command, const QStringList &params);
+    Q_INVOKABLE bool dispatchCommand(const QString &command, const QStringList &params, const QString &displayId = QString::null);
+
+    void registerHandler(CommandHandler *handler);
+    void registerHandlers(const QList<CommandHandler *> &handlers);
+    void unregisterHandler(CommandHandler *handler);
+
+protected:
+    // CommandHandler
+    virtual bool canHandleCommand(const QString &command, const QStringList &params, const QString &displayId);
+    virtual bool handleCommand(const QString &command, const QStringList &params, const QString &displayId);
 
 private:
     QGraphicsScene *scene_;
+
+    QList<CommandHandler *> handlers_;
 
     bool buttonDown_;
     Qt::MouseButton lastButton_;

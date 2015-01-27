@@ -218,6 +218,6 @@ void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
     GraphicsSceneWebServerConnection *connection = new GraphicsSceneWebServerConnection(this, handle);
     connection->moveToThread(connectionThreads_.at(threadIndex)); // Move connection to thread's event loop
 
-    metaObject()->invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
+    QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
 }
 

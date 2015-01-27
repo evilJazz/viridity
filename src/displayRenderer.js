@@ -512,7 +512,7 @@ var ConnectionMethod = {
                     if (typeof(dr.onNewCommandReceived) == "function")
                     {
                         var result = dr.onNewCommandReceived(input);
-                        sendMessage("commandReponse(" + responseId + "," + result + ")");
+                        dr.sendMessage("commandResponse(" + responseId + "," + result + ")");
                     }
                 }
                 else if (command === "end")

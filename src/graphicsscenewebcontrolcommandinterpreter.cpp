@@ -19,6 +19,7 @@ GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpr
     buttonDown_(false),
     keyDownKeyCodeHandled_(false)
 {
+    registerHandler(this);
 }
 
 GraphicsSceneWebControlCommandInterpreter::~GraphicsSceneWebControlCommandInterpreter()
@@ -337,10 +338,47 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
     return true;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::sendCommand(const QString &command, const QStringList &params)
+bool GraphicsSceneWebControlCommandInterpreter::dispatchCommand(const QString &command, const QStringList &params, const QString &displayId)
 {
     DGUARDMETHODTIMED;
 
+    foreach (CommandHandler *handler, handlers_)
+    {
+        if (handler->canHandleCommand(command, params, displayId))
+            return handler->handleCommand(command, params, displayId);
+    }
+
+    return false;
+}
+
+void GraphicsSceneWebControlCommandInterpreter::registerHandler(CommandHandler *handler)
+{
+    if (handlers_.indexOf(handler) == -1)
+        handlers_.append(handler);
+}
+
+void GraphicsSceneWebControlCommandInterpreter::registerHandlers(const QList<CommandHandler *> &handlers)
+{
+    foreach (CommandHandler *handler, handlers)
+        registerHandler(handler);
+}
+
+void GraphicsSceneWebControlCommandInterpreter::unregisterHandler(CommandHandler *handler)
+{
+    handlers_.removeAll(handler);
+}
+
+bool GraphicsSceneWebControlCommandInterpreter::canHandleCommand(const QString &command, const QStringList &params, const QString &displayId)
+{
+    return command.startsWith("mouseEnter") ||
+           command.startsWith("mouseExit") ||
+           (command.startsWith("mouse") && params.count() >= 2) ||
+           (command.startsWith("key") && params.count() >= 1) ||
+           (command.startsWith("resize") && params.count() == 2);
+}
+
+bool GraphicsSceneWebControlCommandInterpreter::handleCommand(const QString &command, const QStringList &params, const QString &displayId)
+{
     if (command.startsWith("mouseEnter"))
         return handleMouseEnter(command, params);
     else if (command.startsWith("mouseExit"))
@@ -350,11 +388,7 @@ bool GraphicsSceneWebControlCommandInterpreter::sendCommand(const QString &comma
     else if (command.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);
     else if (command.startsWith("resize") && params.count() == 2)
-    {
         resizeScene(params);
-    }
-
-    return false;
 }
 
 void GraphicsSceneWebControlCommandInterpreter::resizeScene(const QStringList &params)

@@ -24,7 +24,7 @@ public:
 
     void render(QPainter *painter, const QRectF &target = QRectF(), const QRectF &source = QRectF(), Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio)
     {
-        metaObject()->invokeMethod(
+        QMetaObject::invokeMethod(
             this, "renderInSceneThreadContext",
             scene_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_ARG(QPainter *, painter),
@@ -36,7 +36,7 @@ public:
 
     void render(QPainter *painter, const QVector<QRect> &rects)
     {
-        metaObject()->invokeMethod(
+        QMetaObject::invokeMethod(
             this, "renderInSceneThreadContext",
             scene_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_ARG(QPainter *, painter),

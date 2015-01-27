@@ -1,7 +1,7 @@
 import QtQuick 1.1
 import KCL 1.0
 
-import "qrc:/webcontrol/WebCommand.js" as WebCommand
+import "qrc:/webcontrol/Display.js" as Display
 
 FocusScope {
     id: scene
@@ -232,9 +232,9 @@ FocusScope {
 
             onCheckedChanged:
             {
-                WebCommand.sendCommand("Hello World! " + checked, function (response)
+                Display.sendCommand("Hello World! " + checked, function (response, displayId)
                 {
-                    console.log("Response from client: " + response);
+                    console.log("Response from display " + displayId + ": " + response);
                 });
             }
         }

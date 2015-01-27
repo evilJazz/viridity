@@ -32,38 +32,51 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay()
     QMutexLocker l(&displayMutex_);
 
     // Create new display instance in thread of session manager...
-    GraphicsSceneDisplay *display = NULL;
-    metaObject()->invokeMethod(
-        this, "createDisplayInstance",
+    GraphicsSceneDisplaySession *resources = NULL;
+
+    QMetaObject::invokeMethod(
+        this, "createSession",
         this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-        Q_RETURN_ARG(GraphicsSceneDisplay *, display),
+        Q_RETURN_ARG(GraphicsSceneDisplaySession *, resources),
         Q_ARG(const QString &, createUniqueID())
     );
 
-    if (display)
+    if (resources && resources->display)
     {
-        displays_.insert(display->id(), display);
+        displays_.insert(resources->display->id(), resources->display);
 
-        DisplayResource res;
-        res.display = display;
-        res.lastUsed.restart();
-        res.useCount = 1;
+        resources->lastUsed.restart();
+        resources->useCount = 1;
 
-        displayResources_.insert(display, res);
+        sessions_.insert(resources->display, resources);
 
-        emit newDisplayCreated(display);
+        emit newDisplayCreated(resources->display);
+
+        return resources->display;
     }
-
-    return display;
+    else
+        return NULL;
 }
 
 void GraphicsSceneDisplaySessionManager::removeDisplay(GraphicsSceneDisplay *display)
 {
     QMutexLocker l(&displayMutex_);
     displays_.remove(display->id());
-    displayResources_.remove(display);
 
-    metaObject()->invokeMethod(display, "deleteLater");
+    GraphicsSceneDisplaySession *resources = sessions_.take(display);
+    delete resources;
+
+    QMetaObject::invokeMethod(display, "deleteLater");
+}
+
+GraphicsSceneDisplaySession *GraphicsSceneDisplaySessionManager::createNewSessionInstance()
+{
+    return new GraphicsSceneDisplaySession;
+}
+
+void GraphicsSceneDisplaySessionManager::registerHandlers(GraphicsSceneDisplaySession *session)
+{
+    session->commandInterpreter->registerHandlers(session->commandHandlers);
 }
 
 GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getDisplay(const QString &id)
@@ -83,9 +96,9 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::acquireDisplay(const Q
 
     if (display)
     {
-        DisplayResource &res = displayResources_[display];
-        ++res.useCount;
-        res.lastUsed.restart();
+        GraphicsSceneDisplaySession *res = sessions_[display];
+        ++res->useCount;
+        res->lastUsed.restart();
     }
 
     return display;
@@ -97,36 +110,77 @@ void GraphicsSceneDisplaySessionManager::releaseDisplay(GraphicsSceneDisplay *di
 
     if (display)
     {
-        DisplayResource &res = displayResources_[display];
-        --res.useCount;
-        res.lastUsed.restart();
+        GraphicsSceneDisplaySession *res = sessions_[display];
+        --res->useCount;
+        res->lastUsed.restart();
     }
+}
+
+QStringList GraphicsSceneDisplaySessionManager::displaysIds(QGraphicsScene *scene)
+{
+    QMutexLocker l(&displayMutex_);
+
+    QStringList result;
+
+    foreach (GraphicsSceneDisplaySession *session, sessions_.values())
+    {
+        if (!scene || session->scene == scene)
+            result << session->id;
+    }
+
+    return result;
 }
 
 void GraphicsSceneDisplaySessionManager::killObsoleteDisplays()
 {
     QMutexLocker l(&displayMutex_);
 
-    foreach (const DisplayResource &res, displayResources_.values())
-        if (res.useCount == 0 && res.lastUsed.elapsed() > 5000)
-            removeDisplay(res.display);
+    foreach (GraphicsSceneDisplaySession *res, sessions_.values())
+        if (res->useCount == 0 && res->lastUsed.elapsed() > 5000)
+            removeDisplay(res->display);
 }
 
 
 /* SingleGraphicsSceneDisplaySessionManager */
 
-SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(QObject *parent, QGraphicsScene *scene) :
+SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(QObject *parent) :
     GraphicsSceneDisplaySessionManager(parent),
-    scene_(scene)
+    protoSession_(NULL)
 {
-    commandInterpreter_ = new GraphicsSceneWebControlCommandInterpreter(this);
-    commandInterpreter_->setTargetGraphicsScene(scene_);
 }
 
-GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id)
+SingleGraphicsSceneDisplaySessionManager::~SingleGraphicsSceneDisplaySessionManager()
+{
+    if (protoSession_)
+        delete protoSession_;
+}
+
+GraphicsSceneDisplaySession *SingleGraphicsSceneDisplaySessionManager::createSession(const QString &id)
 {
     DGUARDMETHODTIMED;
-    return new GraphicsSceneDisplay(id, scene_, commandInterpreter_);
+
+    if (!protoSession_)
+    {
+        protoSession_ = createNewSessionInstance();
+        protoSession_->id = id;
+        protoSession_->sessionManager = this;
+
+        setScene(protoSession_);
+        protoSession_->scene->setParent(this);
+
+        protoSession_->commandInterpreter = new GraphicsSceneWebControlCommandInterpreter(protoSession_->scene);
+        protoSession_->commandInterpreter->setTargetGraphicsScene(protoSession_->scene);
+
+        registerHandlers(protoSession_);
+    }
+
+    GraphicsSceneDisplaySession *session = createNewSessionInstance();
+    *session = *protoSession_;
+
+    session->id = id;
+    session->display = new GraphicsSceneDisplay(id, protoSession_->scene, protoSession_->commandInterpreter);
+
+    return session;
 }
 
 /* MultiGraphicsSceneDisplaySessionManager */
@@ -137,15 +191,21 @@ MultiGraphicsSceneDisplaySessionManager::MultiGraphicsSceneDisplaySessionManager
 
 }
 
-GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id)
+GraphicsSceneDisplaySession *MultiGraphicsSceneDisplaySessionManager::createSession(const QString &id)
 {
-    QGraphicsScene *scene = getScene(id);
+    GraphicsSceneDisplaySession *session = createNewSessionInstance();
+    session->id = id;
+    session->sessionManager = this;
 
-    GraphicsSceneWebControlCommandInterpreter *ci = new GraphicsSceneWebControlCommandInterpreter(scene);
-    ci->setTargetGraphicsScene(scene);
+    setScene(session);
 
-    GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, scene, ci);
-    connect(display, SIGNAL(destroyed()), scene, SLOT(deleteLater()));
+    session->commandInterpreter = new GraphicsSceneWebControlCommandInterpreter(session->scene);
+    session->commandInterpreter->setTargetGraphicsScene(session->scene);
 
-    return display;
+    session->display = new GraphicsSceneDisplay(id, session->scene, session->commandInterpreter);
+    connect(session->display, SIGNAL(destroyed()), session->scene, SLOT(deleteLater()));
+
+    registerHandlers(session);
+
+    return session;
 }

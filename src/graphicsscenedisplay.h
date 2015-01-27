@@ -48,6 +48,7 @@ public:
 
     QStringList getMessagesForPendingUpdates();
 
+public slots:
     void dispatchAdditionalMessages(const QStringList &messages);
 
 signals:
