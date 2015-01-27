@@ -16,7 +16,7 @@ struct GraphicsSceneDisplaySession
     QGraphicsScene *scene;
     GraphicsSceneDisplay *display;
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter;
-    QList<CommandHandler *> commandHandlers;
+    QList<MessageHandler *> commandHandlers;
 
     QElapsedTimer lastUsed;
     int useCount;

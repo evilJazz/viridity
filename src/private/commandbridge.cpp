@@ -54,16 +54,25 @@ QVariant CommandBridge::sendCommand(const QString &command, const QString &desti
     return dispatched > 0 ? result : false;
 }
 
-bool CommandBridge::canHandleCommand(const QString &command, const QStringList &params, const QString &displayId)
+bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &displayId)
 {
-    return command.startsWith("commandResponse") && params.count() == 2;
+    return message.startsWith("commandResponse");
 }
 
-bool CommandBridge::handleCommand(const QString &command, const QStringList &params, const QString &displayId)
+bool CommandBridge::handleMessage(const QByteArray &message, const QString &displayId)
 {
-    if (canHandleCommand(command, params, displayId))
+    if (canHandleMessage(message, displayId))
     {
-        emit responseReceived(params[0], params[1], displayId);
+        int paramStartIndex = message.indexOf("(");
+        int paramStopIndex = message.indexOf(")");
+        QByteArray rawParams = message.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+
+        paramStartIndex = rawParams.indexOf(",");
+        QString responseId = rawParams.mid(0, paramStartIndex);
+
+        QString response = QString::fromUtf8(rawParams.mid(paramStartIndex + 1, rawParams.length() - paramStartIndex - 1));
+
+        emit responseReceived(responseId, response, displayId);
         return true;
     }
 

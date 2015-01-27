@@ -11,6 +11,23 @@
 #include "KCL/debug.h"
 #include "private/qtestspontaneevent.h"
 
+
+/* MessageHandler */
+
+void MessageHandler::splitMessage(const QByteArray &message, QString &command, QStringList &params)
+{
+    QString rawMsg = message;
+
+    int paramStartIndex = rawMsg.indexOf("(");
+    int paramStopIndex = rawMsg.indexOf(")");
+
+    command = rawMsg.mid(0, paramStartIndex);
+    QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+
+    params = rawParams.split(",", QString::KeepEmptyParts);
+}
+
+
 /* GraphicsSceneWebControlCommandInterpreter */
 
 GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpreter(QObject *parent) :
@@ -338,57 +355,67 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
     return true;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::dispatchCommand(const QString &command, const QStringList &params, const QString &displayId)
+bool GraphicsSceneWebControlCommandInterpreter::dispatchMessage(const QByteArray &message, const QString &displayId)
 {
     DGUARDMETHODTIMED;
 
-    foreach (CommandHandler *handler, handlers_)
+    foreach (MessageHandler *handler, handlers_)
     {
-        if (handler->canHandleCommand(command, params, displayId))
-            return handler->handleCommand(command, params, displayId);
+        if (handler->canHandleMessage(message, displayId))
+            return handler->handleMessage(message, displayId);
     }
 
     return false;
 }
 
-void GraphicsSceneWebControlCommandInterpreter::registerHandler(CommandHandler *handler)
+void GraphicsSceneWebControlCommandInterpreter::registerHandler(MessageHandler *handler)
 {
     if (handlers_.indexOf(handler) == -1)
         handlers_.append(handler);
 }
 
-void GraphicsSceneWebControlCommandInterpreter::registerHandlers(const QList<CommandHandler *> &handlers)
+void GraphicsSceneWebControlCommandInterpreter::registerHandlers(const QList<MessageHandler *> &handlers)
 {
-    foreach (CommandHandler *handler, handlers)
+    foreach (MessageHandler *handler, handlers)
         registerHandler(handler);
 }
 
-void GraphicsSceneWebControlCommandInterpreter::unregisterHandler(CommandHandler *handler)
+void GraphicsSceneWebControlCommandInterpreter::unregisterHandler(MessageHandler *handler)
 {
     handlers_.removeAll(handler);
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::canHandleCommand(const QString &command, const QStringList &params, const QString &displayId)
+bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &displayId)
 {
-    return command.startsWith("mouseEnter") ||
-           command.startsWith("mouseExit") ||
-           (command.startsWith("mouse") && params.count() >= 2) ||
-           (command.startsWith("key") && params.count() >= 1) ||
-           (command.startsWith("resize") && params.count() == 2);
+    return message.startsWith("mouseEnter") ||
+           message.startsWith("mouseExit") ||
+           message.startsWith("mouse") ||
+           message.startsWith("key") ||
+           message.startsWith("resize");
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleCommand(const QString &command, const QStringList &params, const QString &displayId)
+bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &displayId)
 {
-    if (command.startsWith("mouseEnter"))
+    QString command;
+    QStringList params;
+
+    MessageHandler::splitMessage(message, command, params);
+
+    if (message.startsWith("mouseEnter"))
         return handleMouseEnter(command, params);
-    else if (command.startsWith("mouseExit"))
+    else if (message.startsWith("mouseExit"))
         return handleMouseExit(command, params);
-    else if (command.startsWith("mouse") && params.count() >= 2)
+    else if (message.startsWith("mouse") && params.count() >= 2)
         return handleMouseEvent(command, params);
-    else if (command.startsWith("key") && params.count() >= 1)
+    else if (message.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);
-    else if (command.startsWith("resize") && params.count() == 2)
+    else if (message.startsWith("resize") && params.count() == 2)
+    {
         resizeScene(params);
+        return true;
+    }
+
+    return false;
 }
 
 void GraphicsSceneWebControlCommandInterpreter::resizeScene(const QStringList &params)

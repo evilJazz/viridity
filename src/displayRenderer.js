@@ -391,8 +391,24 @@ var ConnectionMethod = {
 
                 var command = msg.data.substring(0, paramStartIndex);
                 var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
-                var inputParams = params.split(/[\s,]+/);
 
+                if (command === "command")
+                {
+                    if (typeof(dr.onNewCommandReceived) == "function")
+                    {
+                        paramStartIndex = params.indexOf(",");
+
+                        var responseId = params.substring(0, paramStartIndex);
+                        var input = params.substring(paramStartIndex + 1);
+
+                        var result = dr.onNewCommandReceived(input);
+                        dr.sendMessage("commandResponse(" + responseId + "," + result + ")");
+                    }
+
+                    return;
+                }
+
+                var inputParams = params.split(/[\s,]+/);
                 var frame = inputParams[0];
 
                 if (dr.lastFrame !== frame)
@@ -504,16 +520,6 @@ var ConnectionMethod = {
                 {
                     dr.connectionId = inputParams[0];
                     dr.frameEndReceived = true;
-                }
-                else if (command === "command")
-                {
-                    var responseId = inputParams[0];
-                    var input = inputParams[1];
-                    if (typeof(dr.onNewCommandReceived) == "function")
-                    {
-                        var result = dr.onNewCommandReceived(input);
-                        dr.sendMessage("commandResponse(" + responseId + "," + result + ")");
-                    }
                 }
                 else if (command === "end")
                 {

@@ -43,8 +43,7 @@ public:
     bool isUpdateAvailable() const { return clientReady_ && patches_.count() == 0 && updateAvailable_; }
     Patch *takePatch(const QString &patchId);
 
-    bool handleReceivedMessage(const QByteArray &data);
-    bool handleReceivedMessage(const QString &msg, const QStringList &params);
+    bool handleReceivedMessage(const QByteArray &message);
 
     QStringList getMessagesForPendingUpdates();
 

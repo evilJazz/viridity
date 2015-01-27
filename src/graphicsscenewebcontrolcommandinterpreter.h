@@ -7,15 +7,17 @@
 #include <QEvent>
 #include <QGraphicsScene>
 
-class CommandHandler
+class MessageHandler
 {
 public:
-    virtual ~CommandHandler() {}
-    virtual bool canHandleCommand(const QString &command, const QStringList &params, const QString &displayId) = 0;
-    virtual bool handleCommand(const QString &command, const QStringList &params, const QString &displayId) = 0;
+    virtual ~MessageHandler() {}
+    virtual bool canHandleMessage(const QByteArray &message, const QString &displayId) = 0;
+    virtual bool handleMessage(const QByteArray &message, const QString &displayId) = 0;
+
+    static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
 };
 
-class GraphicsSceneWebControlCommandInterpreter : public QObject, public CommandHandler
+class GraphicsSceneWebControlCommandInterpreter : public QObject, public MessageHandler
 {
     Q_OBJECT
 public:
@@ -25,21 +27,21 @@ public:
     void setTargetGraphicsScene(QGraphicsScene *scene);
     QGraphicsScene *targetGraphicsScene() const { return scene_; }
 
-    Q_INVOKABLE bool dispatchCommand(const QString &command, const QStringList &params, const QString &displayId = QString::null);
+    Q_INVOKABLE bool dispatchMessage(const QByteArray &message, const QString &displayId = QString::null);
 
-    void registerHandler(CommandHandler *handler);
-    void registerHandlers(const QList<CommandHandler *> &handlers);
-    void unregisterHandler(CommandHandler *handler);
+    void registerHandler(MessageHandler *handler);
+    void registerHandlers(const QList<MessageHandler *> &handlers);
+    void unregisterHandler(MessageHandler *handler);
 
 protected:
-    // CommandHandler
-    virtual bool canHandleCommand(const QString &command, const QStringList &params, const QString &displayId);
-    virtual bool handleCommand(const QString &command, const QStringList &params, const QString &displayId);
+    // MessageHandler
+    virtual bool canHandleMessage(const QByteArray &message, const QString &displayId);
+    virtual bool handleMessage(const QByteArray &message, const QString &displayId);
 
 private:
     QGraphicsScene *scene_;
 
-    QList<CommandHandler *> handlers_;
+    QList<MessageHandler *> handlers_;
 
     bool buttonDown_;
     Qt::MouseButton lastButton_;

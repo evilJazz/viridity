@@ -86,45 +86,26 @@ Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
     }
 }
 
-bool GraphicsSceneDisplay::handleReceivedMessage(const QByteArray &data)
-{
-    DGUARDMETHODTIMED;
-    QString rawMsg = data;
-
-    int paramStartIndex = rawMsg.indexOf("(");
-    int paramStopIndex = rawMsg.indexOf(")");
-
-    QString command = rawMsg.mid(0, paramStartIndex);
-    QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
-
-    QStringList params = rawParams.split(",", QString::KeepEmptyParts);
-
-    DPRINTF("display: %p thread: %p id: %s -> Received message: %s, command: %s, rawParams: %s", this, this->thread(), id().toUtf8().constData(), data.constData(), command.toLatin1().constData(), rawParams.toLatin1().constData());
-
-    return handleReceivedMessage(command, params);
-}
-
-bool GraphicsSceneDisplay::handleReceivedMessage(const QString &msg, const QStringList &params)
+bool GraphicsSceneDisplay::handleReceivedMessage(const QByteArray &message)
 {
     bool result = true;
 
-    if (msg.startsWith("ready"))
+    if (message.startsWith("ready"))
         QMetaObject::invokeMethod(
             this, "clientReady",
             this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
-    else if (msg.startsWith("requestFullUpdate"))
+    else if (message.startsWith("requestFullUpdate"))
         QMetaObject::invokeMethod(
             renderer_, "fullUpdate",
             renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else
         QMetaObject::invokeMethod(
-            commandInterpreter_, "dispatchCommand",
+            commandInterpreter_, "dispatchMessage",
             commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_RETURN_ARG(bool, result),
-            Q_ARG(const QString &, msg),
-            Q_ARG(const QStringList &, params),
+            Q_ARG(const QByteArray &, message),
             Q_ARG(const QString &, this->id())
         );
 

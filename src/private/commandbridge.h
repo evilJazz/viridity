@@ -8,7 +8,7 @@
 
 class GraphicsSceneDisplaySession;
 
-class CommandBridge : public QObject, public CommandHandler
+class CommandBridge : public QObject, public MessageHandler
 {
     Q_OBJECT
     Q_PROPERTY(QString response READ response WRITE setResponse)
@@ -23,9 +23,9 @@ public:
     Q_INVOKABLE QVariant sendCommand(const QString &command, const QString &destinationDisplayId);
 
 protected:
-    // CommandHandler
-    virtual bool canHandleCommand(const QString &command, const QStringList &params, const QString &displayId);
-    virtual bool handleCommand(const QString &command, const QStringList &params, const QString &displayId);
+    // MessageHandler
+    virtual bool canHandleMessage(const QByteArray &message, const QString &displayId);
+    virtual bool handleMessage(const QByteArray &message, const QString &displayId);
 
 public slots:
     QString handleCommandReady(const QString &id, const QString &command);
