@@ -232,7 +232,7 @@ FocusScope {
 
             onCheckedChanged:
             {
-                Display.sendCommand("Hello World! " + checked, function (response, displayId)
+                Display.sendCommand(["Hello World! " + checked, checked], function (response, displayId)
                 {
                     console.log("Response from display " + displayId + ": " + response);
                 });

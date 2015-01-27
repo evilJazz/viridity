@@ -401,8 +401,8 @@ var ConnectionMethod = {
                         var responseId = params.substring(0, paramStartIndex);
                         var input = params.substring(paramStartIndex + 1);
 
-                        var result = dr.onNewCommandReceived(input);
-                        dr.sendMessage("commandResponse(" + responseId + "," + result + ")");
+                        var result = dr.onNewCommandReceived(JSON.parse(input));
+                        dr.sendMessage("commandResponse(" + responseId + "," + JSON.stringify(result) + ")");
                     }
 
                     return;
