@@ -20,9 +20,18 @@
             display.onNewCommandReceived = function (input)
             {
                 console.dir(input);
-                alert("Input received: " + input);
+                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
                 return "Test!";
             }
+
+            $("#testInputButton").click(function()
+            {
+                display.sendCommand({ blah: "test", ghu: 12343142.22 }, function (response)
+                {
+                    console.dir(response);
+                    alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
+                });
+            });
 
             function resizeToWindow()
             {
@@ -38,5 +47,6 @@
   </head>
   <body>
     <div id="displayContainer"/>
+    <button id="testInputButton">BLAH TEST</button>
   </body>
 </html>

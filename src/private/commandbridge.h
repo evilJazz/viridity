@@ -42,6 +42,8 @@ private:
     int responseId_;
 
     int getNewResponseId();
+
+    bool dispatchMessage(const QString &message, const QString &displayId);
 };
 
 #endif // COMMANDBRIDGE_H

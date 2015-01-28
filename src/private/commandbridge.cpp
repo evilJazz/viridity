@@ -23,12 +23,27 @@ int CommandBridge::getNewResponseId()
     return responseId_;
 }
 
+bool CommandBridge::dispatchMessage(const QString &message, const QString &displayId)
+{
+    QStringList messages;
+    messages << message;
+
+    GraphicsSceneDisplay *display = session_->sessionManager->acquireDisplay(displayId);
+    if (display)
+    {
+        QMetaObject::invokeMethod(display, "dispatchAdditionalMessages", Q_ARG(const QStringList &, messages));
+        session_->sessionManager->releaseDisplay(display);
+        return true;
+    }
+
+    return false;
+}
+
 QVariant CommandBridge::sendCommand(const QString &command, const QString &destinationDisplayId)
 {
     int result = getNewResponseId();
 
-    QStringList messages;
-    messages << QString("command(%1,%2)").arg(result).arg(command);
+    QString message = QString("command(%1,%2)").arg(result).arg(command);
 
     int dispatched = 0;
     QStringList displayIds;
@@ -41,14 +56,8 @@ QVariant CommandBridge::sendCommand(const QString &command, const QString &desti
 
     foreach (const QString &displayId, displayIds)
     {
-        GraphicsSceneDisplay *display = session_->sessionManager->acquireDisplay(displayId);
-        if (display)
-        {
-            QMetaObject::invokeMethod(display, "dispatchAdditionalMessages", Q_ARG(const QStringList &, messages));
+        if (dispatchMessage(message, displayId))
             ++dispatched;
-
-            session_->sessionManager->releaseDisplay(display);
-        }
     }
 
     return dispatched > 0 ? result : false;
@@ -56,7 +65,7 @@ QVariant CommandBridge::sendCommand(const QString &command, const QString &desti
 
 bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &displayId)
 {
-    return message.startsWith("commandResponse");
+    return message.startsWith("commandResponse") || message.startsWith("command");
 }
 
 bool CommandBridge::handleMessage(const QByteArray &message, const QString &displayId)
@@ -70,10 +79,22 @@ bool CommandBridge::handleMessage(const QByteArray &message, const QString &disp
         paramStartIndex = rawParams.indexOf(",");
         QString responseId = rawParams.mid(0, paramStartIndex);
 
-        QString response = QString::fromUtf8(rawParams.mid(paramStartIndex + 1, rawParams.length() - paramStartIndex - 1));
+        QString input = QString::fromUtf8(rawParams.mid(paramStartIndex + 1, rawParams.length() - paramStartIndex - 1));
 
-        emit responseReceived(responseId, response, displayId);
-        return true;
+        if (message.startsWith("commandResponse"))
+        {
+            emit responseReceived(responseId, input, displayId);
+            return true;
+        }
+        else
+        {
+            response_ = QString::null;
+            emit commandReceived(responseId, input);
+
+            QString message = QString("commandResponse(%1,%2)").arg(responseId).arg(response());
+            dispatchMessage(message, displayId);
+            return true;
+        }
     }
 
     return false;

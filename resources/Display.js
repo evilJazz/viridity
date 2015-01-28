@@ -1,4 +1,4 @@
-var pendingCommands = {};
+var pendingCommandCallbacks = {};
 
 function sendCommand(command, callback, displayId)
 {
@@ -6,14 +6,24 @@ function sendCommand(command, callback, displayId)
         displayId = "";
 
     var responseId = CommandBridge.sendCommand(JSON.stringify(command), displayId);
-    pendingCommands[responseId] = callback;
+    pendingCommandCallbacks[responseId] = callback;
 }
 
 CommandBridge.responseReceived.connect(function(responseId, response, displayId)
 {
-    if (pendingCommands.hasOwnProperty(responseId))
+    if (pendingCommandCallbacks.hasOwnProperty(responseId))
     {
-        pendingCommands[responseId](JSON.parse(response), displayId);
-        delete pendingCommands[responseId];
+        pendingCommandCallbacks[responseId](JSON.parse(response), displayId);
+        delete pendingCommandCallbacks[responseId];
+    }
+});
+
+var onNewCommandReceived = undefined;
+
+CommandBridge.commandReceived.connect(function(responseId, input)
+{
+    if (typeof(onNewCommandReceived) == "function")
+    {
+        CommandBridge.response = JSON.stringify(onNewCommandReceived(JSON.parse(input)));
     }
 });

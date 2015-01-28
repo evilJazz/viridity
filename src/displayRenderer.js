@@ -102,6 +102,9 @@ var ConnectionMethod = {
 
             onNewCommandReceived: undefined,
 
+            responseId: 0,
+            pendingCommandCallbacks: {},
+
             _imageDone: function()
             {
                 --dr.frameImageCount;
@@ -392,14 +395,23 @@ var ConnectionMethod = {
                 var command = msg.data.substring(0, paramStartIndex);
                 var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
 
-                if (command === "command")
+                if (command === "command" || command === "commandResponse")
                 {
-                    if (typeof(dr.onNewCommandReceived) == "function")
-                    {
-                        paramStartIndex = params.indexOf(",");
+                    paramStartIndex = params.indexOf(",");
 
-                        var responseId = params.substring(0, paramStartIndex);
-                        var input = params.substring(paramStartIndex + 1);
+                    var responseId = params.substring(0, paramStartIndex);
+                    var input = params.substring(paramStartIndex + 1);
+
+                    if (command === "commandResponse")
+                    {
+                        if (dr.pendingCommandCallbacks.hasOwnProperty(responseId))
+                        {
+                            dr.pendingCommandCallbacks[responseId](JSON.parse(input));
+                            delete dr.pendingCommandCallbacks[responseId];
+                        }
+                    }
+                    else if (typeof(dr.onNewCommandReceived) == "function")
+                    {
 
                         var result = dr.onNewCommandReceived(JSON.parse(input));
                         dr.sendMessage("commandResponse(" + responseId + "," + JSON.stringify(result) + ")");
@@ -559,6 +571,12 @@ var ConnectionMethod = {
 
             sendCommand: function(command, callback)
             {
+                ++dr.responseId;
+                dr.pendingCommandCallbacks[dr.responseId] = callback;
+                var message = "command(" + dr.responseId + "," + JSON.stringify(command) + ")";
+                dr.sendMessage(message);
+
+                /*
                 var options =
                 {
                     type: "POST",
@@ -581,6 +599,7 @@ var ConnectionMethod = {
                 };
 
                 $.ajax(options);
+                */
             },
 
             reconnect: function()

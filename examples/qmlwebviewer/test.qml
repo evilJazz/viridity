@@ -10,6 +10,15 @@ FocusScope {
     height: 768
     focus: true
 
+    Component.onCompleted:
+    {
+        Display.onNewCommandReceived = function(input)
+        {
+            console.log("input: " + input);
+            return { action: "blah", test: 1243234.3423 };
+        }
+    }
+
     Component.onDestruction: console.log("GOODBYE WORLD!")
 
     Rectangle {
