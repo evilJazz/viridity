@@ -4,7 +4,7 @@
 
 #include "private/synchronizedscenerenderer.h"
 
-//#define USE_SCENE_DAMAGEREGION
+#define USE_SCENE_DAMAGEREGION
 
 //#undef DEBUG
 //#define DIAGNOSTIC_OUTPUT

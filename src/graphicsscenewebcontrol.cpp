@@ -3,8 +3,6 @@
 //#undef DEBUG
 #include "KCL/debug.h"
 
-#include "private/commandbridge.h"
-
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 

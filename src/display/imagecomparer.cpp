@@ -7,7 +7,7 @@
 //#undef DEBUG
 #include "KCL/debug.h"
 
-#define USE_MOVE_ANALYZER
+//#define USE_MOVE_ANALYZER
 #define USE_MOVE_ANALYZER_FINEGRAINED
 #define USE_FILL_ANALYZER
 //#define USE_MULTITHREADING

@@ -8,8 +8,8 @@
 CommandBridge::CommandBridge(GraphicsSceneDisplaySession *session, QObject *parent) :
     QObject(parent),
     session_(session),
-    responseId_(0),
-    response_(QString::null)
+    response_(QString::null),
+    responseId_(0)
 {
 }
 

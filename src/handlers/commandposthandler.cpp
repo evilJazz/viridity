@@ -1,6 +1,6 @@
 #include "handlers/commandposthandler.h"
 
-#include "private/commandbridge.h"
+#include "commandbridge.h"
 
 #include "Tufao/Headers"
 

@@ -6,7 +6,7 @@
 
 #include "kclplugin.h"
 
-#include "private/commandbridge.h"
+#include "commandbridge.h"
 
 void createScene(GraphicsSceneDisplaySession *session)
 {
