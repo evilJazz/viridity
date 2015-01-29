@@ -1,4 +1,4 @@
-#include "graphicsscenewebcontrol.h"
+#include "viriditywebserver.h"
 
 //#undef DEBUG
 #include "KCL/debug.h"
@@ -29,9 +29,9 @@
 /* GraphicsSceneWebServerThread */
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(GraphicsSceneMultiThreadedWebServer *parent, qintptr socketDescriptor) :
+ViridityConnection::ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor) :
 #else
-GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor) :
+ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDescriptor) :
 #endif
     QObject(),
     webSocketHandler_(NULL),
@@ -45,12 +45,12 @@ GraphicsSceneWebServerConnection::GraphicsSceneWebServerConnection(GraphicsScene
     DGUARDMETHODTIMED;
 }
 
-GraphicsSceneWebServerConnection::~GraphicsSceneWebServerConnection()
+ViridityConnection::~ViridityConnection()
 {
     DGUARDMETHODTIMED;
 }
 
-void GraphicsSceneWebServerConnection::setupConnection()
+void ViridityConnection::setupConnection()
 {
     DGUARDMETHODTIMED;
 
@@ -88,7 +88,7 @@ void GraphicsSceneWebServerConnection::setupConnection()
     fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/webcontrol/jquery.mousewheel.js", "application/javascript; charset=utf8");
 }
 
-void GraphicsSceneWebServerConnection::onRequestReady()
+void ViridityConnection::onRequestReady()
 {
     //DGUARDMETHODTIMED;
 
@@ -126,7 +126,7 @@ void GraphicsSceneWebServerConnection::onRequestReady()
     }
 }
 
-void GraphicsSceneWebServerConnection::onUpgrade(const QByteArray &head)
+void ViridityConnection::onUpgrade(const QByteArray &head)
 {
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
     webSocketHandler_->handleUpgrade(request, head);
@@ -136,7 +136,7 @@ void GraphicsSceneWebServerConnection::onUpgrade(const QByteArray &head)
 
 /* GraphicsSceneMultiThreadedWebServer */
 
-GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject *parent, GraphicsSceneDisplaySessionManager *sessionManager) :
+ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager) :
     QTcpServer(parent),
     sessionManager_(sessionManager),
     incomingConnectionCount_(0)
@@ -144,7 +144,7 @@ GraphicsSceneMultiThreadedWebServer::GraphicsSceneMultiThreadedWebServer(QObject
     connect(sessionManager_, SIGNAL(newDisplayCreated(GraphicsSceneDisplay*)), this, SLOT(newDisplayCreated(GraphicsSceneDisplay*)));
 }
 
-GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
+ViridityWebServer::~ViridityWebServer()
 {
     // the thread can't have a parent then...
     foreach (QThread* t, connectionThreads_)
@@ -167,7 +167,7 @@ GraphicsSceneMultiThreadedWebServer::~GraphicsSceneMultiThreadedWebServer()
     }
 }
 
-void GraphicsSceneMultiThreadedWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
+void ViridityWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
 {
     connectionThreads_.reserve(threadsNumber);
 
@@ -186,12 +186,12 @@ void GraphicsSceneMultiThreadedWebServer::listen(const QHostAddress &address, qu
     QTcpServer::listen(address, port);
 }
 
-GraphicsSceneDisplaySessionManager *GraphicsSceneMultiThreadedWebServer::sessionManager()
+ViriditySessionManager *ViridityWebServer::sessionManager()
 {
     return sessionManager_;
 }
 
-void GraphicsSceneMultiThreadedWebServer::newDisplayCreated(GraphicsSceneDisplay *display)
+void ViridityWebServer::newDisplayCreated(GraphicsSceneDisplay *display)
 {
     DGUARDMETHODTIMED;
 
@@ -203,9 +203,9 @@ void GraphicsSceneMultiThreadedWebServer::newDisplayCreated(GraphicsSceneDisplay
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-void GraphicsSceneMultiThreadedWebServer::incomingConnection(qintptr handle)
+void ViridityWebServer::incomingConnection(qintptr handle)
 #else
-void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
+void ViridityWebServer::incomingConnection(int handle)
 #endif
 {
     DGUARDMETHODTIMED;
@@ -213,7 +213,7 @@ void GraphicsSceneMultiThreadedWebServer::incomingConnection(int handle)
     ++incomingConnectionCount_;
     int threadIndex = incomingConnectionCount_ % connectionThreads_.count();
 
-    GraphicsSceneWebServerConnection *connection = new GraphicsSceneWebServerConnection(this, handle);
+    ViridityConnection *connection = new ViridityConnection(this, handle);
     connection->moveToThread(connectionThreads_.at(threadIndex)); // Move connection to thread's event loop
 
     QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop

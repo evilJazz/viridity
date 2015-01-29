@@ -1,9 +1,9 @@
 #include "patchrequesthandler.h"
 
-#include "graphicsscenewebcontrol.h"
+#include "viriditywebserver.h"
 #include "graphicsscenedisplay.h"
 
-PatchRequestHandler::PatchRequestHandler(GraphicsSceneWebServerConnection *parent) :
+PatchRequestHandler::PatchRequestHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent)
 {

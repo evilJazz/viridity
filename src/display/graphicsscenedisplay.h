@@ -17,7 +17,7 @@
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-class GraphicsSceneMultiThreadedWebServer;
+class ViridityWebServer;
 
 /* Patch */
 

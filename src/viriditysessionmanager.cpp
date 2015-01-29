@@ -1,4 +1,4 @@
-#include "graphicsscenedisplaysessionmanager.h"
+#include "viriditysessionmanager.h"
 
 #include <QUuid>
 #include <QCryptographicHash>
@@ -12,7 +12,7 @@ QString createUniqueID()
     return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
 }
 
-GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(QObject *parent) :
+ViriditySessionManager::ViriditySessionManager(QObject *parent) :
     QObject(parent),
     displayMutex_(QMutex::Recursive)
 {
@@ -21,23 +21,23 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(QObject *
     cleanupTimer_.start(10000);
 }
 
-GraphicsSceneDisplaySessionManager::~GraphicsSceneDisplaySessionManager()
+ViriditySessionManager::~ViriditySessionManager()
 {
     DGUARDMETHODTIMED;
 }
 
-GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay()
+GraphicsSceneDisplay *ViriditySessionManager::getNewDisplay()
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
 
     // Create new display instance in thread of session manager...
-    GraphicsSceneDisplaySession *resources = NULL;
+    ViriditySession *resources = NULL;
 
     QMetaObject::invokeMethod(
         this, "createSession",
         this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-        Q_RETURN_ARG(GraphicsSceneDisplaySession *, resources),
+        Q_RETURN_ARG(ViriditySession *, resources),
         Q_ARG(const QString &, createUniqueID())
     );
 
@@ -58,28 +58,28 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay()
         return NULL;
 }
 
-void GraphicsSceneDisplaySessionManager::removeDisplay(GraphicsSceneDisplay *display)
+void ViriditySessionManager::removeDisplay(GraphicsSceneDisplay *display)
 {
     QMutexLocker l(&displayMutex_);
     displays_.remove(display->id());
 
-    GraphicsSceneDisplaySession *resources = sessions_.take(display);
+    ViriditySession *resources = sessions_.take(display);
     delete resources;
 
     QMetaObject::invokeMethod(display, "deleteLater");
 }
 
-GraphicsSceneDisplaySession *GraphicsSceneDisplaySessionManager::createNewSessionInstance()
+ViriditySession *ViriditySessionManager::createNewSessionInstance()
 {
-    return new GraphicsSceneDisplaySession;
+    return new ViriditySession;
 }
 
-void GraphicsSceneDisplaySessionManager::registerHandlers(GraphicsSceneDisplaySession *session)
+void ViriditySessionManager::registerHandlers(ViriditySession *session)
 {
     session->commandInterpreter->registerHandlers(session->commandHandlers);
 }
 
-GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getDisplay(const QString &id)
+GraphicsSceneDisplay *ViriditySessionManager::getDisplay(const QString &id)
 {
     QMutexLocker l(&displayMutex_);
     if (displays_.contains(id))
@@ -88,7 +88,7 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getDisplay(const QStri
     return NULL;
 }
 
-GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::acquireDisplay(const QString &id)
+GraphicsSceneDisplay *ViriditySessionManager::acquireDisplay(const QString &id)
 {
     QMutexLocker l(&displayMutex_);
 
@@ -96,7 +96,7 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::acquireDisplay(const Q
 
     if (display)
     {
-        GraphicsSceneDisplaySession *res = sessions_[display];
+        ViriditySession *res = sessions_[display];
         ++res->useCount;
         res->lastUsed.restart();
     }
@@ -104,25 +104,25 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::acquireDisplay(const Q
     return display;
 }
 
-void GraphicsSceneDisplaySessionManager::releaseDisplay(GraphicsSceneDisplay *display)
+void ViriditySessionManager::releaseDisplay(GraphicsSceneDisplay *display)
 {
     QMutexLocker l(&displayMutex_);
 
     if (display)
     {
-        GraphicsSceneDisplaySession *res = sessions_[display];
+        ViriditySession *res = sessions_[display];
         --res->useCount;
         res->lastUsed.restart();
     }
 }
 
-QStringList GraphicsSceneDisplaySessionManager::displaysIds(QGraphicsScene *scene)
+QStringList ViriditySessionManager::displaysIds(QGraphicsScene *scene)
 {
     QMutexLocker l(&displayMutex_);
 
     QStringList result;
 
-    foreach (GraphicsSceneDisplaySession *session, sessions_.values())
+    foreach (ViriditySession *session, sessions_.values())
     {
         if (!scene || session->scene == scene)
             result << session->id;
@@ -131,11 +131,11 @@ QStringList GraphicsSceneDisplaySessionManager::displaysIds(QGraphicsScene *scen
     return result;
 }
 
-void GraphicsSceneDisplaySessionManager::killObsoleteDisplays()
+void ViriditySessionManager::killObsoleteDisplays()
 {
     QMutexLocker l(&displayMutex_);
 
-    foreach (GraphicsSceneDisplaySession *res, sessions_.values())
+    foreach (ViriditySession *res, sessions_.values())
         if (res->useCount == 0 && res->lastUsed.elapsed() > 5000)
             removeDisplay(res->display);
 }
@@ -144,7 +144,7 @@ void GraphicsSceneDisplaySessionManager::killObsoleteDisplays()
 /* SingleGraphicsSceneDisplaySessionManager */
 
 SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(QObject *parent) :
-    GraphicsSceneDisplaySessionManager(parent),
+    ViriditySessionManager(parent),
     protoSession_(NULL)
 {
 }
@@ -155,7 +155,7 @@ SingleGraphicsSceneDisplaySessionManager::~SingleGraphicsSceneDisplaySessionMana
         delete protoSession_;
 }
 
-GraphicsSceneDisplaySession *SingleGraphicsSceneDisplaySessionManager::createSession(const QString &id)
+ViriditySession *SingleGraphicsSceneDisplaySessionManager::createSession(const QString &id)
 {
     DGUARDMETHODTIMED;
 
@@ -174,7 +174,7 @@ GraphicsSceneDisplaySession *SingleGraphicsSceneDisplaySessionManager::createSes
         registerHandlers(protoSession_);
     }
 
-    GraphicsSceneDisplaySession *session = createNewSessionInstance();
+    ViriditySession *session = createNewSessionInstance();
     *session = *protoSession_;
 
     session->id = id;
@@ -186,14 +186,14 @@ GraphicsSceneDisplaySession *SingleGraphicsSceneDisplaySessionManager::createSes
 /* MultiGraphicsSceneDisplaySessionManager */
 
 MultiGraphicsSceneDisplaySessionManager::MultiGraphicsSceneDisplaySessionManager(QObject *parent) :
-    GraphicsSceneDisplaySessionManager(parent)
+    ViriditySessionManager(parent)
 {
 
 }
 
-GraphicsSceneDisplaySession *MultiGraphicsSceneDisplaySessionManager::createSession(const QString &id)
+ViriditySession *MultiGraphicsSceneDisplaySessionManager::createSession(const QString &id)
 {
-    GraphicsSceneDisplaySession *session = createNewSessionInstance();
+    ViriditySession *session = createNewSessionInstance();
     session->id = id;
     session->sessionManager = this;
 

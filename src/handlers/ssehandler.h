@@ -6,14 +6,14 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class GraphicsSceneWebServerConnection;
+class ViridityConnection;
 class GraphicsSceneDisplay;
 
 class SSEHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit SSEHandler(GraphicsSceneWebServerConnection *parent);
+    explicit SSEHandler(ViridityConnection *parent);
     virtual ~SSEHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
@@ -24,7 +24,7 @@ private slots:
     void handleResponseDestroyed();
 
 private:
-    GraphicsSceneWebServerConnection *connection_;
+    ViridityConnection *connection_;
     GraphicsSceneDisplay *display_;
 
     Tufao::HttpServerResponse *response_;

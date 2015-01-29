@@ -15,7 +15,8 @@
 #include <QGraphicsScene>
 
 #include "graphicsscenewebcontrolcommandinterpreter.h"
-#include "graphicsscenedisplaysessionmanager.h"
+
+#include "viriditysessionmanager.h"
 
 class WebSocketHandler;
 class SSEHandler;
@@ -23,22 +24,22 @@ class LongPollingHandler;
 class PatchRequestHandler;
 class FileRequestHandler;
 
-class GraphicsSceneMultiThreadedWebServer;
+class ViridityWebServer;
 class GraphicsSceneDisplay;
 
-class GraphicsSceneWebServerConnection : public QObject
+class ViridityConnection : public QObject
 {
     Q_OBJECT
 public:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    explicit GraphicsSceneWebServerConnection(GraphicsSceneMultiThreadedWebServer *parent, qintptr socketDescriptor);
+    explicit ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor);
 #else
-    explicit GraphicsSceneWebServerConnection(GraphicsSceneMultiThreadedWebServer *parent, int socketDescriptor);
+    explicit ViridityConnection(ViridityWebServer *parent, int socketDescriptor);
 #endif
 
-    virtual ~GraphicsSceneWebServerConnection();
+    virtual ~ViridityConnection();
 
-    GraphicsSceneMultiThreadedWebServer *server() { return server_; }
+    ViridityWebServer *server() { return server_; }
 
 public slots:
     void setupConnection();
@@ -54,7 +55,7 @@ private:
     PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;
 
-    GraphicsSceneMultiThreadedWebServer *server_;
+    ViridityWebServer *server_;
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     qintptr socketDescriptor_;
@@ -63,16 +64,16 @@ private:
 #endif
 };
 
-class GraphicsSceneMultiThreadedWebServer : public QTcpServer
+class ViridityWebServer : public QTcpServer
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneMultiThreadedWebServer(QObject *parent, GraphicsSceneDisplaySessionManager *sessionManager);
-    virtual ~GraphicsSceneMultiThreadedWebServer();
+    explicit ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager);
+    virtual ~ViridityWebServer();
 
     void listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
-    GraphicsSceneDisplaySessionManager *sessionManager();
+    ViriditySessionManager *sessionManager();
 
 protected:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -85,7 +86,7 @@ private slots:
     void newDisplayCreated(GraphicsSceneDisplay *display);
 
 private:
-    GraphicsSceneDisplaySessionManager *sessionManager_;
+    ViriditySessionManager *sessionManager_;
 
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;

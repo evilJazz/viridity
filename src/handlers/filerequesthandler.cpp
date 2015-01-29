@@ -1,9 +1,9 @@
 #include "filerequesthandler.h"
-#include "graphicsscenewebcontrol.h"
 
+#include "viriditywebserver.h"
 #include <QFile>
 
-FileRequestHandler::FileRequestHandler(GraphicsSceneWebServerConnection *parent) :
+FileRequestHandler::FileRequestHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent)
 {

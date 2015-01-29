@@ -2,13 +2,13 @@
 #include <QtDeclarative>
 #include <QDeclarativeEngine>
 
-#include <Viridity/GraphicsSceneMultiThreadedWebServer>
+#include <Viridity/ViridityWebServer>
 
 #include "kclplugin.h"
 
 #include "commandbridge.h"
 
-void createScene(GraphicsSceneDisplaySession *session)
+void createScene(ViriditySession *session)
 {
     QDeclarativeEngine *engine = new QDeclarativeEngine();
 
@@ -41,12 +41,12 @@ void createScene(GraphicsSceneDisplaySession *session)
 
 class MySingleSessionManager : public SingleGraphicsSceneDisplaySessionManager
 {
-    void setScene(GraphicsSceneDisplaySession *session) { createScene(session); }
+    void setScene(ViriditySession *session) { createScene(session); }
 };
 
 class MyMultiSessionManager : public MultiGraphicsSceneDisplaySessionManager
 {
-    void setScene(GraphicsSceneDisplaySession *session) { createScene(session); }
+    void setScene(ViriditySession *session) { createScene(session); }
 };
 
 int main(int argc, char *argv[])
@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
     //MySingleSessionManager sessionManager;
     MyMultiSessionManager sessionManager;
 
-    GraphicsSceneMultiThreadedWebServer server(&a, &sessionManager);
+    ViridityWebServer server(&a, &sessionManager);
     server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount());
 
     qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);

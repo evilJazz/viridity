@@ -6,7 +6,7 @@
 
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-class GraphicsSceneDisplaySession;
+class ViriditySession;
 
 class CommandBridge : public QObject, public MessageHandler
 {
@@ -14,7 +14,7 @@ class CommandBridge : public QObject, public MessageHandler
     Q_PROPERTY(QString response READ response WRITE setResponse)
 
 public:
-    explicit CommandBridge(GraphicsSceneDisplaySession *session, QObject *parent = 0);
+    explicit CommandBridge(ViriditySession *session, QObject *parent = 0);
     virtual ~CommandBridge();
 
     QString response() const { return response_; }
@@ -36,7 +36,7 @@ signals:
     void responseReceived(const QVariant &responseId, const QString &response, const QString &displayId);
 
 private:
-    GraphicsSceneDisplaySession *session_;
+    ViriditySession *session_;
 
     QString response_;
     int responseId_;

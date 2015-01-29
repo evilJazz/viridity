@@ -1,6 +1,6 @@
 #include "graphicssceneinputposthandler.h"
 
-#include "graphicsscenewebcontrol.h"
+#include "viriditywebserver.h"
 #include "graphicsscenedisplay.h"
 
 GraphicsSceneInputPostHandler::GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneDisplay *display, QObject *parent) :

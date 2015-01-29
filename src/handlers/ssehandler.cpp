@@ -7,7 +7,7 @@
 
 #include <QStringList>
 
-#include "graphicsscenewebcontrol.h"
+#include "viriditywebserver.h"
 #include "graphicsscenedisplay.h"
 #include "graphicssceneinputposthandler.h"
 #include "commandposthandler.h"
@@ -15,7 +15,7 @@
 #undef DEBUG
 #include "KCL/debug.h"
 
-SSEHandler::SSEHandler(GraphicsSceneWebServerConnection *parent) :
+SSEHandler::SSEHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent),
     display_(NULL)

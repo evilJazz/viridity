@@ -2,10 +2,10 @@
 #include <QDebug>
 
 #include "graphicsscenedisplay.h"
-#include "graphicsscenedisplaysessionmanager.h"
+#include "viriditysessionmanager.h"
 #include "commandbridge.h"
 
-CommandBridge::CommandBridge(GraphicsSceneDisplaySession *session, QObject *parent) :
+CommandBridge::CommandBridge(ViriditySession *session, QObject *parent) :
     QObject(parent),
     session_(session),
     response_(QString::null),

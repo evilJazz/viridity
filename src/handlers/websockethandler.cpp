@@ -5,10 +5,10 @@
 //#undef DEBUG
 #include "KCL/debug.h"
 
-#include "graphicsscenewebcontrol.h"
+#include "viriditywebserver.h"
 #include "graphicsscenedisplay.h"
 
-WebSocketHandler::WebSocketHandler(GraphicsSceneWebServerConnection *parent) :
+WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent),
     display_(NULL)

@@ -11,8 +11,8 @@ INCLUDEPATH += \
 # Generic stuff
 HEADERS += \
     $$VIRIDITY_SRC_PATH/viridity_global.h \
-    $$VIRIDITY_SRC_PATH/graphicsscenewebcontrol.h \
-    $$VIRIDITY_SRC_PATH/graphicsscenedisplaysessionmanager.h \
+    $$VIRIDITY_SRC_PATH/viriditywebserver.h \
+    $$VIRIDITY_SRC_PATH/viriditysessionmanager.h \
     $$VIRIDITY_SRC_PATH/commandbridge.h \
     $$VIRIDITY_SRC_PATH/handlers/commandposthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.h \
@@ -22,8 +22,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.h
 
 SOURCES += \
-    $$VIRIDITY_SRC_PATH/graphicsscenewebcontrol.cpp \
-    $$VIRIDITY_SRC_PATH/graphicsscenedisplaysessionmanager.cpp \
+    $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
+    $$VIRIDITY_SRC_PATH/viriditysessionmanager.cpp \
     $$VIRIDITY_SRC_PATH/commandbridge.cpp \
     $$VIRIDITY_SRC_PATH/handlers/commandposthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.cpp \
