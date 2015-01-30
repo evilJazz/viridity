@@ -112,13 +112,14 @@ void LongPollingHandler::handleMessagesAvailable()
 
     if (response_ && session_ && session_->pendingMessagesAvailable())
     {
-        QList<QByteArray> messages = session_->getPendingMessages();
+        QList<QByteArray> messages = session_->takePendingMessages();
 
         connection_->server()->sessionManager()->releaseSession(session_);
         session_ = NULL;
 
         QByteArray out;
-        out = messages.join("\n");
+        foreach (const QByteArray &message, messages)
+            out += message + "\n";
 
         response_->writeHead(Tufao::HttpServerResponse::OK);
         response_->headers().insert("Content-Type", "text/plain; charset=utf8");

@@ -1,6 +1,8 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+#include <QThread>
+
 #include "viriditysessionmanager.h"
 #include "commandbridge.h"
 
@@ -14,6 +16,11 @@ CommandBridge::CommandBridge(ViriditySession *session, QObject *parent) :
 
 CommandBridge::~CommandBridge()
 {
+}
+
+void CommandBridge::setResponse(const QString &value)
+{
+    response_ = value;
 }
 
 int CommandBridge::getNewResponseId()
@@ -32,9 +39,9 @@ QVariant CommandBridge::sendCommand(const QString &command, const QString &desti
 
     // Broadcast to all sessions that implement the same logic if no specific destination session was set!
     if (destinationSessionId.isEmpty())
-        dispatched = session_->sessionManager()->dispatchMessagesToClientMatchingLogic(message.toUtf8(), session_->logic);
+        dispatched = session_->sessionManager()->dispatchMessageToClientMatchingLogic(message.toUtf8(), session_->logic);
     else
-        dispatched = session_->sessionManager()->dispatchMessagesToClient(message.toUtf8(), destinationSessionId);
+        dispatched = session_->sessionManager()->dispatchMessageToClient(message.toUtf8(), destinationSessionId);
 
     return dispatched ? result : false;
 }
@@ -45,6 +52,21 @@ bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &s
 }
 
 bool CommandBridge::handleMessage(const QByteArray &message, const QString &sessionId)
+{
+    bool result;
+
+    QMetaObject::invokeMethod(
+        this, "localHandleMessage",
+        thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(bool, result),
+        Q_ARG(const QByteArray &, message),
+        Q_ARG(const QString &, sessionId)
+    );
+
+    return result;
+}
+
+bool CommandBridge::localHandleMessage(const QByteArray &message, const QString &sessionId)
 {
     if (canHandleMessage(message, sessionId))
     {
@@ -68,7 +90,7 @@ bool CommandBridge::handleMessage(const QByteArray &message, const QString &sess
             emit commandReceived(responseId, input);
 
             QString message = QString("commandResponse(%1,%2)").arg(responseId).arg(response());
-            session_->sessionManager()->dispatchMessagesToClient(message.toUtf8(), sessionId);
+            session_->dispatchMessageToClient(message.toUtf8());
             return true;
         }
     }

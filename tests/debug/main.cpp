@@ -1,13 +1,15 @@
-#include <QCoreApplication>
+#include <QGuiApplication>
 #include <QThread>
 
 #include <Viridity/ViridityWebServer>
+
+#include <QtDeclarative>
+#include "kclplugin.h"
 
 #include "commandbridge.h"
 
 void createLogic(ViriditySession *session)
 {
-    /*
     QDeclarativeEngine *engine = new QDeclarativeEngine();
 
     KCLPlugin *kcl = new KCLPlugin;
@@ -17,18 +19,19 @@ void createLogic(ViriditySession *session)
     CommandBridge *commandBridge = new CommandBridge(session, engine);
     engine->rootContext()->setContextProperty("CommandBridge", commandBridge);
 
-    session->commandHandlers.append(commandBridge);
+    session->registerHandler(commandBridge);
 
     QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
 
     if (component.status() != QDeclarativeComponent::Ready)
-        qFatal("Component is not ready.");
+        qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
 
     QObject *instance = component.create();
 
     if (!instance)
         qFatal("Could not create instance of component.");
 
+    /*
     QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
 
     session->scene = new QGraphicsScene(engine);
@@ -36,6 +39,9 @@ void createLogic(ViriditySession *session)
 
     QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
     */
+
+    session->logic = instance;
+    QObject::connect(session->logic, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 }
 
 class MySingleSessionManager : public SingleLogicSessionManager

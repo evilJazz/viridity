@@ -22,10 +22,10 @@ public:
     void unregisterHandler(ViridityMessageHandler *handler);
 
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message);
-    Q_INVOKABLE bool dispatchMessagesToClient(const QByteArray &message);
+    Q_INVOKABLE void dispatchMessageToClient(const QByteArray &message);
 
     bool pendingMessagesAvailable() const;
-    QList<QByteArray> getPendingMessages();
+    QList<QByteArray> takePendingMessages();
 
     ViriditySessionManager *sessionManager() { return sessionManager_; }
     const QString id() const { return id_; }
@@ -39,12 +39,24 @@ public:
     QElapsedTimer lastUsed;
     int useCount;
 
+private slots:
+    void updateCheckTimerTimeout();
+
+private:
+    Q_INVOKABLE bool sendMessageToHandlers(const QByteArray &message);
+    Q_INVOKABLE void sendMessageToClient(const QByteArray &message);
+
 protected:
     friend class ViriditySessionManager;
     ViriditySessionManager *sessionManager_;
     QString id_;
 
     QList<ViridityMessageHandler *> messageHandlers_;
+
+    QList<QByteArray> messages_;
+    QTimer *updateCheckTimer_;
+    int updateCheckInterval_;
+    void triggerUpdateCheckTimer();
 };
 
 class ViridityMessageHandler
@@ -76,8 +88,8 @@ public:
     int sessionCount() const { return sessions_.count(); }
 
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId = QString::null);
-    Q_INVOKABLE bool dispatchMessagesToClientMatchingLogic(const QByteArray &message, QObject *logic);
-    Q_INVOKABLE bool dispatchMessagesToClient(const QByteArray &message, const QString &sessionId = QString::null);
+    Q_INVOKABLE bool dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic);
+    Q_INVOKABLE bool dispatchMessageToClient(const QByteArray &message, const QString &sessionId = QString::null);
 
 signals:
     void newSessionCreated(ViriditySession *session);

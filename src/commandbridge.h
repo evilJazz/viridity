@@ -16,7 +16,7 @@ public:
     virtual ~CommandBridge();
 
     QString response() const { return response_; }
-    void setResponse(const QString &value) { response_ = value; }
+    void setResponse(const QString &value);
 
     Q_INVOKABLE QVariant sendCommand(const QString &command, const QString &destinationSessionId);
 
@@ -27,6 +27,9 @@ protected:
 
 public slots:
     QString handleCommandReady(const QString &id, const QString &command);
+
+private:
+    Q_INVOKABLE bool localHandleMessage(const QByteArray &message, const QString &sessionId);
 
 signals:
     void commandReceived(const QString &id, const QString &command);

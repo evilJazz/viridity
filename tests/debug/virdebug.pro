@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui declarative
 
 TARGET = virdebug
 
@@ -23,6 +23,9 @@ CONFIG(release, debug|release) {
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao.pri)
 include(../../viridity.pri)
+
+RESOURCES += \
+    qmlresource.qrc
 
 linux-* {
     target.path = /opt/bin

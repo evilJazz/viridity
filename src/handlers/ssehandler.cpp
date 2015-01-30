@@ -94,7 +94,7 @@ void SSEHandler::handleMessagesAvailable()
 
     if (response_ && session_ && session_->pendingMessagesAvailable())
     {
-        QList<QByteArray> messages = session_->getPendingMessages();
+        QList<QByteArray> messages = session_->takePendingMessages();
 
         QByteArray out;
         foreach (const QByteArray &message, messages)

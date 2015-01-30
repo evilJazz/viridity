@@ -38,9 +38,13 @@ void ViridityMessageHandler::splitMessage(const QByteArray &message, QString &co
 ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const QString &id) :
     QObject(), // No parent since we move this object into different thread later on...
     sessionManager_(sessionManager),
-    id_(id)
+    id_(id),
+    updateCheckInterval_(10)
 {
-
+    updateCheckTimer_ = new QTimer(this);
+    connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
+    updateCheckTimer_->setSingleShot(false);
+    updateCheckTimer_->start(updateCheckInterval_);
 }
 
 ViriditySession::~ViriditySession()
@@ -48,7 +52,7 @@ ViriditySession::~ViriditySession()
 
 }
 
-bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
+bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
 {
     DGUARDMETHODTIMED;
 
@@ -61,19 +65,64 @@ bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
     return false;
 }
 
-bool ViriditySession::dispatchMessagesToClient(const QByteArray &message)
+void ViriditySession::sendMessageToClient(const QByteArray &message)
 {
+    messages_ += message;
+    triggerUpdateCheckTimer();
+}
 
+bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
+{
+    DGUARDMETHODTIMED;
+
+    bool result = false;
+
+    QMetaObject::invokeMethod(
+        this, "sendMessageToHandlers",
+        thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(bool, result),
+        Q_ARG(const QByteArray &, message)
+    );
+
+    return result;
+}
+
+void ViriditySession::dispatchMessageToClient(const QByteArray &message)
+{
+    DGUARDMETHODTIMED;
+
+    QMetaObject::invokeMethod(
+        this, "sendMessageToClient",
+        Qt::QueuedConnection,
+        Q_ARG(const QByteArray &, message)
+    );
 }
 
 bool ViriditySession::pendingMessagesAvailable() const
 {
-
+    return messages_.count() > 0;
 }
 
-QList<QByteArray> ViriditySession::getPendingMessages()
+QList<QByteArray> ViriditySession::takePendingMessages()
 {
+    QList<QByteArray> messages = messages_;
+    messages_.clear();
+    return messages;
+}
 
+void ViriditySession::updateCheckTimerTimeout()
+{
+    DGUARDMETHODTIMED;
+    updateCheckTimer_->stop();
+
+    if (pendingMessagesAvailable())
+        emit newPendingMessagesAvailable();
+}
+
+void ViriditySession::triggerUpdateCheckTimer()
+{
+    if (!updateCheckTimer_->isActive())
+        updateCheckTimer_->start(updateCheckInterval_);
 }
 
 void ViriditySession::registerHandler(ViridityMessageHandler *handler)
@@ -220,74 +269,79 @@ bool ViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message
                 session, "dispatchMessageToHandlers",
                 session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
                 Q_RETURN_ARG(bool, result),
-                Q_ARG(const QByteArray &, message),
-                Q_ARG(const QString &, session->id())
+                Q_ARG(const QByteArray &, message)
             );
     }
     else
     {
         ViriditySession *session = getSession(sessionId);
-        QMetaObject::invokeMethod(
-            session, "dispatchMessageToHandlers",
-            session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-            Q_RETURN_ARG(bool, result),
-            Q_ARG(const QByteArray &, message),
-            Q_ARG(const QString &, session->id())
-        );
+        if (session)
+        {
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToHandlers",
+                session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+                Q_RETURN_ARG(bool, result),
+                Q_ARG(const QByteArray &, message)
+            );
+        }
     }
 
     return result;
 }
 
-bool ViriditySessionManager::dispatchMessagesToClientMatchingLogic(const QByteArray &message, QObject *logic)
+bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic)
 {
     QMutexLocker l(&sessionMutex_);
 
-    bool result = false;
+    int dispatched = 0;
 
     foreach (ViriditySession *session, sessions_.values())
         if (session->logic == logic)
+        {
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToClient",
-                session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-                Q_RETURN_ARG(bool, result),
-                Q_ARG(const QByteArray &, message),
-                Q_ARG(const QString &, session->id())
+                Qt::QueuedConnection,
+                Q_ARG(const QByteArray &, message)
             );
+            ++dispatched;
+        }
 
-    return result;
+    return dispatched > 0;
 }
 
-bool ViriditySessionManager::dispatchMessagesToClient(const QByteArray &message, const QString &sessionId)
+bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, const QString &sessionId)
 {
     QMutexLocker l(&sessionMutex_);
 
-    bool result = false;
+    int dispatched = 0;
 
     if (sessionId.isEmpty())
     {
         foreach (ViriditySession *session, sessions_.values())
+        {
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToClient",
-                session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-                Q_RETURN_ARG(bool, result),
-                Q_ARG(const QByteArray &, message),
-                Q_ARG(const QString &, session->id())
+                Qt::QueuedConnection,
+                Q_ARG(const QByteArray &, message)
             );
+            ++dispatched;
+        }
     }
     else
     {
         ViriditySession *session = getSession(sessionId);
-        QMetaObject::invokeMethod(
-            session, "dispatchMessageToClient",
-            session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-            Q_RETURN_ARG(bool, result),
-            Q_ARG(const QByteArray &, message),
-            Q_ARG(const QString &, session->id())
-        );
+        if (session)
+        {
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToClient",
+                Qt::QueuedConnection,
+                Q_ARG(const QByteArray &, message)
+            );
+            ++dispatched;
+        }
     }
 
-    return result;
+    return dispatched > 0;
 }
 
 void ViriditySessionManager::killExpiredSessions()

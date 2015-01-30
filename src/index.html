@@ -14,7 +14,8 @@
     <script src="displayRenderer.js"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            //$("#displayContainer").viridity({ connectionMethod: ConnectionMethod.WebSockets });
+            //var viridity = new Viridity({ connectionMethod: ConnectionMethod.WebSockets });
+
             var display = $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
 
             display.onNewCommandReceived = function (input)
@@ -33,6 +34,7 @@
                 });
             });
 
+            /*
             function resizeToWindow()
             {
                 var elem = $(window);
@@ -42,6 +44,7 @@
 
             $(window).resize(function(event) { resizeToWindow(); });
             resizeToWindow();
+            */
         });
     </script>
   </head>

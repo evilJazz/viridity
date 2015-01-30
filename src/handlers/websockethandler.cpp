@@ -61,7 +61,7 @@ void WebSocketHandler::handleMessagesAvailable()
 {
     if (session_ && session_->pendingMessagesAvailable())
     {
-        QList<QByteArray> messages = session_->getPendingMessages();
+        QList<QByteArray> messages = session_->takePendingMessages();
 
         foreach (const QByteArray &message, messages)
             socket_->sendMessage(message);
@@ -71,7 +71,7 @@ void WebSocketHandler::handleMessagesAvailable()
 void WebSocketHandler::clientMessageReceived(QByteArray data)
 {
     if (session_)
-        session_->sessionManager()->dispatchMessageToHandlers(data, session_->id());
+        session_->dispatchMessageToHandlers(data);
 }
 
 void WebSocketHandler::clientDisconnected()
