@@ -1,0 +1,32 @@
+#include "graphicssceneinputposthandler.h"
+
+#include "viriditywebserver.h"
+#include "graphicsscenedisplay.h"
+
+GraphicsSceneInputPostHandler::GraphicsSceneInputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, GraphicsSceneDisplay *display, QObject *parent) :
+    QObject(parent),
+    request_(request),
+    response_(response),
+    display_(display)
+{
+    connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
+    connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
+}
+
+void GraphicsSceneInputPostHandler::onData(const QByteArray &chunk)
+{
+    data_ += chunk;
+}
+
+void GraphicsSceneInputPostHandler::onEnd()
+{
+    QList<QByteArray> commands = data_.split('\n');
+
+    foreach (QByteArray command, commands)
+        display_->handleReceivedMessage(command);
+
+    // handle request
+    response_->headers().insert("Content-Type", "text/plain");
+    response_->writeHead(Tufao::HttpServerResponse::OK);
+    response_->end();
+}
