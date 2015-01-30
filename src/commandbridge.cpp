@@ -1,7 +1,6 @@
 #include <QCoreApplication>
 #include <QDebug>
 
-#include "graphicsscenedisplay.h"
 #include "viriditysessionmanager.h"
 #include "commandbridge.h"
 
@@ -23,54 +22,31 @@ int CommandBridge::getNewResponseId()
     return responseId_;
 }
 
-bool CommandBridge::dispatchMessage(const QString &message, const QString &displayId)
-{
-    QStringList messages;
-    messages << message;
-
-    GraphicsSceneDisplay *display = session_->sessionManager->acquireDisplay(displayId);
-    if (display)
-    {
-        QMetaObject::invokeMethod(display, "dispatchAdditionalMessages", Q_ARG(const QStringList &, messages));
-        session_->sessionManager->releaseDisplay(display);
-        return true;
-    }
-
-    return false;
-}
-
-QVariant CommandBridge::sendCommand(const QString &command, const QString &destinationDisplayId)
+QVariant CommandBridge::sendCommand(const QString &command, const QString &destinationSessionId)
 {
     int result = getNewResponseId();
 
     QString message = QString("command(%1,%2)").arg(result).arg(command);
 
-    int dispatched = 0;
-    QStringList displayIds;
+    bool dispatched = false;
 
-    // Broadcast to all displays of this scene if no specific destination display was set!
-    if (destinationDisplayId.isEmpty())
-        displayIds << session_->sessionManager->displaysIds(session_->scene);
+    // Broadcast to all sessions that implement the same logic if no specific destination session was set!
+    if (destinationSessionId.isEmpty())
+        dispatched = session_->sessionManager()->dispatchMessagesToClientMatchingLogic(message.toUtf8(), session_->logic);
     else
-        displayIds << destinationDisplayId;
+        dispatched = session_->sessionManager()->dispatchMessagesToClient(message.toUtf8(), destinationSessionId);
 
-    foreach (const QString &displayId, displayIds)
-    {
-        if (dispatchMessage(message, displayId))
-            ++dispatched;
-    }
-
-    return dispatched > 0 ? result : false;
+    return dispatched ? result : false;
 }
 
-bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &displayId)
+bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &sessionId)
 {
     return message.startsWith("commandResponse") || message.startsWith("command");
 }
 
-bool CommandBridge::handleMessage(const QByteArray &message, const QString &displayId)
+bool CommandBridge::handleMessage(const QByteArray &message, const QString &sessionId)
 {
-    if (canHandleMessage(message, displayId))
+    if (canHandleMessage(message, sessionId))
     {
         int paramStartIndex = message.indexOf("(");
         int paramStopIndex = message.indexOf(")");
@@ -83,7 +59,7 @@ bool CommandBridge::handleMessage(const QByteArray &message, const QString &disp
 
         if (message.startsWith("commandResponse"))
         {
-            emit responseReceived(responseId, input, displayId);
+            emit responseReceived(responseId, input, sessionId);
             return true;
         }
         else
@@ -92,7 +68,7 @@ bool CommandBridge::handleMessage(const QByteArray &message, const QString &disp
             emit commandReceived(responseId, input);
 
             QString message = QString("commandResponse(%1,%2)").arg(responseId).arg(response());
-            dispatchMessage(message, displayId);
+            session_->sessionManager()->dispatchMessagesToClient(message.toUtf8(), sessionId);
             return true;
         }
     }

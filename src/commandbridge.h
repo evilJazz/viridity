@@ -4,11 +4,9 @@
 #include <QObject>
 #include <QVariant>
 
-#include "graphicsscenewebcontrolcommandinterpreter.h"
+#include "viriditysessionmanager.h"
 
-class ViriditySession;
-
-class CommandBridge : public QObject, public MessageHandler
+class CommandBridge : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
     Q_PROPERTY(QString response READ response WRITE setResponse)
@@ -20,12 +18,12 @@ public:
     QString response() const { return response_; }
     void setResponse(const QString &value) { response_ = value; }
 
-    Q_INVOKABLE QVariant sendCommand(const QString &command, const QString &destinationDisplayId);
+    Q_INVOKABLE QVariant sendCommand(const QString &command, const QString &destinationSessionId);
 
 protected:
-    // MessageHandler
-    virtual bool canHandleMessage(const QByteArray &message, const QString &displayId);
-    virtual bool handleMessage(const QByteArray &message, const QString &displayId);
+    // ViridityMessageHandler
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId);
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId);
 
 public slots:
     QString handleCommandReady(const QString &id, const QString &command);
@@ -42,8 +40,6 @@ private:
     int responseId_;
 
     int getNewResponseId();
-
-    bool dispatchMessage(const QString &message, const QString &displayId);
 };
 
 #endif // COMMANDBRIDGE_H

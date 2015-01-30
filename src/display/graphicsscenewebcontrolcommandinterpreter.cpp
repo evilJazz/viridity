@@ -12,22 +12,6 @@
 #include "private/qtestspontaneevent.h"
 
 
-/* MessageHandler */
-
-void MessageHandler::splitMessage(const QByteArray &message, QString &command, QStringList &params)
-{
-    QString rawMsg = message;
-
-    int paramStartIndex = rawMsg.indexOf("(");
-    int paramStopIndex = rawMsg.indexOf(")");
-
-    command = rawMsg.mid(0, paramStartIndex);
-    QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
-
-    params = rawParams.split(",", QString::KeepEmptyParts);
-}
-
-
 /* GraphicsSceneWebControlCommandInterpreter */
 
 GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpreter(QObject *parent) :
@@ -355,37 +339,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
     return true;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::dispatchMessage(const QByteArray &message, const QString &displayId)
-{
-    DGUARDMETHODTIMED;
-
-    foreach (MessageHandler *handler, handlers_)
-    {
-        if (handler->canHandleMessage(message, displayId))
-            return handler->handleMessage(message, displayId);
-    }
-
-    return false;
-}
-
-void GraphicsSceneWebControlCommandInterpreter::registerHandler(MessageHandler *handler)
-{
-    if (handlers_.indexOf(handler) == -1)
-        handlers_.append(handler);
-}
-
-void GraphicsSceneWebControlCommandInterpreter::registerHandlers(const QList<MessageHandler *> &handlers)
-{
-    foreach (MessageHandler *handler, handlers)
-        registerHandler(handler);
-}
-
-void GraphicsSceneWebControlCommandInterpreter::unregisterHandler(MessageHandler *handler)
-{
-    handlers_.removeAll(handler);
-}
-
-bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &displayId)
+bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId)
 {
     return message.startsWith("mouseEnter") ||
            message.startsWith("mouseExit") ||
@@ -394,7 +348,7 @@ bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArra
            message.startsWith("resize");
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &displayId)
+bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId)
 {
     QString command;
     QStringList params;

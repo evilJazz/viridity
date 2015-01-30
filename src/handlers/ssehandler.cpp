@@ -8,9 +8,6 @@
 #include <QStringList>
 
 #include "viriditywebserver.h"
-#include "graphicsscenedisplay.h"
-#include "graphicssceneinputposthandler.h"
-#include "commandposthandler.h"
 
 #undef DEBUG
 #include "KCL/debug.h"
@@ -18,15 +15,15 @@
 SSEHandler::SSEHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent),
-    display_(NULL)
+    session_(NULL)
 {
     DGUARDMETHODTIMED;
 }
 
 SSEHandler::~SSEHandler()
 {
-    if (display_)
-        connection_->server()->sessionManager()->releaseDisplay(display_);
+    if (session_)
+        connection_->server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -47,25 +44,25 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
     QString id = QUrl(request->url()).queryItemValue("id");
 #endif
 
-    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->getDisplay(id);
+    ViriditySession *session = connection_->server()->sessionManager()->getSession(id);
 
-    if (display)
+    if (session)
     {
-        display_ = connection_->server()->sessionManager()->acquireDisplay(id);
+        session_ = connection_->server()->sessionManager()->acquireSession(id);
         setUpResponse(response);
 
-        if (display_->isUpdateAvailable())
-            handleDisplayUpdateAvailable();
+        if (session_->pendingMessagesAvailable())
+            handleMessagesAvailable();
 
         return;
     }
     else if (id.isEmpty()) // start new connection
     {
-        display_ = connection_->server()->sessionManager()->getNewDisplay();
+        session_ = connection_->server()->sessionManager()->getNewSession();
 
-        DPRINTF("NEW DISPLAY: %s", display_->id().toLatin1().constData());
+        DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
 
-        QString info = "data: info(" + display_->id() + ")\n\n";
+        QString info = "data: info(" + session_->id() + ")\n\n";
 
         setUpResponse(response);
         response_->write(info.toUtf8());
@@ -88,21 +85,20 @@ void SSEHandler::setUpResponse(Tufao::HttpServerResponse *response)
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-    connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+    connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 }
 
-void SSEHandler::handleDisplayUpdateAvailable()
+void SSEHandler::handleMessagesAvailable()
 {
     DGUARDMETHODTIMED;
 
-    if (response_ && display_ && display_->isUpdateAvailable())
+    if (response_ && session_ && session_->pendingMessagesAvailable())
     {
-        QStringList commandList = display_->getMessagesForPendingUpdates();
+        QList<QByteArray> messages = session_->getPendingMessages();
 
         QByteArray out;
-
-        foreach (const QString &command, commandList)
-            out += "data: " + command.toUtf8() + "\n";
+        foreach (const QByteArray &message, messages)
+            out += "data: " + message + "\n";
 
         response_->write(out + "\n");
         response_->flush();

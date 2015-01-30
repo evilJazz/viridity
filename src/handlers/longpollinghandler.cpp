@@ -8,8 +8,7 @@
 #include <QStringList>
 
 #include "viriditywebserver.h"
-#include "graphicsscenedisplay.h"
-#include "graphicssceneinputposthandler.h"
+#include "inputposthandler.h"
 #include "commandposthandler.h"
 
 #undef DEBUG
@@ -18,15 +17,15 @@
 LongPollingHandler::LongPollingHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent),
-    display_(NULL)
+    session_(NULL)
 {
     DGUARDMETHODTIMED;
 }
 
 LongPollingHandler::~LongPollingHandler()
 {
-    if (display_)
-        connection_->server()->sessionManager()->releaseDisplay(display_);
+    if (session_)
+        connection_->server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -47,50 +46,52 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     QString id = QUrl(request->url()).queryItemValue("id");
 #endif
 
-    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->getDisplay(id);
+    ViriditySession *session = connection_->server()->sessionManager()->getSession(id);
 
-    if (display)
+    if (session)
     {
         if (url.startsWith("/display?")) // long polling
         {
             if (request->method() == "GET") // long polling output
             {
-                display_ = connection_->server()->sessionManager()->acquireDisplay(id);
+                session_ = connection_->server()->sessionManager()->acquireSession(id);
 
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-                connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+                connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
-                if (display_->isUpdateAvailable())
-                    handleDisplayUpdateAvailable();
+                if (session_->pendingMessagesAvailable())
+                    handleMessagesAvailable();
 
                 return;
             }
             else if (request->method() == "POST") // long polling input
             {
-                GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, display);
+                InputPostHandler *handler = new InputPostHandler(request, response, session);
                 connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
                 return;
             }
         }
+        /*
         else if (url.startsWith("/command?") && request->method() == "POST") // long polling command
         {
             CommandPostHandler *handler = new CommandPostHandler(request, response);
             connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
         }
+        */
 
         return;
     }
     else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/display?")*/) // start new connection
     {
-        display = connection_->server()->sessionManager()->getNewDisplay();
+        session = connection_->server()->sessionManager()->getNewSession();
 
-        DPRINTF("NEW DISPLAY: %s", display->id().toLatin1().constData());
+        DPRINTF("NEW DISPLAY: %s", session->id().toLatin1().constData());
 
-        QString info = "info(" + display->id() + ")";
+        QString info = "info(" + session->id() + ")";
 
-        connection_->server()->sessionManager()->releaseDisplay(display);
+        connection_->server()->sessionManager()->releaseSession(session);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "text/plain; charset=utf8");
@@ -105,19 +106,19 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     response->end("Not found");
 }
 
-void LongPollingHandler::handleDisplayUpdateAvailable()
+void LongPollingHandler::handleMessagesAvailable()
 {
     DGUARDMETHODTIMED;
 
-    if (response_ && display_ && display_->isUpdateAvailable())
+    if (response_ && session_ && session_->pendingMessagesAvailable())
     {
-        QStringList commandList = display_->getMessagesForPendingUpdates();
+        QList<QByteArray> messages = session_->getPendingMessages();
 
-        connection_->server()->sessionManager()->releaseDisplay(display_);
-        display_ = NULL;
+        connection_->server()->sessionManager()->releaseSession(session_);
+        session_ = NULL;
 
         QByteArray out;
-        out = commandList.join("\n").toUtf8();
+        out = messages.join("\n");
 
         response_->writeHead(Tufao::HttpServerResponse::OK);
         response_->headers().insert("Content-Type", "text/plain; charset=utf8");

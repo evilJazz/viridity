@@ -6,12 +6,11 @@
 #include "KCL/debug.h"
 
 #include "viriditywebserver.h"
-#include "graphicsscenedisplay.h"
 
 WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
     QObject(parent),
     connection_(parent),
-    display_(NULL)
+    session_(NULL)
 {
     DGUARDMETHODTIMED;
     socket_ = new Tufao::WebSocket(this);
@@ -23,8 +22,8 @@ WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
 
 WebSocketHandler::~WebSocketHandler()
 {
-    if (display_)
-        connection_->server()->sessionManager()->releaseDisplay(display_);
+    if (session_)
+        connection_->server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -42,37 +41,37 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         return;
     }
 
-    display_ = connection_->server()->sessionManager()->getNewDisplay();
+    session_ = connection_->server()->sessionManager()->getNewSession();
 
-    connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));
+    connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
     socket_->startServerHandshake(request, head);
 
-    QString info = "info(" + display_->id() + ")";
+    QString info = "info(" + session_->id() + ")";
     socket_->sendMessage(info.toUtf8().constData());
 }
 
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = QString(request->url()).mid(1, 40);
-    return connection_->server()->sessionManager()->getDisplay(id) != NULL;
+    return connection_->server()->sessionManager()->getSession(id) != NULL;
 }
 
-void WebSocketHandler::handleDisplayUpdateAvailable()
+void WebSocketHandler::handleMessagesAvailable()
 {
-    if (display_ && display_->isUpdateAvailable())
+    if (session_ && session_->pendingMessagesAvailable())
     {
-        QStringList commandList = display_->getMessagesForPendingUpdates();
+        QList<QByteArray> messages = session_->getPendingMessages();
 
-        foreach (QString command, commandList)
-            socket_->sendMessage(command.toLatin1());
+        foreach (const QByteArray &message, messages)
+            socket_->sendMessage(message);
     }
 }
 
 void WebSocketHandler::clientMessageReceived(QByteArray data)
 {
-    if (display_)
-        display_->handleReceivedMessage(data);
+    if (session_)
+        session_->sessionManager()->dispatchMessageToHandlers(data, session_->id());
 }
 
 void WebSocketHandler::clientDisconnected()

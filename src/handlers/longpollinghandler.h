@@ -7,7 +7,7 @@
 #include "Tufao/HttpServerRequest"
 
 class ViridityConnection;
-class GraphicsSceneDisplay;
+class ViriditySession;
 
 class LongPollingHandler : public QObject
 {
@@ -20,12 +20,12 @@ public:
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private slots:
-    void handleDisplayUpdateAvailable();
+    void handleMessagesAvailable();
     void handleResponseDestroyed();
 
 private:
     ViridityConnection *connection_;
-    GraphicsSceneDisplay *display_;
+    ViriditySession *session_;
 
     Tufao::HttpServerResponse *response_;
 };

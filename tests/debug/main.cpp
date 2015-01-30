@@ -1,15 +1,13 @@
-#include <QApplication>
-#include <QtDeclarative>
-#include <QDeclarativeEngine>
+#include <QCoreApplication>
+#include <QThread>
 
 #include <Viridity/ViridityWebServer>
 
-#include "kclplugin.h"
-
 #include "commandbridge.h"
 
-void createScene(ViriditySession *session)
+void createLogic(ViriditySession *session)
 {
+    /*
     QDeclarativeEngine *engine = new QDeclarativeEngine();
 
     KCLPlugin *kcl = new KCLPlugin;
@@ -37,21 +35,22 @@ void createScene(ViriditySession *session)
     session->scene->addItem(item);
 
     QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
+    */
 }
 
 class MySingleSessionManager : public SingleLogicSessionManager
 {
-    void setLogic(ViriditySession *session) { createScene(session); }
+    void setLogic(ViriditySession *session) { createLogic(session); }
 };
 
 class MyMultiSessionManager : public MultiLogicSessionManager
 {
-    void setLogic(ViriditySession *session) { createScene(session); }
+    void setLogic(ViriditySession *session) { createLogic(session); }
 };
 
 int main(int argc, char *argv[])
 {
-    QApplication a(argc, argv);
+    QCoreApplication a(argc, argv);
 
     const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
 
@@ -59,9 +58,10 @@ int main(int argc, char *argv[])
     MyMultiSessionManager sessionManager;
 
     ViridityWebServer server(&a, &sessionManager);
-    server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount());
-
-    qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
+    if (server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount()))
+        qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
+    else
+        qFatal("Could not setup server on 127.0.0.1 %d.", dataPort);
 
     return a.exec();
 }

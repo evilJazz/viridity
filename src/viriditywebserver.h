@@ -12,10 +12,6 @@
 #include <QMutex>
 #include <QWaitCondition>
 
-#include <QGraphicsScene>
-
-#include "graphicsscenewebcontrolcommandinterpreter.h"
-
 #include "viriditysessionmanager.h"
 
 class WebSocketHandler;
@@ -52,7 +48,7 @@ private:
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
-    PatchRequestHandler *patchRequestHandler_;
+    //PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;
 
     ViridityWebServer *server_;
@@ -71,7 +67,7 @@ public:
     explicit ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager);
     virtual ~ViridityWebServer();
 
-    void listen(const QHostAddress &address, quint16 port, int threadsNumber);
+    bool listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
     ViriditySessionManager *sessionManager();
 
@@ -83,7 +79,7 @@ protected:
 #endif
 
 private slots:
-    void newDisplayCreated(GraphicsSceneDisplay *display);
+    void newSessionCreated(ViriditySession *session);
 
 private:
     ViriditySessionManager *sessionManager_;
@@ -91,7 +87,7 @@ private:
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;
 
-    QList<QThread *> displayThreads_;
+    QList<QThread *> sessionThreads_;
 };
 
 #endif // GRAPHICSSCENEWEBCONTROL_H

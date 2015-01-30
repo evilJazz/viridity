@@ -8,7 +8,7 @@
 #include "Tufao/HttpServerRequest"
 
 class ViridityConnection;
-class GraphicsSceneDisplay;
+class ViriditySession;
 
 class WebSocketHandler : public QObject
 {
@@ -21,14 +21,14 @@ public:
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
 
 private slots:
-    void handleDisplayUpdateAvailable();
+    void handleMessagesAvailable();
 
     void clientMessageReceived(QByteArray data);
     void clientDisconnected();
 
 private:
     ViridityConnection *connection_;
-    GraphicsSceneDisplay *display_;
+    ViriditySession *session_;
 
     Tufao::WebSocket *socket_;
 };

@@ -12,13 +12,13 @@ PatchRequestHandler::PatchRequestHandler(ViridityConnection *parent) :
 bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = QString(request->url()).mid(1, 40);
-    return connection_->server()->sessionManager()->getDisplay(id) != NULL;
+    return connection_->server()->sessionManager()->getSession(id) != NULL;
 }
 
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     QString id = QString(request->url()).mid(1, 40);
-    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->acquireDisplay(id);
+    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->acquireSession(id);
 
     if (display)
     {
@@ -32,7 +32,7 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
 
         Patch *patch = display->takePatch(patchId);
 
-        connection_->server()->sessionManager()->releaseDisplay(display);
+        connection_->server()->sessionManager()->releaseSession(display);
 
         if (patch)
         {

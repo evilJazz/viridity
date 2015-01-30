@@ -7,17 +7,9 @@
 #include <QEvent>
 #include <QGraphicsScene>
 
-class MessageHandler
-{
-public:
-    virtual ~MessageHandler() {}
-    virtual bool canHandleMessage(const QByteArray &message, const QString &displayId) = 0;
-    virtual bool handleMessage(const QByteArray &message, const QString &displayId) = 0;
+#include "viriditysessionmanager.h"
 
-    static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
-};
-
-class GraphicsSceneWebControlCommandInterpreter : public QObject, public MessageHandler
+class GraphicsSceneWebControlCommandInterpreter : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
 public:
@@ -27,21 +19,13 @@ public:
     void setTargetGraphicsScene(QGraphicsScene *scene);
     QGraphicsScene *targetGraphicsScene() const { return scene_; }
 
-    Q_INVOKABLE bool dispatchMessage(const QByteArray &message, const QString &displayId = QString::null);
-
-    void registerHandler(MessageHandler *handler);
-    void registerHandlers(const QList<MessageHandler *> &handlers);
-    void unregisterHandler(MessageHandler *handler);
-
 protected:
-    // MessageHandler
-    virtual bool canHandleMessage(const QByteArray &message, const QString &displayId);
-    virtual bool handleMessage(const QByteArray &message, const QString &displayId);
+    // ViridityMessageHandler
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId);
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId);
 
 private:
     QGraphicsScene *scene_;
-
-    QList<MessageHandler *> handlers_;
 
     bool buttonDown_;
     Qt::MouseButton lastButton_;
