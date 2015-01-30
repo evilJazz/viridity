@@ -83,6 +83,7 @@ void ViridityConnection::setupConnection()
     fileRequestHandler_->insertFileInformation("/", ":/webcontrol/index.html", "text/html; charset=utf8");
     fileRequestHandler_->insertFileInformation("/index.html", ":/webcontrol/index.html", "text/html; charset=utf8");
     fileRequestHandler_->insertFileInformation("/displayRenderer.js", ":/webcontrol/displayRenderer.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/Viridity.js", ":/webcontrol/Viridity.js", "application/javascript; charset=utf8");
     fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/webcontrol/jquery.mousewheel.js", "application/javascript; charset=utf8");
 }
 
