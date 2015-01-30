@@ -101,7 +101,7 @@ var Viridity = function(options)
                     for (var i = 0, ii = lines.length; i < ii; i++)
                     {
 //                        console.log("line " + i + ": " + lines[i] + "\n");
-                        dr.processPlainMessage(lines[i]);
+                        dr.processMessage(lines[i]);
                     }
 
                     setTimeout(function() { dr._longPollingReceiveOutputMessages() }, dr.pause);
@@ -128,26 +128,19 @@ var Viridity = function(options)
             for (var i = 0, ii = lines.length; i < ii; i++)
             {
                 //console.log("line " + i + ": " + lines[i] + "\n");
-                dr.processPlainMessage(lines[i]);
+                dr.processMessage(lines[i]);
             }
 
             dr._longPollingCheckInputEventsStarted();
         },
 
-        processPlainMessage: function(data)
-        {
-            var msg = {};
-            msg["data"] = data;
-            dr.processMessage(msg);
-        },
-
         processMessage: function(msg)
         {
-            var paramStartIndex = msg.data.indexOf("(");
-            var paramEndIndex = msg.data.indexOf(")");
+            var paramStartIndex = msg.indexOf("(");
+            var paramEndIndex = msg.indexOf(")");
 
-            var command = msg.data.substring(0, paramStartIndex);
-            var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
+            var command = msg.substring(0, paramStartIndex);
+            var params = msg.substring(paramStartIndex + 1, paramEndIndex);
 
             if (command === "command" || command === "commandResponse")
             {
@@ -255,7 +248,7 @@ var Viridity = function(options)
             {
                 dr.socket = new WebSocket("ws://" + dr.location + "/display");
 
-                dr.socket.onmessage = function(msg) { dr.processMessage(msg) };
+                dr.socket.onmessage = function(msg) { dr.processMessage(msg.data) };
                 dr.socket.onopen = dr._sendQueuedMessages;
                 dr.socket.onerror = dr.reconnect;
                 dr.socket.onclose = dr.reconnect;
