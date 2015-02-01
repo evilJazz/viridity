@@ -17,6 +17,9 @@
         $(document).ready(function() {
             var viridity = new Viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
 
+            //var display1 = $("#displayContainer1").viridity(viridity, "preview1");
+            //var display2 = $("#displayContainer2").viridity(viridity, "preview2");
+
             //var viridity = $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
 
             viridity.onNewCommandReceived = function (input)
@@ -50,7 +53,8 @@
     </script>
   </head>
   <body>
-    <div id="displayContainer"/>
+    <div id="displayContainer1"/>
+    <div id="displayContainer2"/>
     <button id="testInputButton">BLAH TEST</button>
   </body>
 </html>

@@ -21,8 +21,8 @@ public:
 
 protected:
     // ViridityMessageHandler
-    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId);
-    virtual bool handleMessage(const QByteArray &message, const QString &sessionId);
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
 private:
     QGraphicsScene *scene_;

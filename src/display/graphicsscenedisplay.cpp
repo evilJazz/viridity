@@ -229,11 +229,11 @@ void GraphicsSceneDisplay::updateCheckTimerTimeout()
     }
 }
 
-QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
+QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 {
     DGUARDMETHODTIMED;
 
-    QStringList messageList;
+    QList<QByteArray> messageList;
 
     updateAvailable_ = false;
     QList<UpdateOperation> ops = renderer_->updateBufferExt();
@@ -259,10 +259,10 @@ QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
             if (urlMode_)
             {
                 Patch *patch = createPatch(rect, false);
-                patch->id = QString::number(frame_) + "_" + QString::number(i);
+                patch->id = id_ + "_" + QString::number(frame_) + "_" + QString::number(i);
 
-                QString msg = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
-                    frame_,
+                QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%s):%s",
+                    id_.toLatin1().constData(), frame_,
                     rect.x(), rect.y(), rect.width(), rect.height(),
                     patch->mimeType.toLatin1().constData(),
                     QString("fb:" + id() + "/" + patch->id).toLatin1().constData()
@@ -271,20 +271,20 @@ QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
                 QMutexLocker l(&patchesMutex_);
                 patches_.insert(patch->id, patch);
 
-                messageList += msg;
+                messageList += msg.toUtf8();
             }
             else
             {
                 Patch *patch = createPatch(rect, true);
 
                 QString format = patch->mimeType + ";base64";
-                QString msg = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):",
-                    frame_,
+                QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%s):",
+                    id_.toLatin1().constData(), frame_,
                     rect.x(), rect.y(), rect.width(), rect.height(),
                     format.toLatin1().constData()
                 );
 
-                messageList += msg + patch->dataBase64;
+                messageList += msg.toUtf8() + patch->dataBase64;
 
                 delete patch;
             }
@@ -293,42 +293,40 @@ QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("moveImage(%d,%d,%d,%d,%d,%d,%d):",
-                frame_,
+            QString msg = QString().sprintf("%s>moveImage(%d,%d,%d,%d,%d,%d,%d):",
+                id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.dstPoint.x(), op.dstPoint.y()
             );
 
-            messageList += msg;
+            messageList += msg.toUtf8();
         }
         else if (op.type == uotFill)
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("fillRect(%d,%d,%d,%d,%d,%s):",
-                frame_,
+            QString msg = QString().sprintf("%s>fillRect(%d,%d,%d,%d,%d,%s):",
+                id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.fillColor.name().toLatin1().constData()
             );
 
-            messageList += msg;
+            messageList += msg.toUtf8();
         }
     }
 
     if (ops.count() > 0)
-        messageList += QString().sprintf("end(%d):", frame_);
-
-    if (additionalMessages_.count() > 0)
-    {
-        messageList += additionalMessages_;
-        additionalMessages_.clear();
-    }
+        messageList += QString().sprintf("%s>end(%d):", id_.toLatin1().constData(), frame_).toUtf8();
 
     return messageList;
 }
 
-void GraphicsSceneDisplay::dispatchAdditionalMessages(const QStringList &messages)
+bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    additionalMessages_ += messages;
-    triggerUpdateCheckTimer();
+    return targetId == id_ && static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId);
+}
+
+bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+{
+    return targetId == id_ && static_cast<ViridityMessageHandler *>(commandInterpreter_)->handleMessage(message, sessionId, targetId);
 }

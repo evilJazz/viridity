@@ -19,6 +19,20 @@ QString createUniqueID()
 
 /* ViridityMessageHandler */
 
+QString ViridityMessageHandler::takeTargetFromMessage(QByteArray &message)
+{
+    QByteArray bm = message.left(message.indexOf("("));
+    int indexOfMarker = bm.indexOf('>');
+
+    if (indexOfMarker > -1)
+    {
+        message.remove(0, indexOfMarker + 1);
+        return bm.left(indexOfMarker);
+    }
+    else
+        return QString::null;
+}
+
 void ViridityMessageHandler::splitMessage(const QByteArray &message, QString &command, QStringList &params)
 {
     QString rawMsg = message;
@@ -39,7 +53,8 @@ ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const Q
     QObject(), // No parent since we move this object into different thread later on...
     sessionManager_(sessionManager),
     id_(id),
-    updateCheckInterval_(10)
+    updateCheckInterval_(10),
+    dispatchMutex_(QMutex::Recursive)
 {
     updateCheckTimer_ = new QTimer(this);
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
@@ -56,18 +71,27 @@ bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
 {
     DGUARDMETHODTIMED;
 
+    QByteArray modMsg = message;
+    QString targetId = ViridityMessageHandler::takeTargetFromMessage(modMsg);
+
     foreach (ViridityMessageHandler *handler, messageHandlers_)
     {
-        if (handler->canHandleMessage(message, id_))
-            return handler->handleMessage(message, id_);
+        if (handler->canHandleMessage(modMsg, id_, targetId))
+            return handler->handleMessage(modMsg, id_, targetId);
     }
 
     return false;
 }
 
-void ViriditySession::sendMessageToClient(const QByteArray &message)
+void ViriditySession::sendMessageToClient(const QByteArray &message, const QString &targetId)
 {
-    messages_ += message;
+    QMutexLocker l(&dispatchMutex_);
+
+    if (targetId.isEmpty())
+        messages_ += message;
+    else
+        messages_ += targetId.toUtf8() + ">" + message;
+
     triggerUpdateCheckTimer();
 }
 
@@ -87,27 +111,49 @@ bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
     return result;
 }
 
-void ViriditySession::dispatchMessageToClient(const QByteArray &message)
+void ViriditySession::dispatchMessageToClient(const QByteArray &message, const QString &targetId)
 {
     DGUARDMETHODTIMED;
 
     QMetaObject::invokeMethod(
         this, "sendMessageToClient",
         Qt::QueuedConnection,
-        Q_ARG(const QByteArray &, message)
+        Q_ARG(const QByteArray &, message),
+        Q_ARG(const QString &, targetId)
     );
 }
 
 bool ViriditySession::pendingMessagesAvailable() const
 {
-    return messages_.count() > 0;
+    QMutexLocker l(&dispatchMutex_);
+    return messages_.count() > 0 || messageHandlersRequestingMessageDispatch_.count() > 0;
 }
 
 QList<QByteArray> ViriditySession::takePendingMessages()
 {
+    QMutexLocker l(&dispatchMutex_);
+
     QList<QByteArray> messages = messages_;
+
+    foreach (ViridityMessageHandler *handler, messageHandlersRequestingMessageDispatch_)
+    {
+        messages += handler->takePendingMessages();
+    }
+
     messages_.clear();
+    messageHandlersRequestingMessageDispatch_.clear();
+
     return messages;
+}
+
+void ViriditySession::handlerIsReadyForDispatch(ViridityMessageHandler *handler)
+{
+    QMutexLocker l(&dispatchMutex_);
+
+    if (!messageHandlersRequestingMessageDispatch_.contains(handler))
+        messageHandlersRequestingMessageDispatch_.append(handler);
+
+    triggerUpdateCheckTimer();
 }
 
 void ViriditySession::updateCheckTimerTimeout()
@@ -309,7 +355,7 @@ bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArr
     return dispatched > 0;
 }
 
-bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, const QString &sessionId)
+bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -322,7 +368,8 @@ bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, 
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToClient",
                 Qt::QueuedConnection,
-                Q_ARG(const QByteArray &, message)
+                Q_ARG(const QByteArray &, message),
+                Q_ARG(const QString &, targetId)
             );
             ++dispatched;
         }
@@ -335,7 +382,8 @@ bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, 
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToClient",
                 Qt::QueuedConnection,
-                Q_ARG(const QByteArray &, message)
+                Q_ARG(const QByteArray &, message),
+                Q_ARG(const QString &, targetId)
             );
             ++dispatched;
         }

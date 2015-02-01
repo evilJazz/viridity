@@ -34,6 +34,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp
 
 # Display related
+CONFIG += viridity_module_display
+
 viridity_module_display {
     INCLUDEPATH += \
         $$VIRIDITY_SRC_PATH/display
@@ -45,6 +47,7 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.h \
         $$VIRIDITY_SRC_PATH/display/graphicssceneobserver.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.h \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
         $$VIRIDITY_SRC_PATH/display/private/qtestspontaneevent.h \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \
@@ -60,6 +63,7 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicssceneobserver.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.cpp \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.cpp \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.cpp \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/private/moveanalyzerdebugview.cpp \

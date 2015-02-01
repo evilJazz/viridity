@@ -31,7 +31,7 @@ public:
     QByteArray dataBase64;
 };
 
-class GraphicsSceneDisplay : public QObject
+class GraphicsSceneDisplay : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
 public:
@@ -47,11 +47,14 @@ public:
 
     QStringList getMessagesForPendingUpdates();
 
-public slots:
-    void dispatchAdditionalMessages(const QStringList &messages);
-
 signals:
     void updateAvailable();
+
+protected:
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
+
+    virtual QList<QByteArray> takePendingMessages();
 
 private slots:
     void sceneDamagedRegionsAvailable();
@@ -78,8 +81,6 @@ private:
     QHash<QString, Patch *> patches_;
     QImage patchBuffer_;
     QMutex patchesMutex_;
-
-    QStringList additionalMessages_;
 
     Patch *createPatch(const QRect &rect, bool createBase64);
     void clearPatches();

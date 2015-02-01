@@ -46,12 +46,12 @@ QVariant CommandBridge::sendCommand(const QString &command, const QString &desti
     return dispatched ? result : false;
 }
 
-bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &sessionId)
+bool CommandBridge::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     return message.startsWith("commandResponse") || message.startsWith("command");
 }
 
-bool CommandBridge::handleMessage(const QByteArray &message, const QString &sessionId)
+bool CommandBridge::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     bool result;
 
@@ -60,15 +60,16 @@ bool CommandBridge::handleMessage(const QByteArray &message, const QString &sess
         thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(bool, result),
         Q_ARG(const QByteArray &, message),
-        Q_ARG(const QString &, sessionId)
+        Q_ARG(const QString &, sessionId),
+        Q_ARG(const QString &, targetId)
     );
 
     return result;
 }
 
-bool CommandBridge::localHandleMessage(const QByteArray &message, const QString &sessionId)
+bool CommandBridge::localHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    if (canHandleMessage(message, sessionId))
+    if (canHandleMessage(message, sessionId, targetId))
     {
         int paramStartIndex = message.indexOf("(");
         int paramStopIndex = message.indexOf(")");

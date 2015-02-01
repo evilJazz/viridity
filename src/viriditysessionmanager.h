@@ -1,5 +1,5 @@
-#ifndef GRAPHICSSCENEDISPLAYSESSIONMANAGER_H
-#define GRAPHICSSCENEDISPLAYSESSIONMANAGER_H
+#ifndef VIRIDITYSESSIONMANAGER_H
+#define VIRIDITYSESSIONMANAGER_H
 
 #include <QObject>
 #include <QMutex>
@@ -22,10 +22,12 @@ public:
     void unregisterHandler(ViridityMessageHandler *handler);
 
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message);
-    Q_INVOKABLE void dispatchMessageToClient(const QByteArray &message);
+    Q_INVOKABLE void dispatchMessageToClient(const QByteArray &message, const QString &targetId = QString::null);
 
     bool pendingMessagesAvailable() const;
     QList<QByteArray> takePendingMessages();
+
+    void handlerIsReadyForDispatch(ViridityMessageHandler *handler);
 
     ViriditySessionManager *sessionManager() { return sessionManager_; }
     const QString id() const { return id_; }
@@ -44,7 +46,7 @@ private slots:
 
 private:
     Q_INVOKABLE bool sendMessageToHandlers(const QByteArray &message);
-    Q_INVOKABLE void sendMessageToClient(const QByteArray &message);
+    Q_INVOKABLE void sendMessageToClient(const QByteArray &message, const QString &targetId);
 
 protected:
     friend class ViriditySessionManager;
@@ -53,7 +55,10 @@ protected:
 
     QList<ViridityMessageHandler *> messageHandlers_;
 
+    mutable QMutex dispatchMutex_;
     QList<QByteArray> messages_;
+    QList<ViridityMessageHandler *> messageHandlersRequestingMessageDispatch_;
+
     QTimer *updateCheckTimer_;
     int updateCheckInterval_;
     void triggerUpdateCheckTimer();
@@ -63,9 +68,12 @@ class ViridityMessageHandler
 {
 public:
     virtual ~ViridityMessageHandler() {}
-    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId) = 0;
-    virtual bool handleMessage(const QByteArray &message, const QString &sessionId) = 0;
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
 
+    virtual QList<QByteArray> takePendingMessages() {}
+
+    static QString takeTargetFromMessage(QByteArray &message);
     static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
 };
 
@@ -89,7 +97,7 @@ public:
 
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId = QString::null);
     Q_INVOKABLE bool dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic);
-    Q_INVOKABLE bool dispatchMessageToClient(const QByteArray &message, const QString &sessionId = QString::null);
+    Q_INVOKABLE bool dispatchMessageToClient(const QByteArray &message, const QString &sessionId = QString::null, const QString &targetId = QString::null);
 
 signals:
     void newSessionCreated(ViriditySession *session);
@@ -139,4 +147,4 @@ protected slots:
     virtual ViriditySession *createSession(const QString &id);
 };
 
-#endif // GRAPHICSSCENEDISPLAYSESSIONMANAGER_H
+#endif // VIRIDITYSESSIONMANAGER_H

@@ -20,7 +20,6 @@ GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpr
     buttonDown_(false),
     keyDownKeyCodeHandled_(false)
 {
-    registerHandler(this);
 }
 
 GraphicsSceneWebControlCommandInterpreter::~GraphicsSceneWebControlCommandInterpreter()
@@ -339,7 +338,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
     return true;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId)
+bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     return message.startsWith("mouseEnter") ||
            message.startsWith("mouseExit") ||
@@ -348,12 +347,12 @@ bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArra
            message.startsWith("resize");
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId)
+bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     QString command;
     QStringList params;
 
-    MessageHandler::splitMessage(message, command, params);
+    ViridityMessageHandler::splitMessage(message, command, params);
 
     if (message.startsWith("mouseEnter"))
         return handleMouseEnter(command, params);

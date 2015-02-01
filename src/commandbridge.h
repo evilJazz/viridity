@@ -22,14 +22,14 @@ public:
 
 protected:
     // ViridityMessageHandler
-    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId);
-    virtual bool handleMessage(const QByteArray &message, const QString &sessionId);
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
 public slots:
     QString handleCommandReady(const QString &id, const QString &command);
 
 private:
-    Q_INVOKABLE bool localHandleMessage(const QByteArray &message, const QString &sessionId);
+    Q_INVOKABLE bool localHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
 signals:
     void commandReceived(const QString &id, const QString &command);

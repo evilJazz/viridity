@@ -1,5 +1,5 @@
-#ifndef GRAPHICSSCENEWEBCONTROL_H
-#define GRAPHICSSCENEWEBCONTROL_H
+#ifndef VIRIDITYWEBSERVER_H
+#define VIRIDITYWEBSERVER_H
 
 #include "viridity_global.h"
 
@@ -21,7 +21,6 @@ class PatchRequestHandler;
 class FileRequestHandler;
 
 class ViridityWebServer;
-class GraphicsSceneDisplay;
 
 class ViridityConnection : public QObject
 {
@@ -90,4 +89,4 @@ private:
     QList<QThread *> sessionThreads_;
 };
 
-#endif // GRAPHICSSCENEWEBCONTROL_H
+#endif // VIRIDITYWEBSERVER_H
