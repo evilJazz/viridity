@@ -10,7 +10,7 @@ var Viridity = function(options)
     var debugVerbosity = 0;
     var originHref = window.location.href;
 
-    var dr =
+    var v =
     {
         connectionMethod: ConnectionMethod.Auto,
 
@@ -35,22 +35,22 @@ var Viridity = function(options)
 
         _longPollingSendInputEvents: function()
         {
-            if (dr.inputEvents.length > 0)
+            if (v.inputEvents.length > 0)
             {
-                var data = dr.inputEvents.join("\n");
-                dr.inputEvents = [];
+                var data = v.inputEvents.join("\n");
+                v.inputEvents = [];
                 var options =
                 {
                     type: "POST",
-                    url: dr.fullLocation + "/display?id=" + dr.sessionId,
+                    url: v.fullLocation + "/display?id=" + v.sessionId,
                     async: true,
                     cache: false,
-                    timeout: dr.timeout,
+                    timeout: v.timeout,
                     data: data,
 
                     success: function(data)
                     {
-                        setTimeout(function() { dr._longPollingSendInputEvents() }, dr.pause);
+                        setTimeout(function() { v._longPollingSendInputEvents() }, v.pause);
                     },
 
                     error: function(xhr, status, exception)
@@ -58,9 +58,9 @@ var Viridity = function(options)
                         console.log("While sending input events \"" + data + "\":\n" + status + " - " + exception + "\n");
 
                         if (status != "timeout")
-                            dr.reconnect();
+                            v.reconnect();
                         else
-                            setTimeout(function() { dr._longPollingSendInputEvents() }, dr.pause);
+                            setTimeout(function() { v._longPollingSendInputEvents() }, v.pause);
                     }
                 };
 
@@ -68,16 +68,16 @@ var Viridity = function(options)
             }
             else
             {
-                setTimeout(function() { dr._longPollingSendInputEvents() }, dr.pause);
+                setTimeout(function() { v._longPollingSendInputEvents() }, v.pause);
             }
         },
 
         _longPollingCheckInputEventsStarted: function()
         {
-            if (!dr.inputEventsStarted)
+            if (!v.inputEventsStarted)
             {
-                dr._longPollingSendInputEvents();
-                dr.inputEventsStarted = true;
+                v._longPollingSendInputEvents();
+                v.inputEventsStarted = true;
             }
         },
 
@@ -86,12 +86,12 @@ var Viridity = function(options)
             var options =
             {
                 type: "GET",
-                url: "display?id=" + dr.sessionId,
+                url: "display?id=" + v.sessionId,
 
                 async: true,
                 cache: false,
 
-                timeout: dr.timeout,
+                timeout: v.timeout,
 
                 success: function(data)
                 {
@@ -101,20 +101,20 @@ var Viridity = function(options)
                     for (var i = 0, ii = lines.length; i < ii; i++)
                     {
 //                        console.log("line " + i + ": " + lines[i] + "\n");
-                        dr.processMessage(lines[i]);
+                        v.processMessage(lines[i]);
                     }
 
-                    setTimeout(function() { dr._longPollingReceiveOutputMessages() }, dr.pause);
-                    dr._longPollingCheckInputEventsStarted();
+                    setTimeout(function() { v._longPollingReceiveOutputMessages() }, v.pause);
+                    v._longPollingCheckInputEventsStarted();
                 },
                 error: function(xhr, status, exception)
                 {
                     console.log("error receiving display data:\n" + status + " - " + exception + "\n");
 
                     if (status != "timeout")
-                        dr.reconnect();
+                        v.reconnect();
                     else
-                        setTimeout(function() { dr._longPollingReceiveOutputMessages() }, dr.pause);
+                        setTimeout(function() { v._longPollingReceiveOutputMessages() }, v.pause);
                 }
             };
 
@@ -128,10 +128,10 @@ var Viridity = function(options)
             for (var i = 0, ii = lines.length; i < ii; i++)
             {
                 //console.log("line " + i + ": " + lines[i] + "\n");
-                dr.processMessage(lines[i]);
+                v.processMessage(lines[i]);
             }
 
-            dr._longPollingCheckInputEventsStarted();
+            v._longPollingCheckInputEventsStarted();
         },
 
         processMessage: function(msg)
@@ -151,16 +151,16 @@ var Viridity = function(options)
 
                 if (command === "commandResponse")
                 {
-                    if (dr.pendingCommandCallbacks.hasOwnProperty(responseId))
+                    if (v.pendingCommandCallbacks.hasOwnProperty(responseId))
                     {
-                        dr.pendingCommandCallbacks[responseId](JSON.parse(input));
-                        delete dr.pendingCommandCallbacks[responseId];
+                        v.pendingCommandCallbacks[responseId](JSON.parse(input));
+                        delete v.pendingCommandCallbacks[responseId];
                     }
                 }
-                else if (typeof(dr.onNewCommandReceived) == "function")
+                else if (typeof(v.onNewCommandReceived) == "function")
                 {
-                    var result = dr.onNewCommandReceived(JSON.parse(input));
-                    dr.sendMessage("commandResponse(" + responseId + "," + JSON.stringify(result) + ")");
+                    var result = v.onNewCommandReceived(JSON.parse(input));
+                    v.sendMessage("commandResponse(" + responseId + "," + JSON.stringify(result) + ")");
                 }
 
                 return;
@@ -170,7 +170,7 @@ var Viridity = function(options)
 
             if (command === "info")
             {
-                dr.sessionId = inputParams[0];
+                v.sessionId = inputParams[0];
             }
         },
 
@@ -179,35 +179,35 @@ var Viridity = function(options)
             if (debugVerbosity > 0)
                 console.log("Sending message to server: " + msg);
 
-            if (dr.connectionMethod === ConnectionMethod.WebSockets)
+            if (v.connectionMethod === ConnectionMethod.WebSockets)
             {
-                if (dr.socket.readyState === WebSocket.OPEN)
-                    dr.socket.send(msg);
+                if (v.socket.readyState === WebSocket.OPEN)
+                    v.socket.send(msg);
                 else
-                    dr.inputEvents.push(msg);
+                    v.inputEvents.push(msg);
             }
-            else if (dr.connectionMethod === ConnectionMethod.LongPolling ||
-                     dr.connectionMethod === ConnectionMethod.ServerSentEvents)
-                dr.inputEvents.push(msg);
+            else if (v.connectionMethod === ConnectionMethod.LongPolling ||
+                     v.connectionMethod === ConnectionMethod.ServerSentEvents)
+                v.inputEvents.push(msg);
         },
 
         _sendQueuedMessages: function()
         {
-            if (dr.socket.readyState === WebSocket.OPEN)
+            if (v.socket.readyState === WebSocket.OPEN)
             {
-                for (var i = 0, ii = dr.inputEvents.length; i < ii; i++)
-                    dr.sendMessage(dr.inputEvents[i]);
+                for (var i = 0, ii = v.inputEvents.length; i < ii; i++)
+                    v.sendMessage(v.inputEvents[i]);
 
-                dr.inputEvents = [];
+                v.inputEvents = [];
             }
         },
 
         sendCommand: function(command, callback)
         {
-            ++dr.responseId;
-            dr.pendingCommandCallbacks[dr.responseId] = callback;
-            var message = "command(" + dr.responseId + "," + JSON.stringify(command) + ")";
-            dr.sendMessage(message);
+            ++v.responseId;
+            v.pendingCommandCallbacks[v.responseId] = callback;
+            var message = "command(" + v.responseId + "," + JSON.stringify(command) + ")";
+            v.sendMessage(message);
         },
 
         reconnect: function()
@@ -217,46 +217,46 @@ var Viridity = function(options)
 
         init: function(connectionMethod)
         {
-            dr.connectionMethod = connectionMethod;
+            v.connectionMethod = connectionMethod;
 
-            if (dr.connectionMethod === ConnectionMethod.Auto)
-                dr.connectionMethod = ConnectionMethod.WebSockets;
+            if (v.connectionMethod === ConnectionMethod.Auto)
+                v.connectionMethod = ConnectionMethod.WebSockets;
 
-            if (dr.connectionMethod === ConnectionMethod.WebSockets && !window.hasOwnProperty("WebSocket"))
-                dr.connectionMethod = ConnectionMethod.ServerSentEvents;
+            if (v.connectionMethod === ConnectionMethod.WebSockets && !window.hasOwnProperty("WebSocket"))
+                v.connectionMethod = ConnectionMethod.ServerSentEvents;
 
-            if (dr.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
-                dr.connectionMethod = ConnectionMethod.LongPolling;
+            if (v.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
+                v.connectionMethod = ConnectionMethod.LongPolling;
 
-            dr.fullLocation = window.location.href.replace(/\/$/, "");
-            console.log("dr.fullLocation: " + dr.fullLocation);
+            v.fullLocation = window.location.href.replace(/\/$/, "");
+            console.log("v.fullLocation: " + v.fullLocation);
 
             var hostWithPath = window.location.host + window.location.pathname;
-            dr.location = hostWithPath.replace(/\/$/, "");
+            v.location = hostWithPath.replace(/\/$/, "");
 
-            if (dr.connectionMethod === ConnectionMethod.LongPolling)
+            if (v.connectionMethod === ConnectionMethod.LongPolling)
             {
-                dr._longPollingReceiveOutputMessages();
+                v._longPollingReceiveOutputMessages();
             }
-            else if (dr.connectionMethod === ConnectionMethod.ServerSentEvents)
+            else if (v.connectionMethod === ConnectionMethod.ServerSentEvents)
             {
-                dr.eventSource = new EventSource("events");
-                dr.eventSource.onmessage = dr._serverSentEventsMessageReceived;
-                dr.eventSource.onerror = dr.reconnect;
+                v.eventSource = new EventSource("events");
+                v.eventSource.onmessage = v._serverSentEventsMessageReceived;
+                v.eventSource.onerror = v.reconnect;
             }
-            else if (dr.connectionMethod === ConnectionMethod.WebSockets)
+            else if (v.connectionMethod === ConnectionMethod.WebSockets)
             {
-                dr.socket = new WebSocket("ws://" + dr.location + "/display");
+                v.socket = new WebSocket("ws://" + v.location + "/display");
 
-                dr.socket.onmessage = function(msg) { dr.processMessage(msg.data) };
-                dr.socket.onopen = dr._sendQueuedMessages;
-                dr.socket.onerror = dr.reconnect;
-                dr.socket.onclose = dr.reconnect;
+                v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
+                v.socket.onopen = v._sendQueuedMessages;
+                v.socket.onerror = v.reconnect;
+                v.socket.onclose = v.reconnect;
             }
         }
     }
 
-    dr.init(options.connectionMethod);
+    v.init(options.connectionMethod);
 
-    return dr;
+    return v;
 };
