@@ -71,7 +71,7 @@ bool GraphicsSceneDisplaySessionManager::canHandleMessage(const QByteArray &mess
 {
     QMutexLocker l(&displayMutex_);
     return
-        (targetId.isEmpty() && message.startsWith("newdisplay")) ||
+        (targetId.isEmpty() && message.startsWith("newDisplay")) ||
         (displays_.contains(targetId) && static_cast<ViridityMessageHandler *>(displays_.value(targetId))->canHandleMessage(message, sessionId, targetId));
 }
 
@@ -86,7 +86,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
 
         ViridityMessageHandler::splitMessage(message, command, params);
 
-        if (command.startsWith("newdisplay"))
+        if (command.startsWith("newDisplay"))
         {
             QStringList modParams = params;
             QString id = modParams.takeFirst();

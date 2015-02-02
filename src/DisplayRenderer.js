@@ -1,57 +1,3 @@
-var Base64Binary = {
-    _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-
-    /* will return a Uint8Array type */
-    decodeArrayBuffer: function(input) {
-                           var bytes = Math.ceil( (3*input.length) / 4.0);
-                           var ab = new ArrayBuffer(bytes);
-                           this.decode(input, ab);
-
-                           return ab;
-                       },
-
-    decode: function(input, arrayBuffer) {
-                //get last chars to see if are valid
-                var lkey1 = this._keyStr.indexOf(input.charAt(input.length-1));
-                var lkey2 = this._keyStr.indexOf(input.charAt(input.length-1));
-
-                var bytes = Math.ceil( (3*input.length) / 4.0);
-                if (lkey1 == 64) bytes--; //padding chars, so skip
-                if (lkey2 == 64) bytes--; //padding chars, so skip
-
-                var uarray;
-                var chr1, chr2, chr3;
-                var enc1, enc2, enc3, enc4;
-                var i = 0;
-                var j = 0;
-
-                if (arrayBuffer)
-                    uarray = new Uint8Array(arrayBuffer);
-                else
-                    uarray = new Uint8Array(bytes);
-
-                input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
-
-                for (i=0; i<bytes; i+=3) {
-                    //get the 3 octects in 4 ascii chars
-                    enc1 = this._keyStr.indexOf(input.charAt(j++));
-                    enc2 = this._keyStr.indexOf(input.charAt(j++));
-                    enc3 = this._keyStr.indexOf(input.charAt(j++));
-                    enc4 = this._keyStr.indexOf(input.charAt(j++));
-
-                    chr1 = (enc1 << 2) | (enc2 >> 4);
-                    chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-                    chr3 = ((enc3 & 3) << 6) | enc4;
-
-                    uarray[i] = chr1;
-                    if (enc3 != 64) uarray[i+1] = chr2;
-                    if (enc4 != 64) uarray[i+2] = chr3;
-                }
-
-                return uarray;
-            }
-}
-
 (function($)
 {
     $.fn.viridity = function(viridityChannel, sceneId)
@@ -67,6 +13,11 @@ var Base64Binary = {
 
         var dr =
         {
+            targetId: undefined,
+            sceneId: undefined,
+
+            useBlobBuilder: false,
+
             canvas: 0,
             ctx: 0,
 
@@ -98,7 +49,7 @@ var Base64Binary = {
 
                     if (debugVerbosity > 1) console.log("SENDING READY!!!!");
 
-                    dr.sendMessage("ready()", true);
+                    v.sendMessage("ready()", dr.targetId);
                 }
             },
 
@@ -111,7 +62,7 @@ var Base64Binary = {
 
             requestFullUpdate: function()
             {
-                dr.sendMessage("requestFullUpdate()", true);
+                v.sendMessage("requestFullUpdate()", dr.targetId);
             },
 
             createDebugOverlay: function()
@@ -255,40 +206,9 @@ var Base64Binary = {
                 }
             },
 
-            processMessage: function(msg, useBlobBuilder)
+            _messageCallback: function(t)
             {
-                var paramStartIndex = msg.data.indexOf("(");
-                var paramEndIndex = msg.data.indexOf(")");
-
-                var command = msg.data.substring(0, paramStartIndex);
-                var params = msg.data.substring(paramStartIndex + 1, paramEndIndex);
-
-                if (command === "command" || command === "commandResponse")
-                {
-                    paramStartIndex = params.indexOf(",");
-
-                    var responseId = params.substring(0, paramStartIndex);
-                    var input = params.substring(paramStartIndex + 1);
-
-                    if (command === "commandResponse")
-                    {
-                        if (dr.pendingCommandCallbacks.hasOwnProperty(responseId))
-                        {
-                            dr.pendingCommandCallbacks[responseId](JSON.parse(input));
-                            delete dr.pendingCommandCallbacks[responseId];
-                        }
-                    }
-                    else if (typeof(dr.onNewCommandReceived) == "function")
-                    {
-
-                        var result = dr.onNewCommandReceived(JSON.parse(input));
-                        dr.sendMessage("commandResponse(" + responseId + "," + JSON.stringify(result) + ")");
-                    }
-
-                    return;
-                }
-
-                var inputParams = params.split(/[\s,]+/);
+                var inputParams = t.params.split(/[\s,]+/);
                 var frame = inputParams[0];
 
                 if (dr.lastFrame !== frame)
@@ -323,14 +243,14 @@ var Base64Binary = {
                     dr.frameCommands.push(frameCmd);
                 }
 
-                if (command === "fillRect")
+                if (t.command === "fillRect")
                 {
                     dr.ctx.fillStyle = inputParams[5]
                     dr.ctx.fillRect(
                                 inputParams[1], inputParams[2], inputParams[3], inputParams[4]
                                 );
                 }
-                else if (command === "moveImage")
+                else if (t.command === "moveImage")
                 {
                     dr.ctx.drawImage(
                                 dr.frontCanvas,
@@ -338,7 +258,7 @@ var Base64Binary = {
                                 inputParams[5], inputParams[6], inputParams[3], inputParams[4]
                                 );
                 }
-                else if (command === "drawImage")
+                else if (t.command === "drawImage")
                 {
                     ++dr.frameImageCount;
 
@@ -353,7 +273,7 @@ var Base64Binary = {
                         dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
 
-                        if (useBlobBuilder)
+                        if (dr.useBlobBuilder)
                             URL.revokeObjectURL(img.src);
 
                         dr._imageDone();
@@ -369,9 +289,63 @@ var Base64Binary = {
                     {
                         img.src = imageData;
                     }
-                    else if (useBlobBuilder)
+                    else if (dr.useBlobBuilder)
                     {
                         var blobber = new BlobBuilder;
+
+                        var Base64Binary = {
+                            _keyStr : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+
+                            /* will return a Uint8Array type */
+                            decodeArrayBuffer: function(input) {
+                                                   var bytes = Math.ceil( (3*input.length) / 4.0);
+                                                   var ab = new ArrayBuffer(bytes);
+                                                   this.decode(input, ab);
+
+                                                   return ab;
+                                               },
+
+                            decode: function(input, arrayBuffer) {
+                                        //get last chars to see if are valid
+                                        var lkey1 = this._keyStr.indexOf(input.charAt(input.length-1));
+                                        var lkey2 = this._keyStr.indexOf(input.charAt(input.length-1));
+
+                                        var bytes = Math.ceil( (3*input.length) / 4.0);
+                                        if (lkey1 == 64) bytes--; //padding chars, so skip
+                                        if (lkey2 == 64) bytes--; //padding chars, so skip
+
+                                        var uarray;
+                                        var chr1, chr2, chr3;
+                                        var enc1, enc2, enc3, enc4;
+                                        var i = 0;
+                                        var j = 0;
+
+                                        if (arrayBuffer)
+                                            uarray = new Uint8Array(arrayBuffer);
+                                        else
+                                            uarray = new Uint8Array(bytes);
+
+                                        input = input.replace(/[^A-Za-z0-9\+\/\=]/g, "");
+
+                                        for (i=0; i<bytes; i+=3) {
+                                            //get the 3 octects in 4 ascii chars
+                                            enc1 = this._keyStr.indexOf(input.charAt(j++));
+                                            enc2 = this._keyStr.indexOf(input.charAt(j++));
+                                            enc3 = this._keyStr.indexOf(input.charAt(j++));
+                                            enc4 = this._keyStr.indexOf(input.charAt(j++));
+
+                                            chr1 = (enc1 << 2) | (enc2 >> 4);
+                                            chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+                                            chr3 = ((enc3 & 3) << 6) | enc4;
+
+                                            uarray[i] = chr1;
+                                            if (enc3 != 64) uarray[i+1] = chr2;
+                                            if (enc4 != 64) uarray[i+2] = chr3;
+                                        }
+
+                                        return uarray;
+                                    }
+                        }
 
                         var buf = Base64Binary.decodeArrayBuffer(imageData);
 
@@ -396,12 +370,12 @@ var Base64Binary = {
                     else
                         img.src = "data:" + inputParams[5] + "," + imageData;
                 }
-                else if (command === "info")
+                else if (t.command === "info")
                 {
                     dr.connectionId = inputParams[0];
                     dr.frameEndReceived = true;
                 }
-                else if (command === "end")
+                else if (t.command === "end")
                 {
                     if (debugVerbosity > 1) console.log("Frame end " + frame + " received...");
                     dr.frameEndReceived = true;
@@ -419,25 +393,14 @@ var Base64Binary = {
                     dr.frontCanvas.width = dr.canvas.width = width;
                     dr.frontCanvas.height = dr.canvas.height = height;
 
-                    dr.sendMessage("resize(" + width + "," + height + ")");
+                    v.sendMessage("resize(" + width + "," + height + ")", dr.targetId);
 
                     dr.requestFullUpdate();
                 }
             },
 
-            init: function(connectionMethod)
+            init: function()
             {
-                dr.connectionMethod = connectionMethod;
-
-                if (dr.connectionMethod === ConnectionMethod.Auto)
-                    dr.connectionMethod = ConnectionMethod.WebSockets;
-
-                if (dr.connectionMethod === ConnectionMethod.WebSockets && !window.hasOwnProperty("WebSocket"))
-                    dr.connectionMethod = ConnectionMethod.ServerSentEvents;
-
-                if (dr.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
-                    dr.connectionMethod = ConnectionMethod.LongPolling;
-
                 dr.fullLocation = window.location.href.replace(/\/$/, "");
                 console.log("dr.fullLocation: " + dr.fullLocation);
 
@@ -468,8 +431,9 @@ var Base64Binary = {
 
                 var BlobBuilder = window.BlobBuilder || window.WebKitBlobBuilder || window.MozBlobBuilder || window.MSBlobBuilder;
                 var URL = window.URL || window.webKitURL;
-                var useBlobBuilder = BlobBuilder && URL;
-                //var useBlobBuilder = false;
+
+                //dr.useBlobBuilder = BlobBuilder && URL;
+                dr.useBlobBuilder = false;
 
                 function getCanvasPos(event)
                 {
@@ -507,9 +471,9 @@ var Base64Binary = {
                     pos.y = Math.round(pos.y);
 
                     if (other)
-                        dr.sendMessage(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")");
+                        v.sendMessage(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + "," + other + ")", dr.targetId);
                     else
-                        dr.sendMessage(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")");
+                        v.sendMessage(type + "(" + pos.x + "," + pos.y + "," + event.which + "," + getModifiers(event) + ")", dr.targetId);
 
                     event.stopPropagation();
                     event.preventDefault();
@@ -538,9 +502,9 @@ var Base64Binary = {
                     }
 
                     if (event.hasOwnProperty("which"))
-                        dr.sendMessage(type + "(" + event.which + "," + getModifiers(event) + ")");
+                        v.sendMessage(type + "(" + event.which + "," + getModifiers(event) + ")", dr.targetId);
                     else
-                        dr.sendMessage(type + "(" + event.keyCode + "," + getModifiers(event) + ")");
+                        v.sendMessage(type + "(" + event.keyCode + "," + getModifiers(event) + ")", dr.targetId);
 
                     if (printableCharacter || isNonPrintableKey(event.keyCode))
                     {
@@ -571,29 +535,14 @@ var Base64Binary = {
                 $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
                 $(dr.frontCanvas).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
 
-                if (dr.connectionMethod === ConnectionMethod.LongPolling)
-                {
-                    dr._longPollingReceiveOutputMessages();
-                }
-                else if (dr.connectionMethod === ConnectionMethod.ServerSentEvents)
-                {
-                    dr.eventSource = new EventSource("events");
-                    dr.eventSource.onmessage = dr._serverSentEventsMessageReceived;
-                    dr.eventSource.onerror = dr.reconnect;
-                }
-                else if (dr.connectionMethod === ConnectionMethod.WebSockets)
-                {
-                    dr.socket = new WebSocket("ws://" + dr.location + "/viridity");
+                dr.targetId = v.registerCallback(dr._messageCallback);
+                dr.sceneId = sceneId;
 
-                    dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
-                    dr.socket.onopen = dr._sendQueuedMessages;
-                    dr.socket.onerror = dr.reconnect;
-                    dr.socket.onclose = dr.reconnect;
-                }
+                v.sendMessage("newDisplay(" + dr.targetId + "," + dr.sceneId + ")");
             }
         }
 
-        dr.init(options.connectionMethod);
+        dr.init();
 
         return dr;
     };

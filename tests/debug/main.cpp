@@ -1,4 +1,4 @@
-#include <QGuiApplication>
+#include <QApplication>
 #include <QThread>
 
 #include <Viridity/ViridityWebServer>
@@ -7,6 +7,37 @@
 #include "kclplugin.h"
 
 #include "viriditydatabridge.h"
+#include "graphicsscenedisplaysessionmanager.h"
+
+class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
+{
+public:
+    MySceneDisplaySessionManager(ViriditySession *session, QObject *parent = 0) : MultiGraphicsSceneDisplaySessionManager(session, parent) {}
+    virtual ~MySceneDisplaySessionManager() {}
+
+    QDeclarativeEngine *engine;
+
+protected slots:
+    virtual QGraphicsScene *getScene(const QString &id, const QStringList &params)
+    {
+        QDeclarativeComponent component(engine, QUrl("qrc:/qml/" + params.at(0) + ".qml"));
+
+        if (component.status() != QDeclarativeComponent::Ready)
+            qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
+
+        QObject *instance = component.create();
+
+        if (!instance)
+            qFatal("Could not create instance of component.");
+
+        QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
+
+        QGraphicsScene *scene = new QGraphicsScene(engine);
+        scene->addItem(item);
+
+        return scene;
+    }
+};
 
 void createLogic(ViriditySession *session)
 {
@@ -40,6 +71,10 @@ void createLogic(ViriditySession *session)
     QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
     */
 
+    MySceneDisplaySessionManager *displaySessionManager = new MySceneDisplaySessionManager(session, session);
+    displaySessionManager->engine = engine;
+    session->registerHandler(displaySessionManager);
+
     session->logic = instance;
     QObject::connect(session->logic, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 }
@@ -56,7 +91,7 @@ class MyMultiSessionManager : public MultiLogicSessionManager
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+    QApplication a(argc, argv);
 
     const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
 
