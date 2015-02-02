@@ -84,7 +84,7 @@ var Viridity = function(options)
             var options =
             {
                 type: "GET",
-                url: "display?id=" + v.sessionId,
+                url: v.fullLocation + "/viridity?id=" + v.sessionId,
 
                 async: true,
                 cache: false,
