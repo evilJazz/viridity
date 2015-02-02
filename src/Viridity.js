@@ -5,65 +5,6 @@ var ConnectionMethod = {
     WebSockets: 2
 };
 
-var DataBridge = function(viridityChannel, id)
-{
-    var v = viridityChannel;
-
-    var c =
-    {
-        targetId: undefined,
-
-        onNewCommandReceived: undefined,
-
-        responseId: 0,
-        pendingCommandCallbacks: {},
-
-        _messageCallback: function(t)
-        {
-            var processed = false;
-
-            if (t.targetId == c.targetId &&
-                (t.command === "data" || t.command === "dataResponse"))
-            {
-                var paramStartIndex = t.params.indexOf(",");
-
-                var responseId = t.params.substring(0, paramStartIndex);
-                var input = t.params.substring(paramStartIndex + 1);
-
-                if (t.command === "dataResponse")
-                {
-                    if (c.pendingCommandCallbacks.hasOwnProperty(responseId))
-                    {
-                        c.pendingCommandCallbacks[responseId](JSON.parse(input));
-                        delete c.pendingCommandCallbacks[responseId];
-                        processed = true;
-                    }
-                }
-                else if (typeof(c.onNewCommandReceived) == "function")
-                {
-                    var result = c.onNewCommandReceived(JSON.parse(input));
-                    v.sendMessage("dataResponse(" + responseId + "," + JSON.stringify(result) + ")", c.targetId);
-                    processed = true;
-                }
-            }
-
-            return processed;
-        },
-
-        sendCommand: function(command, callback)
-        {
-            ++c.responseId;
-            c.pendingCommandCallbacks[c.responseId] = callback;
-            var message = "data(" + c.responseId + "," + JSON.stringify(command) + ")";
-            v.sendMessage(message, c.targetId);
-        }
-    }
-
-    c.targetId = v.registerCallback(c._messageCallback, id);
-
-    return c;
-}
-
 var Viridity = function(options)
 {
     var debugVerbosity = 0;
@@ -87,8 +28,8 @@ var Viridity = function(options)
         inputEvents: [],
         inputEventsStarted: false,
 
-        responseId: 0,
-        pendingCommandCallbacks: {},
+        nextFreeTargetId: 0,
+        targetCallbacks: {},
 
         _longPollingSendInputEvents: function()
         {
@@ -99,7 +40,7 @@ var Viridity = function(options)
                 var options =
                 {
                     type: "POST",
-                    url: v.fullLocation + "/display?id=" + v.sessionId,
+                    url: v.fullLocation + "/viridity?id=" + v.sessionId,
                     async: true,
                     cache: false,
                     timeout: v.timeout,
@@ -225,9 +166,9 @@ var Viridity = function(options)
             var processed = false;
 
             if (typeof(t.targetId) !== "undefined" &&
-                v.pendingCommandCallbacks.hasOwnProperty(t.targetId))
+                v.targetCallbacks.hasOwnProperty(t.targetId))
             {
-                processed = v.pendingCommandCallbacks[t.targetId](t);
+                processed = v.targetCallbacks[t.targetId](t);
             }
 
             var inputParams = t.params.split(/[\s,]+/);
@@ -273,27 +214,27 @@ var Viridity = function(options)
         {
             if (typeof(targetId) == "undefined")
             {
-                targetId = v.responseId;
-                ++v.responseId;
+                targetId = v.nextFreeTargetId;
+                ++v.nextFreeTargetId;
             }
 
-            v.pendingCommandCallbacks[targetId] = callback;
+            v.targetCallbacks[targetId] = callback;
             return targetId;
         },
 
         getCallback: function(targetId)
         {
-            if (v.pendingCommandCallbacks.hasOwnProperty(targetId))
-                return v.pendingCommandCallbacks[targetId];
+            if (v.targetCallbacks.hasOwnProperty(targetId))
+                return v.targetCallbacks[targetId];
             else
                 return false;
         },
 
         unregisterCallback: function(targetId)
         {
-            if (v.pendingCommandCallbacks.hasOwnProperty(targetId))
+            if (v.targetCallbacks.hasOwnProperty(targetId))
             {
-                delete v.pendingCommandCallbacks[targetId];
+                delete v.targetCallbacks[targetId];
                 return true;
             }
             else
@@ -336,7 +277,7 @@ var Viridity = function(options)
             }
             else if (v.connectionMethod === ConnectionMethod.WebSockets)
             {
-                v.socket = new WebSocket("ws://" + v.location + "/display");
+                v.socket = new WebSocket("ws://" + v.location + "/viridity");
 
                 v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
                 v.socket.onopen = v._sendQueuedMessages;

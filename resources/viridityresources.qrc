@@ -9,5 +9,6 @@
         <file alias="DisplayRenderer.js">../src/DisplayRenderer.js</file>
         <file alias="jquery.mousewheel.js">../src/jquery.mousewheel.js</file>
         <file alias="Viridity.js">../src/Viridity.js</file>
+        <file alias="DataBridge.js">../src/DataBridge.js</file>
     </qresource>
 </RCC>

@@ -583,7 +583,7 @@ var Base64Binary = {
                 }
                 else if (dr.connectionMethod === ConnectionMethod.WebSockets)
                 {
-                    dr.socket = new WebSocket("ws://" + dr.location + "/display");
+                    dr.socket = new WebSocket("ws://" + dr.location + "/viridity");
 
                     dr.socket.onmessage = function(msg) { dr.processMessage(msg, useBlobBuilder) };
                     dr.socket.onopen = dr._sendQueuedMessages;

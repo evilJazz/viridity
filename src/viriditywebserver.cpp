@@ -81,7 +81,8 @@ void ViridityConnection::setupConnection()
     fileRequestHandler_ = new FileRequestHandler(this);
     fileRequestHandler_->insertFileInformation("/", ":/Client/index.html", "text/html; charset=utf8");
     fileRequestHandler_->insertFileInformation("/index.html", ":/Client/index.html", "text/html; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/displayRenderer.js", ":/Client/displayRenderer.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf8");
     fileRequestHandler_->insertFileInformation("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
     fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
 }

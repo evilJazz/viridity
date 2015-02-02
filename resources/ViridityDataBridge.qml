@@ -16,7 +16,7 @@ QtObjectWithChildren {
             sessionId = "";
 
         var responseId = bridge.sendData(JSON.stringify(data), sessionId);
-        Private.pendingCommandCallbacks[responseId] = callback;
+        Private.pendingResponseCallbacks[responseId] = callback;
     }
 
     function onNewCommandReceived(input)
@@ -34,10 +34,10 @@ QtObjectWithChildren {
 
         onResponseReceived: // responseId, response, sessionId
         {
-            if (Private.pendingCommandCallbacks.hasOwnProperty(responseId))
+            if (Private.pendingResponseCallbacks.hasOwnProperty(responseId))
             {
-                Private.pendingCommandCallbacks[responseId](JSON.parse(response), sessionId);
-                delete Private.pendingCommandCallbacks[responseId];
+                Private.pendingResponseCallbacks[responseId](JSON.parse(response), sessionId);
+                delete Private.pendingResponseCallbacks[responseId];
             }
         }
     }

@@ -1,1 +1,1 @@
-var pendingCommandCallbacks = {};
+var pendingResponseCallbacks = {};

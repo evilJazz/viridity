@@ -31,7 +31,7 @@ LongPollingHandler::~LongPollingHandler()
 
 bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().startsWith("/display?");
+    return request->url().startsWith("/viridity?");
 }
 
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
@@ -49,7 +49,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
     if (session)
     {
-        if (url.startsWith("/display?")) // long polling
+        if (url.startsWith("/viridity?")) // long polling
         {
             if (request->method() == "GET") // long polling output
             {
@@ -75,7 +75,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
         return;
     }
-    else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/display?")*/) // start new connection
+    else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/viridity?")*/) // start new connection
     {
         session = connection_->server()->sessionManager()->getNewSession();
 
