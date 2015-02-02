@@ -1,41 +1,65 @@
 import QtQuick 1.0
 import KCL 1.0
-
-import "qrc:/webcontrol/Display.js" as Display
+import Viridity 1.0
 
 QtObjectWithChildren {
     id: logic
 
+    ViridityDataBridge {
+        id: dataBridge1
+        session: currentSession
+        targetId: "data1"
+
+        function onNewCommandReceived(input)
+        {
+            testTimer1.start();
+            console.log("input1: " + input);
+            return { action: "blah111", test: 1243234.3423 };
+        }
+    }
+
+    ViridityDataBridge {
+        id: dataBridge2
+        session: currentSession
+        targetId: "data2"
+
+        function onNewCommandReceived(input)
+        {
+            testTimer2.start();
+            console.log("input 2: " + input);
+            return { action: "blah222", test: 1243234.3423 };
+        }
+    }
+
     Timer {
-        id: testTimer
+        id: testTimer1
         interval: 5000
 
         onTriggered:
         {
-            Display.sendCommand(["Hello World!", 34589237458.23452345], function (response, displayId)
+            dataBridge1.sendData(["Hello World! 111", 34589237458.23452345], function (response, sessionId)
             {
-                console.log("Response from display " + displayId + ": " + response);
+                console.log("Response from session " + sessionId + ": " + response);
+            });
+        }
+    }
+
+    Timer {
+        id: testTimer2
+        interval: 5000
+
+        onTriggered:
+        {
+            dataBridge2.sendData(["Hello World! 222", 34589237458.23452345], function (response, sessionId)
+            {
+                console.log("Response from session " + sessionId + ": " + response);
             });
         }
     }
 
     Component.onCompleted:
     {
-        Display.onNewCommandReceived = function(input)
-        {
-            testTimer.start();
-            console.log("input: " + input);
-            return { action: "blah", test: 1243234.3423 };
-        }
-
         //testTimer.start();
-
-        /*
-        Display.sendCommand(["Hello World! " + checked, checked], function (response, displayId)
-        {
-            console.log("Response from display " + displayId + ": " + response);
-        });
-        */
     }
 
     Component.onDestruction: console.log("GOODBYE WORLD!")

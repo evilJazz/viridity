@@ -13,8 +13,7 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/viridity_global.h \
     $$VIRIDITY_SRC_PATH/viriditywebserver.h \
     $$VIRIDITY_SRC_PATH/viriditysessionmanager.h \
-    $$VIRIDITY_SRC_PATH/commandbridge.h \
-    $$VIRIDITY_SRC_PATH/handlers/commandposthandler.h \
+    $$VIRIDITY_SRC_PATH/viriditydatabridge.h \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.h \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.h \
     $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h \
@@ -25,8 +24,7 @@ HEADERS += \
 SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
     $$VIRIDITY_SRC_PATH/viriditysessionmanager.cpp \
-    $$VIRIDITY_SRC_PATH/commandbridge.cpp \
-    $$VIRIDITY_SRC_PATH/handlers/commandposthandler.cpp \
+    $$VIRIDITY_SRC_PATH/viriditydatabridge.cpp \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.cpp \
@@ -70,10 +68,5 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp
 }
 
-OTHER_FILES += \
-    $$VIRIDITY_SRC_PATH/displayRenderer.js \
-    $$VIRIDITY_SRC_PATH/index.html \
-    $$VIRIDITY_SRC_PATH/jquery.mousewheel.js
-
 RESOURCES += \
-    $$VIRIDITY_RES_PATH/webresources.qrc
+    $$VIRIDITY_RES_PATH/viridityresources.qrc

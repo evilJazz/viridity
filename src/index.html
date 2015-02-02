@@ -22,16 +22,35 @@
 
             //var viridity = $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
 
-            viridity.onNewCommandReceived = function (input)
+            var dataBridge1 = new DataBridge(viridity, "data1");
+            var dataBridge2 = new DataBridge(viridity, "data2");
+
+            dataBridge1.onNewCommandReceived = function (input)
             {
                 console.dir(input);
                 alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
-                return "Test!";
+                return "TEST1";
             }
 
-            $("#testInputButton").click(function()
+            dataBridge2.onNewCommandReceived = function (input)
             {
-                viridity.sendCommand({ blah: "test", ghu: 12343142.22 }, function (response)
+                console.dir(input);
+                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
+                return "TEST2";
+            }
+
+            $("#testInputButton1").click(function()
+            {
+                dataBridge1.sendCommand({ blah: "test1", ghu: 12343142.22 }, function (response)
+                {
+                    console.dir(response);
+                    alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
+                });
+            });
+
+            $("#testInputButton2").click(function()
+            {
+                dataBridge2.sendCommand({ blah: "test2", ghu: 12343142.22 }, function (response)
                 {
                     console.dir(response);
                     alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
@@ -55,6 +74,7 @@
   <body>
     <div id="displayContainer1"/>
     <div id="displayContainer2"/>
-    <button id="testInputButton">BLAH TEST</button>
+    <button id="testInputButton1">TEST1</button>
+    <button id="testInputButton2">TEST2</button>
   </body>
 </html>

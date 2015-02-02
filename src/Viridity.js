@@ -5,6 +5,65 @@ var ConnectionMethod = {
     WebSockets: 2
 };
 
+var DataBridge = function(viridityChannel, id)
+{
+    var v = viridityChannel;
+
+    var c =
+    {
+        targetId: undefined,
+
+        onNewCommandReceived: undefined,
+
+        responseId: 0,
+        pendingCommandCallbacks: {},
+
+        _messageCallback: function(t)
+        {
+            var processed = false;
+
+            if (t.targetId == c.targetId &&
+                (t.command === "data" || t.command === "dataResponse"))
+            {
+                var paramStartIndex = t.params.indexOf(",");
+
+                var responseId = t.params.substring(0, paramStartIndex);
+                var input = t.params.substring(paramStartIndex + 1);
+
+                if (t.command === "dataResponse")
+                {
+                    if (c.pendingCommandCallbacks.hasOwnProperty(responseId))
+                    {
+                        c.pendingCommandCallbacks[responseId](JSON.parse(input));
+                        delete c.pendingCommandCallbacks[responseId];
+                        processed = true;
+                    }
+                }
+                else if (typeof(c.onNewCommandReceived) == "function")
+                {
+                    var result = c.onNewCommandReceived(JSON.parse(input));
+                    v.sendMessage("dataResponse(" + responseId + "," + JSON.stringify(result) + ")", c.targetId);
+                    processed = true;
+                }
+            }
+
+            return processed;
+        },
+
+        sendCommand: function(command, callback)
+        {
+            ++c.responseId;
+            c.pendingCommandCallbacks[c.responseId] = callback;
+            var message = "data(" + c.responseId + "," + JSON.stringify(command) + ")";
+            v.sendMessage(message, c.targetId);
+        }
+    }
+
+    c.targetId = v.registerCallback(c._messageCallback, id);
+
+    return c;
+}
+
 var Viridity = function(options)
 {
     var debugVerbosity = 0;
@@ -27,8 +86,6 @@ var Viridity = function(options)
 
         inputEvents: [],
         inputEventsStarted: false,
-
-        onNewCommandReceived: undefined,
 
         responseId: 0,
         pendingCommandCallbacks: {},
@@ -134,48 +191,58 @@ var Viridity = function(options)
             v._longPollingCheckInputEventsStarted();
         },
 
-        processMessage: function(msg)
+        parseMessage: function(msg)
         {
             var paramStartIndex = msg.indexOf("(");
+
+            var bm = msg.substring(0, paramStartIndex);
+            var indexOfMarker = bm.indexOf(">");
+
+            var targetId = undefined;
+
+            if (indexOfMarker > -1)
+            {
+                targetId = msg.substring(0, indexOfMarker);
+                msg = msg.substr(indexOfMarker + 1);
+                paramStartIndex -= indexOfMarker + 1;
+            }
+
             var paramEndIndex = msg.indexOf(")");
 
             var command = msg.substring(0, paramStartIndex);
             var params = msg.substring(paramStartIndex + 1, paramEndIndex);
 
-            if (command === "command" || command === "commandResponse")
+            return {
+                targetId: targetId,
+                command: command,
+                params: params
+            }
+        },
+
+        processMessage: function(msg)
+        {
+            var t = v.parseMessage(msg);
+            var processed = false;
+
+            if (typeof(t.targetId) !== "undefined" &&
+                v.pendingCommandCallbacks.hasOwnProperty(t.targetId))
             {
-                paramStartIndex = params.indexOf(",");
-
-                var responseId = params.substring(0, paramStartIndex);
-                var input = params.substring(paramStartIndex + 1);
-
-                if (command === "commandResponse")
-                {
-                    if (v.pendingCommandCallbacks.hasOwnProperty(responseId))
-                    {
-                        v.pendingCommandCallbacks[responseId](JSON.parse(input));
-                        delete v.pendingCommandCallbacks[responseId];
-                    }
-                }
-                else if (typeof(v.onNewCommandReceived) == "function")
-                {
-                    var result = v.onNewCommandReceived(JSON.parse(input));
-                    v.sendMessage("commandResponse(" + responseId + "," + JSON.stringify(result) + ")");
-                }
-
-                return;
+                processed = v.pendingCommandCallbacks[t.targetId](t);
             }
 
-            var inputParams = params.split(/[\s,]+/);
+            var inputParams = t.params.split(/[\s,]+/);
 
-            if (command === "info")
+            if (t.command === "info")
             {
                 v.sessionId = inputParams[0];
             }
         },
 
-        sendMessage: function(msg)
+        sendMessage: function(msg, targetId)
         {
+            if (typeof(targetId) !== "undefined")
+                msg = targetId + ">" + msg;
+
             if (debugVerbosity > 0)
                 console.log("Sending message to server: " + msg);
 
@@ -202,12 +269,35 @@ var Viridity = function(options)
             }
         },
 
-        sendCommand: function(command, callback)
+        registerCallback: function(callback, targetId)
         {
-            ++v.responseId;
-            v.pendingCommandCallbacks[v.responseId] = callback;
-            var message = "command(" + v.responseId + "," + JSON.stringify(command) + ")";
-            v.sendMessage(message);
+            if (typeof(targetId) == "undefined")
+            {
+                targetId = v.responseId;
+                ++v.responseId;
+            }
+
+            v.pendingCommandCallbacks[targetId] = callback;
+            return targetId;
+        },
+
+        getCallback: function(targetId)
+        {
+            if (v.pendingCommandCallbacks.hasOwnProperty(targetId))
+                return v.pendingCommandCallbacks[targetId];
+            else
+                return false;
+        },
+
+        unregisterCallback: function(targetId)
+        {
+            if (v.pendingCommandCallbacks.hasOwnProperty(targetId))
+            {
+                delete v.pendingCommandCallbacks[targetId];
+                return true;
+            }
+            else
+                return false;
         },
 
         reconnect: function()

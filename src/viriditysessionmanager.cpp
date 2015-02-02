@@ -335,7 +335,7 @@ bool ViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message
     return result;
 }
 
-bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic)
+bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -347,7 +347,8 @@ bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArr
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToClient",
                 Qt::QueuedConnection,
-                Q_ARG(const QByteArray &, message)
+                Q_ARG(const QByteArray &, message),
+                Q_ARG(const QString &, targetId)
             );
             ++dispatched;
         }

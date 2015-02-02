@@ -6,7 +6,7 @@
 #include <QtDeclarative>
 #include "kclplugin.h"
 
-#include "commandbridge.h"
+#include "viriditydatabridge.h"
 
 void createLogic(ViriditySession *session)
 {
@@ -16,10 +16,10 @@ void createLogic(ViriditySession *session)
     kcl->initializeEngine(engine, "KCL");
     kcl->registerTypes("KCL");
 
-    CommandBridge *commandBridge = new CommandBridge(session, engine);
-    engine->rootContext()->setContextProperty("CommandBridge", commandBridge);
+    engine->rootContext()->setContextProperty("currentSession", session);
 
-    session->registerHandler(commandBridge);
+    qmlRegisterType<ViridityDataBridge>("Viridity", 1, 0, "NativeViridityDataBridge");
+    qmlRegisterUncreatableType<ViriditySession>("Viridity", 1, 0, "ViriditySession", "Can't create a session out of thin air.");
 
     QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
 

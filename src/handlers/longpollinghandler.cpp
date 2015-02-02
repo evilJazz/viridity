@@ -9,7 +9,6 @@
 
 #include "viriditywebserver.h"
 #include "inputposthandler.h"
-#include "commandposthandler.h"
 
 #undef DEBUG
 #include "KCL/debug.h"
@@ -32,7 +31,7 @@ LongPollingHandler::~LongPollingHandler()
 
 bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().startsWith("/display?") || request->url().startsWith("/command?");
+    return request->url().startsWith("/display?");
 }
 
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
@@ -73,13 +72,6 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
                 return;
             }
         }
-        /*
-        else if (url.startsWith("/command?") && request->method() == "POST") // long polling command
-        {
-            CommandPostHandler *handler = new CommandPostHandler(request, response);
-            connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
-        }
-        */
 
         return;
     }

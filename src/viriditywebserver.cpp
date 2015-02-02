@@ -17,7 +17,6 @@
 #include <QUrl>
 
 #include "handlers/inputposthandler.h"
-#include "handlers/commandposthandler.h"
 #include "handlers/websockethandler.h"
 #include "handlers/ssehandler.h"
 #include "handlers/longpollinghandler.h"
@@ -80,11 +79,11 @@ void ViridityConnection::setupConnection()
     longPollingHandler_ = new LongPollingHandler(this);
     //patchRequestHandler_ = new PatchRequestHandler(this);
     fileRequestHandler_ = new FileRequestHandler(this);
-    fileRequestHandler_->insertFileInformation("/", ":/webcontrol/index.html", "text/html; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/index.html", ":/webcontrol/index.html", "text/html; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/displayRenderer.js", ":/webcontrol/displayRenderer.js", "application/javascript; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/Viridity.js", ":/webcontrol/Viridity.js", "application/javascript; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/webcontrol/jquery.mousewheel.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/", ":/Client/index.html", "text/html; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/index.html", ":/Client/index.html", "text/html; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/displayRenderer.js", ":/Client/displayRenderer.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
+    fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
 }
 
 void ViridityConnection::onRequestReady()
