@@ -6,6 +6,8 @@
 #include <QtDeclarative>
 #include "kclplugin.h"
 
+#include "KCL/debug.h"
+
 #include "viriditydatabridge.h"
 #include "graphicsscenedisplaysessionmanager.h"
 
@@ -20,6 +22,9 @@ public:
 protected slots:
     virtual QGraphicsScene *getScene(const QString &id, const QStringList &params)
     {
+        // RUNS IN MAIN THREAD!
+
+        DGUARDMETHODTIMED;
         QDeclarativeComponent component(engine, QUrl("qrc:/qml/" + params.at(0) + ".qml"));
 
         if (component.status() != QDeclarativeComponent::Ready)
@@ -41,6 +46,9 @@ protected slots:
 
 void createLogic(ViriditySession *session)
 {
+    // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
+
+    DGUARDMETHODTIMED;
     QDeclarativeEngine *engine = new QDeclarativeEngine();
 
     KCLPlugin *kcl = new KCLPlugin;

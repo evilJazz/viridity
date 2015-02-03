@@ -7,6 +7,8 @@
 #include "viriditysessionmanager.h"
 #include "graphicsscenedisplay.h"
 
+class MainThreadGateway;
+
 class GraphicsSceneDisplaySessionManager : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
@@ -37,6 +39,7 @@ protected:
     virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
 protected slots:
+    friend class MainThreadGateway;
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params) = 0; // Always executed in thread of session manager
 
 private slots:
@@ -59,6 +62,8 @@ private:
     QTimer cleanupTimer_;
 
     static QList<GraphicsSceneDisplaySessionManager *> activeSessionManagers_;
+
+    MainThreadGateway *mainThreadGateway_;
 };
 
 class SingleGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySessionManager

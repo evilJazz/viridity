@@ -103,7 +103,7 @@ bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
 
     QMetaObject::invokeMethod(
         this, "sendMessageToHandlers",
-        thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(bool, result),
         Q_ARG(const QByteArray &, message)
     );
@@ -148,6 +148,7 @@ QList<QByteArray> ViriditySession::takePendingMessages()
 
 void ViriditySession::handlerIsReadyForDispatch(ViridityMessageHandler *handler)
 {
+    DGUARDMETHODTIMED;
     QMutexLocker l(&dispatchMutex_);
 
     if (!messageHandlersRequestingMessageDispatch_.contains(handler))
@@ -445,6 +446,7 @@ MultiLogicSessionManager::MultiLogicSessionManager(QObject *parent) :
 
 ViriditySession *MultiLogicSessionManager::createSession(const QString &id)
 {
+    DGUARDMETHODTIMED;
     ViriditySession *session = createNewSessionInstance(id);
     setLogic(session);
 

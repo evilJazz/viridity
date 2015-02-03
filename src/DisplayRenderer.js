@@ -279,7 +279,7 @@
                         dr._imageDone();
                     };
 
-                    var imageData = msg.data.slice(paramEndIndex + 2);
+                    var imageData = t.message.slice(t.paramEndIndex + 2);
 
                     if (imageData.substring(0,3) === "fb:")
                     {
@@ -387,7 +387,7 @@
             {
                 if (dr.frontCanvas.width != width || dr.frontCanvas.height != height)
                 {
-                    console.log("width: " + width + " height: " + height);
+                    console.log(dr.sceneId + " -> width: " + width + " height: " + height);
                     $(dr.frontCanvas).css("width", width);
                     $(dr.frontCanvas).css("height", height);
                     dr.frontCanvas.width = dr.canvas.width = width;
@@ -401,6 +401,11 @@
 
             init: function()
             {
+                dr.targetId = v.registerCallback(dr._messageCallback);
+                dr.sceneId = sceneId;
+
+                v.sendMessage("newDisplay(" + dr.targetId + "," + dr.sceneId + ")");
+
                 dr.fullLocation = window.location.href.replace(/\/$/, "");
                 console.log("dr.fullLocation: " + dr.fullLocation);
 
@@ -414,18 +419,14 @@
                 dr.frontCanvas = document.createElement("canvas");
                 dr.frontCtx = dr.frontCanvas.getContext("2d");
 
-                if (dr.canvas.width != 1024 || dr.canvas.height != 768)
-                {
-                    dr.frontCanvas.width = dr.canvas.width = 1024;
-                    dr.frontCanvas.height = dr.canvas.height = 768;
-                }
-
                 $(containerElement).append(dr.frontCanvas);
                 $(containerElement).resize(function()
                 {
                     var container = $(this);
                     dr.resize(container.width(), container.height());
                 });
+
+                $(containerElement).triggerHandler("resize");
 
                 //dr.createDebugOverlay();
 
@@ -534,11 +535,6 @@
                 $(dr.frontCanvas).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
                 $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
                 $(dr.frontCanvas).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
-
-                dr.targetId = v.registerCallback(dr._messageCallback);
-                dr.sceneId = sceneId;
-
-                v.sendMessage("newDisplay(" + dr.targetId + "," + dr.sceneId + ")");
             }
         }
 

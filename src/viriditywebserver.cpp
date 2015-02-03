@@ -198,7 +198,7 @@ void ViridityWebServer::newSessionCreated(ViriditySession *session)
 
     int threadIndex = sessionManager_->sessionCount() % sessionThreads_.count();
     QThread *workerThread = sessionThreads_.at(threadIndex);
-    session->moveToThread(workerThread); // Move display to thread's event loop
+    session->moveToThread(workerThread); // Move session to thread's event loop
 
     DPRINTF("New worker thread %p for session id %s", workerThread, session->id().toLatin1().constData());
 }

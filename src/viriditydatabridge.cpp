@@ -85,7 +85,7 @@ bool ViridityDataBridge::handleMessage(const QByteArray &message, const QString 
 
     QMetaObject::invokeMethod(
         this, "localHandleMessage",
-        thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(bool, result),
         Q_ARG(const QByteArray &, message),
         Q_ARG(const QString &, sessionId),

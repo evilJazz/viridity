@@ -1,8 +1,16 @@
 import QtQuick 1.0
 
-Rectangle {
-    width: 100
-    height: 62
+Flickable {
+    clip: true
 
-    color: "blue"
+    height: 400
+    width: 400
+
+    contentWidth: contentImage.width
+    contentHeight: contentImage.height
+
+    Image {
+        id: contentImage
+        source: "qrc:/testimages/lena.png"
+    }
 }

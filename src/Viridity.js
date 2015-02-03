@@ -154,7 +154,10 @@ var Viridity = function(options)
             var params = msg.substring(paramStartIndex + 1, paramEndIndex);
 
             return {
+                message: msg,
                 targetId: targetId,
+                paramStartIndex: paramStartIndex,
+                paramEndIndex: paramEndIndex,
                 command: command,
                 params: params
             }

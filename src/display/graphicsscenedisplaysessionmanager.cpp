@@ -1,10 +1,34 @@
 #include "graphicsscenedisplaysessionmanager.h"
 
+#include <QCoreApplication>
+
 #include <QUuid>
 #include <QCryptographicHash>
 
 //#undef DEBUG
 #include "KCL/debug.h"
+
+class MainThreadGateway : public QObject
+{
+    Q_OBJECT
+public:
+    MainThreadGateway(QObject *parent = 0) : QObject(parent) {}
+    virtual ~MainThreadGateway() {}
+
+    Q_INVOKABLE GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params)
+    {
+        DGUARDMETHODTIMED;
+        GraphicsSceneDisplay *display = manager->createDisplayInstance(id, params);
+        if (display)
+            display->moveToThread(manager->thread());
+
+        return display;
+    }
+
+    GraphicsSceneDisplaySessionManager *manager;
+};
+
+/* GraphicsSceneDisplaySessionManager */
 
 QList<GraphicsSceneDisplaySessionManager *> GraphicsSceneDisplaySessionManager::activeSessionManagers_;
 
@@ -18,6 +42,10 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViridityS
     cleanupTimer_.start(10000);
 
     activeSessionManagers_.append(this);
+
+    mainThreadGateway_ = new MainThreadGateway();
+    mainThreadGateway_->manager = this;
+    mainThreadGateway_->moveToThread(qApp->thread());
 }
 
 GraphicsSceneDisplaySessionManager::~GraphicsSceneDisplaySessionManager()
@@ -34,8 +62,8 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay(const QS
     // Create new display instance in thread of session manager...
     GraphicsSceneDisplay *display = NULL;
     metaObject()->invokeMethod(
-        this, "createDisplayInstance",
-        this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        mainThreadGateway_, "createDisplayInstance",
+        mainThreadGateway_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(GraphicsSceneDisplay *, display),
         Q_ARG(const QString &, id),
         Q_ARG(const QStringList &, params)
@@ -77,6 +105,7 @@ bool GraphicsSceneDisplaySessionManager::canHandleMessage(const QByteArray &mess
 
 bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
+    DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
 
     if (targetId.isEmpty())
@@ -117,6 +146,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
 
 void GraphicsSceneDisplaySessionManager::handleDisplayUpdateAvailable()
 {
+    DGUARDMETHODTIMED;
     GraphicsSceneDisplay *display = qobject_cast<GraphicsSceneDisplay *>(sender());
     if (display)
         session_->handlerIsReadyForDispatch(display);
@@ -210,3 +240,5 @@ GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInst
 
     return display;
 }
+
+#include "graphicsscenedisplaysessionmanager.moc" // for MainThreadGateway

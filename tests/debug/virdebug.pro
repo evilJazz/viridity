@@ -25,7 +25,8 @@ include(../../3rdparty/tufao/tufao.pri)
 include(../../viridity.pri)
 
 RESOURCES += \
-    qmlresource.qrc
+    qmlresource.qrc \
+    ../../tests/testdata/test.qrc
 
 linux-* {
     target.path = /opt/bin

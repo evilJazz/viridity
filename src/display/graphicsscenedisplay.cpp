@@ -86,32 +86,6 @@ Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
     }
 }
 
-bool GraphicsSceneDisplay::handleReceivedMessage(const QByteArray &message)
-{
-    bool result = true;
-
-    if (message.startsWith("ready"))
-        QMetaObject::invokeMethod(
-            this, "clientReady",
-            this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
-        );
-    else if (message.startsWith("requestFullUpdate"))
-        QMetaObject::invokeMethod(
-            renderer_, "fullUpdate",
-            renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
-        );
-    else
-        QMetaObject::invokeMethod(
-            commandInterpreter_, "dispatchMessage",
-            commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-            Q_RETURN_ARG(bool, result),
-            Q_ARG(const QByteArray &, message),
-            Q_ARG(const QString &, this->id())
-        );
-
-    return result;
-}
-
 void GraphicsSceneDisplay::clientReady()
 {
     DGUARDMETHODTIMED;
@@ -323,10 +297,37 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 
 bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    return targetId == id_ && static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId);
+    return targetId == id_ && (
+        message.startsWith("ready") ||
+        message.startsWith("requestFullUpdate") ||
+        static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId)
+    );
 }
 
 bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    return targetId == id_ && static_cast<ViridityMessageHandler *>(commandInterpreter_)->handleMessage(message, sessionId, targetId);
+    DGUARDMETHODTIMED;
+    bool result = true;
+
+    if (message.startsWith("ready"))
+        QMetaObject::invokeMethod(
+            this, "clientReady",
+            this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+        );
+    else if (message.startsWith("requestFullUpdate"))
+        QMetaObject::invokeMethod(
+            renderer_, "fullUpdate",
+            renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+        );
+    else
+        QMetaObject::invokeMethod(
+            commandInterpreter_, "handleMessage",
+            commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+            Q_RETURN_ARG(bool, result),
+            Q_ARG(const QByteArray &, message),
+            Q_ARG(const QString &, sessionId),
+            Q_ARG(const QString &, targetId)
+        );
+
+    return result;
 }
