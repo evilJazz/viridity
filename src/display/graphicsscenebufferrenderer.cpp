@@ -59,6 +59,8 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     DTIMERINIT(paintTimer);
     QPainter p(workBuffer_);
 
+    p.setBackground(QBrush(QColor(255, 255, 255, 0)));
+
 #ifdef USE_SCENE_DAMAGEREGION
     QVector<QRect> rects = damageRegion_.rects();
     foreach (const QRect &rect, rects)

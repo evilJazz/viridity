@@ -57,6 +57,7 @@
             {
                 dr.frontCanvas.width = dr.canvas.width;
                 dr.frontCanvas.height = dr.canvas.height;
+                dr.frontCtx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
                 dr.frontCtx.drawImage(dr.canvas, 0, 0);
             },
 
@@ -270,7 +271,7 @@
 
                         if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
 
-                        dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4])
+                        dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
 
                         if (dr.useBlobBuilder)
