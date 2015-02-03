@@ -19,7 +19,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     scene_(scene),
     id_(id),
     commandInterpreter_(commandInterpreter),
-    urlMode_(false),
+    urlMode_(true),
     updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),
@@ -209,6 +209,9 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 
     QList<QByteArray> messageList;
 
+    if (!isUpdateAvailable())
+        return messageList;
+
     updateAvailable_ = false;
     QList<UpdateOperation> ops = renderer_->updateBufferExt();
     patchBuffer_ = renderer_->buffer();
@@ -239,7 +242,7 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
                     id_.toLatin1().constData(), frame_,
                     rect.x(), rect.y(), rect.width(), rect.height(),
                     patch->mimeType.toLatin1().constData(),
-                    QString("fb:" + id() + "/" + patch->id).toLatin1().constData()
+                    QString("fb:" + patch->id).toLatin1().constData()
                 );
 
                 QMutexLocker l(&patchesMutex_);

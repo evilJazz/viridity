@@ -77,7 +77,7 @@ void ViridityConnection::setupConnection()
     webSocketHandler_ = new WebSocketHandler(this);
     sseHandler_ = new SSEHandler(this);
     longPollingHandler_ = new LongPollingHandler(this);
-    //patchRequestHandler_ = new PatchRequestHandler(this);
+    patchRequestHandler_ = new PatchRequestHandler(this);
     fileRequestHandler_ = new FileRequestHandler(this);
     fileRequestHandler_->insertFileInformation("/", ":/Client/index.html", "text/html; charset=utf8");
     fileRequestHandler_->insertFileInformation("/index.html", ":/Client/index.html", "text/html; charset=utf8");
@@ -114,12 +114,10 @@ void ViridityConnection::onRequestReady()
     {
         longPollingHandler_->handleRequest(request, response);
     }
-/*
     else if (patchRequestHandler_->doesHandleRequest(request))
     {
         patchRequestHandler_->handleRequest(request, response);
     }
-*/
     else
     {
         response->writeHead(404);

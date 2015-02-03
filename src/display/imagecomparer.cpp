@@ -8,7 +8,7 @@
 #include "KCL/debug.h"
 
 //#define USE_MOVE_ANALYZER
-#define USE_MOVE_ANALYZER_FINEGRAINED
+//#define USE_MOVE_ANALYZER_FINEGRAINED
 #define USE_FILL_ANALYZER
 //#define USE_MULTITHREADING
 
@@ -520,9 +520,11 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<
             );
     */
 
+#if defined(USE_MOVE_ANALYZER)
     DPRINTF("No move operation found for: %d, %d + %d x %d",
             minRect.left(), minRect.top(), minRect.width(), minRect.height()
             );
+#endif
 
     op.type = uotUpdate;
     op.srcRect = minRect;

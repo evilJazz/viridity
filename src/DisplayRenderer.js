@@ -23,7 +23,7 @@
 
             lastFrame: 0,
             frameEndReceived: true,
-            frameImageCount: 0,
+            pendingPatchesCount: 0,
             frameCommands: [],
 
             frontCanvas: 0,
@@ -34,14 +34,14 @@
 
             _imageDone: function()
             {
-                --dr.frameImageCount;
+                --dr.pendingPatchesCount;
                 dr._determineReadyState();
             },
 
             _determineReadyState: function()
             {
-                if (debugVerbosity > 1) console.log("_imageDone: " + dr.frameImageCount)
-                if (dr.frameEndReceived && dr.frameImageCount == 0)
+                if (debugVerbosity > 1) console.log("pendingPatchesCount: " + dr.pendingPatchesCount)
+                if (dr.frameEndReceived && dr.pendingPatchesCount == 0)
                 {
                     dr._flipToFront();
                     if (debugDraw)
@@ -216,9 +216,9 @@
                     if (debugVerbosity > 1) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
                     dr.lastFrame = frame;
 
-                    if (dr.frameImageCount != 0)
+                    if (dr.pendingPatchesCount != 0)
                     {
-                        console.log("PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.frameImageCount);
+                        console.log("PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.pendingPatchesCount);
                     }
 
                     // This is to stop _determineReadyState() from sending ready() when image loading is quasi-synchronous, ie. base64 encoded sources.
@@ -231,12 +231,12 @@
                     }
                 }
 
-                if (debugVerbosity > 1) console.log("command: " + command + " params: " + JSON.stringify(inputParams));
+                if (debugVerbosity > 1) console.log("command: " + t.command + " params: " + JSON.stringify(inputParams));
                 if (debugDraw)
                 {
                     var frameCmd =
                     {
-                        command: command,
+                        command: t.command,
                         params: inputParams
                     }
 
@@ -260,7 +260,7 @@
                 }
                 else if (t.command === "drawImage")
                 {
-                    ++dr.frameImageCount;
+                    ++dr.pendingPatchesCount;
 
                     var img = new Image;
                     img.onload = function()
@@ -283,7 +283,7 @@
 
                     if (imageData.substring(0,3) === "fb:")
                     {
-                        img.src = imageData.substring(3);
+                        img.src = v.sessionId + "/" + imageData.substring(3);
                     }
                     else if (imageData.substring(0,4) === "http")
                     {

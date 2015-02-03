@@ -47,7 +47,7 @@ private:
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
-    //PatchRequestHandler *patchRequestHandler_;
+    PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;
 
     ViridityWebServer *server_;

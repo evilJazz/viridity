@@ -37,6 +37,10 @@ var Viridity = function(options)
             {
                 var data = v.inputEvents.join("\n");
                 v.inputEvents = [];
+
+                if (debugVerbosity > 1)
+                    console.log("Now posting messages to server:\n" + data);
+
                 var options =
                 {
                     type: "POST",
@@ -167,6 +171,9 @@ var Viridity = function(options)
         {
             var t = v.parseMessage(msg);
             var processed = false;
+
+            if (debugVerbosity > 0)
+                console.log("Received message from server: " + msg);
 
             if (typeof(t.targetId) !== "undefined" &&
                 v.targetCallbacks.hasOwnProperty(t.targetId))
