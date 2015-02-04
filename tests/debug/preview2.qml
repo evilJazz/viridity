@@ -1,25 +1,32 @@
 import QtQuick 1.0
 
-Flickable {
-    clip: true
+Item {
+    Flickable {
+        anchors.fill: parent
+        clip: true
 
-    height: 400
-    width: 400
+        contentWidth: contentImage.width
+        contentHeight: contentImage.height
 
-    contentWidth: contentImage.width
-    contentHeight: contentImage.height
+        Image {
+            id: contentImage
+            source: "qrc:/testimages/lena.png"
 
-    Image {
-        id: contentImage
-        source: "qrc:/testimages/lena.png"
+            opacity: 0.6
 
-        opacity: 0.6
-
-        Rectangle {
-            anchors.centerIn: parent
-            width: 100
-            height: 100
-            color: "blue"
+            Rectangle {
+                anchors.centerIn: parent
+                width: 100
+                height: 100
+                color: "blue"
+            }
         }
+    }
+
+    Rectangle {
+        anchors.centerIn: parent
+        width: 100
+        height: 100
+        color: "red"
     }
 }

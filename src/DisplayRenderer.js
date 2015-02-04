@@ -61,7 +61,7 @@
                 if (dr.frontCanvas.height !== dr.canvas.height)
                     dr.frontCanvas.height = dr.canvas.height;
 
-                dr.frontCtx.globalCompositeOperation = 'copy';
+                dr.frontCtx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
                 dr.frontCtx.drawImage(dr.canvas, 0, 0);
             },
 
@@ -248,10 +248,10 @@
                     dr.frameCommands.push(frameCmd);
                 }
 
-                dr.ctx.globalCompositeOperation = 'copy';
-
                 if (t.command === "fillRect")
                 {
+                    dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+
                     dr.ctx.fillStyle = "rgba(" + inputParams[5] + "," + inputParams[6] + "," + inputParams[7] + "," + (inputParams[8] / 255) + ")";
                     dr.ctx.fillRect(
                                 inputParams[1], inputParams[2], inputParams[3], inputParams[4]
@@ -277,6 +277,7 @@
 
                         if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
 
+                        dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
 
                         if (dr.useBlobBuilder)
@@ -425,14 +426,32 @@
                 dr.frontCanvas = document.createElement("canvas");
                 dr.frontCtx = dr.frontCanvas.getContext("2d");
 
-                $(containerElement).append(dr.frontCanvas);
-                $(containerElement).resize(function()
-                {
-                    var container = $(this);
-                    dr.resize(container.width(), container.height());
-                });
+                $(containerElement).append(dr.frontCanvas).css("margin", 0).css("padding", 0);
 
-                $(containerElement).triggerHandler("resize");
+                $(dr.frontCanvas).css("margin", 0).css("padding", 0).css("position", "absolute");
+
+                // Set up default sizes...
+                if ($(containerElement).height() === 0)
+                    $(containerElement).height(300);
+
+                if ($(containerElement).width() === 0)
+                    $(containerElement).width(300);
+
+                // Set up timed resize callback to resize canvas, ie. when the style size was changed
+                // exogenously or indirectly.
+                // Note: jQuery plugins that are using MutationObserver or other means do not work reliable.
+                var resizeCallback = function()
+                {
+                    var container = $(containerElement);
+                    dr.resize(container.width(), container.height());
+                };
+                setInterval(resizeCallback, 1000);
+
+                // Set resize callback to allow triggering of a resize from jQuery...
+                $(containerElement).resize(resizeCallback);
+
+                // Finally set size...
+                resizeCallback();
 
                 //dr.createDebugOverlay();
 
