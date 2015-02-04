@@ -170,10 +170,10 @@ void GraphicsSceneBufferRenderer::setSizeFromScene()
     if (buffer1_.width() != width || buffer1_.height() != height)
     {
         if (width != buffer1_.width() || height != buffer1_.height())
-            buffer1_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
+            buffer1_ = QImage(width, height, QImage::Format_ARGB32);
 
         if (width != buffer2_.width() || height != buffer2_.height())
-            buffer2_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
+            buffer2_ = QImage(width, height, QImage::Format_ARGB32);
 
         workBuffer_ = &buffer1_;
         otherBuffer_ = &buffer2_;

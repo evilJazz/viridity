@@ -114,7 +114,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     patch->rect = rect;
 
     //QImage image(rect.size(), QImage::Format_RGB888);
-    QImage image(rect.size(), QImage::Format_ARGB32_Premultiplied);
+    QImage image(rect.size(), QImage::Format_ARGB32);
     image.fill(0);
 
     QPainter p;
