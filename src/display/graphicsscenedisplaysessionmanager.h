@@ -27,6 +27,8 @@ public:
 
     static QList<GraphicsSceneDisplaySessionManager *> activeSessionManagers();
 
+    ViriditySession *session() const { return session_; }
+
 signals:
     void newDisplayCreated(GraphicsSceneDisplay *display);
     void displayRemoved(GraphicsSceneDisplay *display);
