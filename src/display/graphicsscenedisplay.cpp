@@ -114,7 +114,8 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     patch->rect = rect;
 
     //QImage image(rect.size(), QImage::Format_RGB888);
-    QImage image(rect.size(), QImage::Format_ARGB32);
+    QImage image(rect.size(), QImage::Format_ARGB32_Premultiplied);
+    image.fill(0);
 
     QPainter p;
     p.begin(&image);
@@ -283,10 +284,10 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("%s>fillRect(%d,%d,%d,%d,%d,%s):",
+            QString msg = QString().sprintf("%s>fillRect(%d,%d,%d,%d,%d,%d,%d,%d,%d):",
                 id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
-                op.fillColor.name().toLatin1().constData()
+                op.fillColor.red(), op.fillColor.green(), op.fillColor.blue(), op.fillColor.alpha()
             );
 
             messageList += msg.toUtf8();

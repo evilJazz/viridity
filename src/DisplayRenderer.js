@@ -5,7 +5,7 @@
         var containerElement = this;
 
         var debugVerbosity = 0;
-        var debugDraw = 0;
+        var debugDraw = false;
 
         var originHref = window.location.href;
 
@@ -55,9 +55,13 @@
 
             _flipToFront: function()
             {
-                dr.frontCanvas.width = dr.canvas.width;
-                dr.frontCanvas.height = dr.canvas.height;
-                dr.frontCtx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
+                if (dr.frontCanvas.width !== dr.canvas.width)
+                    dr.frontCanvas.width = dr.canvas.width;
+
+                if (dr.frontCanvas.height !== dr.canvas.height)
+                    dr.frontCanvas.height = dr.canvas.height;
+
+                dr.frontCtx.globalCompositeOperation = 'copy';
                 dr.frontCtx.drawImage(dr.canvas, 0, 0);
             },
 
@@ -244,9 +248,11 @@
                     dr.frameCommands.push(frameCmd);
                 }
 
+                dr.ctx.globalCompositeOperation = 'copy';
+
                 if (t.command === "fillRect")
                 {
-                    dr.ctx.fillStyle = inputParams[5]
+                    dr.ctx.fillStyle = "rgba(" + inputParams[5] + "," + inputParams[6] + "," + inputParams[7] + "," + (inputParams[8] / 255) + ")";
                     dr.ctx.fillRect(
                                 inputParams[1], inputParams[2], inputParams[3], inputParams[4]
                                 );
@@ -271,7 +277,6 @@
 
                         if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
 
-                        dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
                         dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
 
                         if (dr.useBlobBuilder)

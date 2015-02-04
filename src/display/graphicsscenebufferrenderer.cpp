@@ -59,7 +59,10 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     DTIMERINIT(paintTimer);
     QPainter p(workBuffer_);
 
+    // Properly set up to make eraseRect work the way we expect it to work,
+    // ie. replace with the defined transparent brush instead of merging/blending
     p.setBackground(QBrush(QColor(255, 255, 255, 0)));
+    p.setCompositionMode(QPainter::CompositionMode_Source);
 
 #ifdef USE_SCENE_DAMAGEREGION
     QVector<QRect> rects = damageRegion_.rects();
@@ -150,6 +153,7 @@ void GraphicsSceneBufferRenderer::fullUpdate()
 {
     // TODO: This method is inefficient. Optimize!!
     QMutexLocker m(&bufferAndRegionMutex_);
+    otherBuffer_->fill(-1);
     workBuffer_->fill(0);
     damageRegion_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
     emitUpdatesAvailable();

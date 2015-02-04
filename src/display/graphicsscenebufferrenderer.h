@@ -24,7 +24,7 @@ public:
 
     //QRegion updateBuffer();
     UpdateOperationList updateBufferExt();
-    QImage buffer() const { return *workBuffer_; }
+    QImage &buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
 
     int tileSize() const { return comparer_ ? comparer_->tileSize() : 0; }

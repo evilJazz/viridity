@@ -12,5 +12,14 @@ Flickable {
     Image {
         id: contentImage
         source: "qrc:/testimages/lena.png"
+
+        opacity: 0.6
+
+        Rectangle {
+            anchors.centerIn: parent
+            width: 100
+            height: 100
+            color: "blue"
+        }
     }
 }
