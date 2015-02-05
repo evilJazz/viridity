@@ -12,13 +12,13 @@ PatchRequestHandler::PatchRequestHandler(ViridityConnection *parent) :
 
 bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QString id = QString(request->url()).mid(1, 40);
+    QString id = ViriditySession::parseIdFromUrl(request->url());
     return connection_->server()->sessionManager()->getSession(id) != NULL;
 }
 
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
-    QString id = QString(request->url()).mid(1, 40);
+    QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = connection_->server()->sessionManager()->acquireSession(id);
 
     if (session)

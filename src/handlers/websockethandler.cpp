@@ -53,7 +53,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QString id = QString(request->url()).mid(1, 40);
+    QString id = ViriditySession::parseIdFromUrl(request->url());
     return connection_->server()->sessionManager()->getSession(id) != NULL;
 }
 

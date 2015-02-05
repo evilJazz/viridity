@@ -37,12 +37,7 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
 {
     DGUARDMETHODTIMED;
 
-    QString url(request->url());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    QString id = QUrlQuery(QUrl(request->url())).queryItemValue("id");
-#else
-    QString id = QUrl(request->url()).queryItemValue("id");
-#endif
+    QString id = UrlQuery(request->url()).queryItemValue("id");
 
     ViriditySession *session = connection_->server()->sessionManager()->getSession(id);
 

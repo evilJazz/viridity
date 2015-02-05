@@ -157,6 +157,12 @@ void ViriditySession::handlerIsReadyForDispatch(ViridityMessageHandler *handler)
     triggerUpdateCheckTimer();
 }
 
+QString ViriditySession::parseIdFromUrl(const QByteArray &url)
+{
+    QString id = url.mid(1, 10);
+    return id;
+}
+
 void ViriditySession::updateCheckTimerTimeout()
 {
     DGUARDMETHODTIMED;
@@ -218,7 +224,7 @@ ViriditySession *ViriditySessionManager::getNewSession()
         this, "createSession",
         this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(ViriditySession *, session),
-        Q_ARG(const QString &, createUniqueID())
+        Q_ARG(const QString &, createUniqueID().left(10))
     );
 
     if (session)

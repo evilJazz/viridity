@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/testimages">
         <file>lena.png</file>
+        <file>backtile.png</file>
     </qresource>
 </RCC>

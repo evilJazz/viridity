@@ -12,6 +12,15 @@
 #include <QMutex>
 #include <QWaitCondition>
 
+#include <QUrl>
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    #include <QUrlQuery>
+    #define UrlQuery(...) QUrlQuery(QUrl(__VA_ARGS__))
+#else
+    #define UrlQuery(...) QUrl(__VA_ARGS__);
+#endif
+
 #include "viriditysessionmanager.h"
 
 class WebSocketHandler;

@@ -555,7 +555,15 @@
                 $(dr.frontCanvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event); });
                 $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event); });
 
-                $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
+                var setUpWheelSupport = function()
+                {
+                    $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
+                }
+
+                if ($.fn.mousewheel == undefined)
+                    $.getScript("jquery.mousewheel.js", setUpWheelSupport);
+                else
+                    setUpWheelSupport();
 
                 $(dr.frontCanvas).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
                 $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });

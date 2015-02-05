@@ -10,6 +10,7 @@
 
 #include "viriditydatabridge.h"
 #include "graphicsscenedisplaysessionmanager.h"
+#include "handlers/filerequesthandler.h"
 
 class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
 {
@@ -105,6 +106,14 @@ int main(int argc, char *argv[])
 
     //MySingleSessionManager sessionManager;
     MyMultiSessionManager sessionManager;
+
+    FileRequestHandler::publishFileGlobally("/", ":/Client/index.html", "text/html; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/index.html", ":/Client/index.html", "text/html; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/testimages/backtile.png", ":/testimages/backtile.png", "image/png");
+    FileRequestHandler::publishFileGlobally("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
 
     ViridityWebServer server(&a, &sessionManager);
     if (server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount()))

@@ -32,6 +32,8 @@ public:
     ViriditySessionManager *sessionManager() { return sessionManager_; }
     const QString id() const { return id_; }
 
+    static QString parseIdFromUrl(const QByteArray &url);
+
 signals:
     void newPendingMessagesAvailable();
 
