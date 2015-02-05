@@ -3,4 +3,7 @@
         <file>lena.png</file>
         <file>backtile.png</file>
     </qresource>
+    <qresource prefix="/">
+        <file alias="index.html">../debug/index.html</file>
+    </qresource>
 </RCC>

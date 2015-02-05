@@ -55,6 +55,9 @@
 
             _flipToFront: function()
             {
+                // Do we have a pending resize, ie. was the back canvas already resized
+                // and we are waiting for the full update? In this case update the size
+                // of the front canvas now.
                 if (dr.frontCanvas.width !== dr.canvas.width)
                     dr.frontCanvas.width = dr.canvas.width;
 
@@ -392,13 +395,18 @@
 
             resize: function(width, height)
             {
-                if (dr.frontCanvas.width != width || dr.frontCanvas.height != height)
+                if (dr.canvas.width != width || dr.canvas.height != height)
                 {
-                    console.log(dr.sceneId + " -> width: " + width + " height: " + height);
+                    if (debugVerbosity > 0)
+                        console.log(dr.sceneId + " -> width: " + width + " height: " + height);
+
                     $(dr.frontCanvas).css("width", width);
                     $(dr.frontCanvas).css("height", height);
-                    dr.frontCanvas.width = dr.canvas.width = width;
-                    dr.frontCanvas.height = dr.canvas.height = height;
+
+                    // Only set back canvas size.
+                    // Front canvas size will be updated as soon as the update frame arrives.
+                    dr.canvas.width = width;
+                    dr.canvas.height = height;
 
                     v.sendMessage("resize(" + width + "," + height + ")", dr.targetId);
 
@@ -414,7 +422,8 @@
                 v.sendMessage("newDisplay(" + dr.targetId + "," + dr.sceneId + ")");
 
                 dr.fullLocation = window.location.href.replace(/\/$/, "");
-                console.log("dr.fullLocation: " + dr.fullLocation);
+                if (debugVerbosity > 0)
+                    console.log("dr.fullLocation: " + dr.fullLocation);
 
                 var hostWithPath = window.location.host + window.location.pathname;
                 dr.location = hostWithPath.replace(/\/$/, "");
@@ -449,6 +458,7 @@
 
                 // Set resize callback to allow triggering of a resize from jQuery...
                 $(containerElement).resize(resizeCallback);
+                $(window).resize(resizeCallback);
 
                 // Finally set size...
                 resizeCallback();

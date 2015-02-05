@@ -10,6 +10,7 @@
 
 #include "viriditydatabridge.h"
 #include "graphicsscenedisplaysessionmanager.h"
+#include "declarativescenesizehandler.h"
 #include "handlers/filerequesthandler.h"
 
 class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
@@ -37,6 +38,9 @@ protected slots:
             qFatal("Could not create instance of component.");
 
         QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
+
+        DeclarativeSceneSizeHandler *sizeHandler = new DeclarativeSceneSizeHandler(id, item, item);
+        session()->registerHandler(sizeHandler);
 
         QGraphicsScene *scene = new QGraphicsScene(engine);
         scene->addItem(item);
@@ -107,12 +111,13 @@ int main(int argc, char *argv[])
     //MySingleSessionManager sessionManager;
     MyMultiSessionManager sessionManager;
 
-    FileRequestHandler::publishFileGlobally("/", ":/Client/index.html", "text/html; charset=utf8");
-    FileRequestHandler::publishFileGlobally("/index.html", ":/Client/index.html", "text/html; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/", ":/index.html", "text/html; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/index.html", ":/index.html", "text/html; charset=utf8");
     FileRequestHandler::publishFileGlobally("/testimages/backtile.png", ":/testimages/backtile.png", "image/png");
+
+    FileRequestHandler::publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
     FileRequestHandler::publishFileGlobally("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf8");
     FileRequestHandler::publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf8");
-    FileRequestHandler::publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
     FileRequestHandler::publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
 
     ViridityWebServer server(&a, &sessionManager);

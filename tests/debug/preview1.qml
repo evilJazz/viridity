@@ -1,8 +1,7 @@
 import QtQuick 1.0
 
-Rectangle {
-    width: 100
-    height: 62
-
-    color: "red"
+Image {
+    source: "qrc:/testimages/lena.png"
+    fillMode: Image.PreserveAspectFit
+    smooth: true
 }

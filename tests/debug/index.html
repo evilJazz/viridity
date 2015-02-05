@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>QGraphicsScene Web Controller</title>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+    body {
+        margin: 0;
+        /*
+        overflow: hidden;
+        background-color: #333;
+        background-image: url("testimages/backtile.png");
+        */
+    }
+    </style>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+    <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+
+    <script src="Viridity.js"></script>
+    <script src="DataBridge.js"></script>
+    <script src="DisplayRenderer.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var viridity = new Viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+
+            var display1 = $("#displayContainer1").viridity(viridity, "preview2");
+            var display2 = $("#displayContainer2").viridity(viridity, "preview1");
+            var display3 = $("#displayContainer3").viridity(viridity, "preview2");
+
+            //var viridity = $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+
+            var dataBridge1 = new DataBridge(viridity, "data1");
+            var dataBridge2 = new DataBridge(viridity, "data2");
+
+            dataBridge1.onNewCommandReceived = function (input)
+            {
+                console.dir(input);
+                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
+                return "TEST1";
+            }
+
+            dataBridge2.onNewCommandReceived = function (input)
+            {
+                console.dir(input);
+                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
+                return "TEST2";
+            }
+
+            $("#testInputButton1").click(function()
+            {
+                dataBridge1.sendCommand({ blah: "test1", ghu: 12343142.22 }, function (response)
+                {
+                    console.dir(response);
+                    alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
+                });
+            });
+
+            $("#testInputButton2").click(function()
+            {
+                dataBridge2.sendCommand({ blah: "test2", ghu: 12343142.22 }, function (response)
+                {
+                    console.dir(response);
+                    alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
+                });
+            });
+
+            /*
+            function resizeToWindow()
+            {
+                var elem = $(window);
+                $("#displayContainer").width(elem.width()).height(elem.height());
+                $("#displayContainer").triggerHandler("resize"); // Don't bubble event up.
+            }
+
+            $(window).resize(function(event) { resizeToWindow(); });
+            resizeToWindow();
+            */
+        });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+
+      <div class="page-header">
+        <h1>Viridity test</h1>
+        <p class="lead">Lorem ipsum dolor sit amet.</p>
+      </div>
+
+      <h3>Mẹ̄nin aeịde, theạ, Pēlẹ̄iadeọ̄ Achilẹ̄os:</h3>
+      <div class="row">
+        <div class="col-md-8">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</div>
+        <div class="col-md-4"><div id="displayContainer1"></div></div>
+      </div>
+
+      <h3>Oụlomenẹ̄n, hē mỵri' Achaịois ạlge' ethẹ̄ke</h3>
+      <div class="row">
+        <div class="col-md-4"><div id="displayContainer2"></div></div>
+        <div class="col-md-8">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</div>
+      </div>
+
+      <h3>Mẹ̄nin aeịde, theạ, Pēlẹ̄iadeọ̄ Achilẹ̄os:</h3>
+      <div class="row">
+        <div class="col-md-8">Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.</div>
+        <div class="col-md-4"><div id="displayContainer3"></div></div>
+      </div>
+
+      <button id="testInputButton1">TEST1</button>
+      <button id="testInputButton2">TEST2</button>
+    </div>
+  </body>
+</html>

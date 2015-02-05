@@ -51,8 +51,6 @@ private:
     bool handleMouseEvent(const QString &command, const QStringList &params);
     bool handleKeyEvent(const QString &command, const QStringList &params);
     QString textForKey(int key, Qt::KeyboardModifier modifiers);
-
-    void resizeScene(const QStringList &params);
 };
 
 #endif // GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H

@@ -343,8 +343,7 @@ bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArra
     return message.startsWith("mouseEnter") ||
            message.startsWith("mouseExit") ||
            message.startsWith("mouse") ||
-           message.startsWith("key") ||
-           message.startsWith("resize");
+           message.startsWith("key");
 }
 
 bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -362,29 +361,6 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &
         return handleMouseEvent(command, params);
     else if (message.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);
-    else if (message.startsWith("resize") && params.count() == 2)
-    {
-        resizeScene(params);
-        return true;
-    }
 
     return false;
-}
-
-void GraphicsSceneWebControlCommandInterpreter::resizeScene(const QStringList &params)
-{
-    int width = params[0].toInt();
-    int height = params[1].toInt();
-
-    DPRINTF("Received new size: %d x %d", width, height);
-
-    if (scene_->items().count() > 0)
-    {
-        QDeclarativeItem *mainItem = dynamic_cast<QDeclarativeItem *>(scene_->items().last());
-        if (mainItem)
-        {
-            mainItem->setWidth(width);
-            mainItem->setHeight(height);
-        }
-    }
 }

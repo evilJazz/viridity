@@ -5,10 +5,9 @@
         <file>qmldir</file>
     </qresource>
     <qresource prefix="/Client">
-        <file alias="index.html">../src/index.html</file>
-        <file alias="DisplayRenderer.js">../src/DisplayRenderer.js</file>
-        <file alias="jquery.mousewheel.js">../src/jquery.mousewheel.js</file>
         <file alias="Viridity.js">../src/Viridity.js</file>
         <file alias="DataBridge.js">../src/DataBridge.js</file>
+        <file alias="DisplayRenderer.js">../src/DisplayRenderer.js</file>
+        <file alias="jquery.mousewheel.js">../src/jquery.mousewheel.js</file>
     </qresource>
 </RCC>
