@@ -102,16 +102,45 @@ private slots:
 
             if (pos < analyzeBuffer_.size())
             {
+                // Read headers...
+                currentPart_.headerFields.clear();
+
+                QString header = QString::fromUtf8(analyzeBuffer_.left(pos));
+                QStringList headerLines = header.split('\n');
+
+                foreach (const QString &headerLine, headerLines)
+                {
+                    QStringList lineParts = headerLine.split(':');
+                    if (lineParts.count() == 2)
+                    {
+                        QString key = lineParts[0].trimmed();
+                        QString value = lineParts[1].trimmed();
+
+                        if (key.compare(key, "Content-Disposition", Qt::CaseInsensitive) == 0)
+                        {
+                            currentPart_.name = readSubValueFromHeaderValue("name", value);
+                            currentPart_.fileName = readSubValueFromHeaderValue("filename", value);
+
+                            sanitizeFileName(currentPart_.name);
+                            sanitizeFileName(currentPart_.fileName);
+                        }
+
+                        currentPart_.headerFields.insert(key, value);
+                    }
+                }
+
+                // Set temp filename...
+                ++fileId_;
+                currentPart_.tempFileName = FileSystemUtils::pathAppend(QDir::tempPath(), "temp_" + QString::number(fileId_));
+                targetFile_.setFileName(currentPart_.tempFileName);
+
+                // Write beginning to file...
                 int endIndex = analyzeBuffer_.length() - 1;
 
                 if (isComplete)
                     endIndex = findEndIndex(analyzeBuffer_, endIndex);
 
                 QByteArray start = analyzeBuffer_.mid(pos, endIndex - pos + 1);
-
-                ++fileId_;
-                targetFileName_ = FileSystemUtils::pathAppend(QDir::tempPath(), "temp_" + QString::number(fileId_));
-                targetFile_.setFileName(targetFileName_);
 
                 if (targetFile_.open(QIODevice::WriteOnly | QIODevice::Truncate))
                     targetFile_.write(start);
@@ -124,6 +153,22 @@ private slots:
         {
             targetFile_.write(newData);
         }
+    }
+
+    static QString readSubValueFromHeaderValue(const QString &key, const QString &input)
+    {
+        QRegExp r(".*[\\s;]+" + key + "=\"?([^\"]+)\"?\\s?", Qt::CaseInsensitive);
+
+        if (r.indexIn(input) != 0)
+            return QString::null;
+        else
+            return r.cap(1);
+    }
+
+    static void sanitizeFileName(QString &input)
+    {
+        input.replace(QRegExp("[,+&/=:#!?_@$*|\\\\\"'\\^~`]"), "");
+        input = input.simplified();
     }
 
     int findEndIndex(const QByteArray &data, int endIndex)
@@ -144,7 +189,6 @@ private slots:
 
     void writeLastBlockOfCurrentPart(const QByteArray &newData)
     {
-        //parts_.append(data_);
         if (targetFile_.isWritable())
         {
             int newEndPos = findEndIndex(newData, newData.length() - 1);
@@ -161,7 +205,7 @@ private slots:
         if (targetFile_.isWritable())
         {
             targetFile_.close();
-            fileNames_.append(targetFile_.fileName());
+            parts_.append(currentPart_);
             analyzeBuffer_.clear();
         }
     }
@@ -225,11 +269,21 @@ private:
     bool isMultiPart_;
     QByteArray boundary_;
 
-    QFile targetFile_;
-    QString targetFileName_;
-
-    QStringList fileNames_;
     int fileId_;
+
+    struct Part
+    {
+        QString name;
+        QString fileName;
+        QString mimeType;
+        QString tempFileName;
+        QHash<QString, QString> headerFields;
+    };
+
+    QList<Part> parts_;
+
+    QFile targetFile_;
+    Part currentPart_;
 };
 
 
