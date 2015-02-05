@@ -20,7 +20,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.h \
-    $$PWD/src/display/declarativescenesizehandler.h
+    $$PWD/src/display/declarativescenesizehandler.h \
+    $$PWD/src/handlers/fileuploadhandler.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
@@ -31,7 +32,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp \
-    $$PWD/src/display/declarativescenesizehandler.cpp
+    $$PWD/src/display/declarativescenesizehandler.cpp \
+    $$PWD/src/handlers/fileuploadhandler.cpp
 
 # Display related
 CONFIG += viridity_module_display

@@ -22,6 +22,7 @@
 #include "handlers/longpollinghandler.h"
 #include "handlers/patchrequesthandler.h"
 #include "handlers/filerequesthandler.h"
+#include "handlers/fileuploadhandler.h"
 
 /* GraphicsSceneWebServerThread */
 
@@ -79,6 +80,7 @@ void ViridityConnection::setupConnection()
     longPollingHandler_ = new LongPollingHandler(this);
     patchRequestHandler_ = new PatchRequestHandler(this);
     fileRequestHandler_ = new FileRequestHandler(this);
+    fileUploadHandler_ = new FileUploadHandler(this);
 }
 
 void ViridityConnection::onRequestReady()
@@ -99,6 +101,10 @@ void ViridityConnection::onRequestReady()
     if (fileRequestHandler_->doesHandleRequest(request))
     {
         fileRequestHandler_->handleRequest(request, response);
+    }
+    else if (fileUploadHandler_->doesHandleRequest(request))
+    {
+        fileUploadHandler_->handleRequest(request, response);
     }
     else if (sseHandler_->doesHandleRequest(request))
     {

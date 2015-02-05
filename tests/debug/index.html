@@ -12,6 +12,10 @@
         background-image: url("testimages/backtile.png");
         */
     }
+
+    #displayContainer1, #displayContainer2 {
+        background-image: url("testimages/backtile.png");
+    }
     </style>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
@@ -25,18 +29,28 @@
     <script src="DataBridge.js"></script>
     <script src="DisplayRenderer.js"></script>
 
+    <link href="http://hayageek.github.io/jQuery-Upload-File/uploadfile.min.css" rel="stylesheet">
+    <script src="http://hayageek.github.io/jQuery-Upload-File/jquery.uploadfile.min.js"></script>
+
     <script type="text/javascript">
         $(document).ready(function() {
-            var viridity = new Viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+            var channel = new Viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
 
-            var display1 = $("#displayContainer1").viridity(viridity, "preview2");
-            var display2 = $("#displayContainer2").viridity(viridity, "preview1");
-            var display3 = $("#displayContainer3").viridity(viridity, "preview2");
+            channel.on("sessionStart", function(sessionId)
+            {
+                $("#fileuploader").uploadFile(
+                {
+                    url: "upload?id=" + sessionId,
+                    fileName: "myfile"
+                });
+            });
 
-            //var viridity = $("#displayContainer").viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+            var display1 = $("#displayContainer1").viridity(channel, "preview2");
+            var display2 = $("#displayContainer2").viridity(channel, "preview1");
+            var display3 = $("#displayContainer3").viridity(channel, "preview2");
 
-            var dataBridge1 = new DataBridge(viridity, "data1");
-            var dataBridge2 = new DataBridge(viridity, "data2");
+            var dataBridge1 = new DataBridge(channel, "data1");
+            var dataBridge2 = new DataBridge(channel, "data2");
 
             dataBridge1.onNewCommandReceived = function (input)
             {
@@ -69,18 +83,6 @@
                     alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
                 });
             });
-
-            /*
-            function resizeToWindow()
-            {
-                var elem = $(window);
-                $("#displayContainer").width(elem.width()).height(elem.height());
-                $("#displayContainer").triggerHandler("resize"); // Don't bubble event up.
-            }
-
-            $(window).resize(function(event) { resizeToWindow(); });
-            resizeToWindow();
-            */
         });
     </script>
   </head>
@@ -90,6 +92,10 @@
       <div class="page-header">
         <h1>Viridity test</h1>
         <p class="lead">Lorem ipsum dolor sit amet.</p>
+      </div>
+
+      <div class="row">
+        <div id="fileuploader">Upload</div>
       </div>
 
       <h3>Mẹ̄nin aeịde, theạ, Pēlẹ̄iadeọ̄ Achilẹ̄os:</h3>

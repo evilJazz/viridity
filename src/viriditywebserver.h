@@ -28,6 +28,7 @@ class SSEHandler;
 class LongPollingHandler;
 class PatchRequestHandler;
 class FileRequestHandler;
+class FileUploadHandler;
 
 class ViridityWebServer;
 
@@ -58,6 +59,7 @@ private:
     LongPollingHandler *longPollingHandler_;
     PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;
+    FileUploadHandler *fileUploadHandler_;
 
     ViridityWebServer *server_;
 
