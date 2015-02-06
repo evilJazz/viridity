@@ -12,8 +12,9 @@ class FileUploadDataHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit FileUploadDataHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, ViriditySession *session, QObject *parent = 0) :
+    explicit FileUploadDataHandler(FileUploadHandler *parent, Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, ViriditySession *session) :
         QObject(parent),
+        parent_(parent),
         request_(request),
         response_(response),
         session_(session),
@@ -131,7 +132,7 @@ private slots:
 
                 // Set temp filename...
                 ++fileId_;
-                currentPart_.tempFileName = FileSystemUtils::pathAppend(QDir::tempPath(), "temp_" + QString::number(fileId_));
+                currentPart_.tempFileName = FileSystemUtils::pathAppend(QDir::tempPath(), "temp_" + QString::number(fileId_) + "_" + currentPart_.fileName);
                 targetFile_.setFileName(currentPart_.tempFileName);
 
                 // Write beginning to file...
@@ -257,9 +258,34 @@ private slots:
         response_->headers().insert("Content-Type", "text/plain");
         response_->writeHead(Tufao::HttpServerResponse::OK);
         response_->end();
+
+        emitResults();
+    }
+
+    void emitResults()
+    {
+        QVariantList result;
+
+        foreach (const Part &part, parts_)
+        {
+            QVariantMap file;
+
+            file.insert("fileName", part.fileName);
+            file.insert("name", part.name);
+            file.insert("tempFileName", part.tempFileName);
+            file.insert("mimeType", part.mimeType);
+
+            result.append(file);
+        }
+
+        emit parent_->newFilesUploaded(result);
+
+        // TODO: Delete tempfiles...
+        parts_.clear();
     }
 
 private:
+    FileUploadHandler *parent_;
     Tufao::HttpServerRequest *request_;
     Tufao::HttpServerResponse *response_;
     ViriditySession *session_;
@@ -317,7 +343,7 @@ void FileUploadHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::
         if (request->method() == "POST")
         {
             // Hand off to separate data handler!
-            FileUploadDataHandler *handler = new FileUploadDataHandler(request, response, session);
+            FileUploadDataHandler *handler = new FileUploadDataHandler(this, request, response, session);
             connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
         }
     }

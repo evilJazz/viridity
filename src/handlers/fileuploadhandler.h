@@ -17,6 +17,9 @@ public:
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+
+signals:
+    void newFilesUploaded(const QVariantList &files);
 };
 
 #endif // FILEUPLOADHANDLER_H

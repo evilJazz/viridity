@@ -87,6 +87,7 @@ void createLogic(ViriditySession *session)
 
     FileUploadHandler *fileUploadHandler = new FileUploadHandler(session->sessionManager()->server(), session);
     session->registerRequestHandler(fileUploadHandler);
+    engine->rootContext()->setContextProperty("fileUploadHandler", fileUploadHandler);
 
     MySceneDisplaySessionManager *displaySessionManager = new MySceneDisplaySessionManager(session, session);
     displaySessionManager->engine = engine;
