@@ -13,8 +13,8 @@
 #undef DEBUG
 #include "KCL/debug.h"
 
-LongPollingHandler::LongPollingHandler(ViridityConnection *parent) :
-    ViridityBaseRequestHandler(parent),
+LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent),
     session_(NULL)
 {
     DGUARDMETHODTIMED;
@@ -23,7 +23,7 @@ LongPollingHandler::LongPollingHandler(ViridityConnection *parent) :
 LongPollingHandler::~LongPollingHandler()
 {
     if (session_)
-        connection_->server()->sessionManager()->releaseSession(session_);
+        server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -39,7 +39,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
     QString id = UrlQuery(request->url()).queryItemValue("id");
 
-    ViriditySession *session = connection_->server()->sessionManager()->getSession(id);
+    ViriditySession *session = server()->sessionManager()->getSession(id);
 
     if (session)
     {
@@ -47,7 +47,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
         {
             if (request->method() == "GET") // long polling output
             {
-                session_ = connection_->server()->sessionManager()->acquireSession(id);
+                session_ = server()->sessionManager()->acquireSession(id);
 
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
@@ -71,13 +71,13 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     }
     else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/viridity?")*/) // start new connection
     {
-        session = connection_->server()->sessionManager()->getNewSession();
+        session = server()->sessionManager()->getNewSession();
 
         DPRINTF("NEW DISPLAY: %s", session->id().toLatin1().constData());
 
         QString info = "info(" + session->id() + ")";
 
-        connection_->server()->sessionManager()->releaseSession(session);
+        server()->sessionManager()->releaseSession(session);
 
         response->writeHead(Tufao::HttpServerResponse::OK);
         response->headers().insert("Content-Type", "text/plain; charset=utf8");
@@ -100,7 +100,7 @@ void LongPollingHandler::handleMessagesAvailable()
     {
         QList<QByteArray> messages = session_->takePendingMessages();
 
-        connection_->server()->sessionManager()->releaseSession(session_);
+        server()->sessionManager()->releaseSession(session_);
         session_ = NULL;
 
         QByteArray out;

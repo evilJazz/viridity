@@ -7,8 +7,8 @@
 
 #include "viriditywebserver.h"
 
-WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
-    ViridityBaseRequestHandler(parent),
+WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent),
     session_(NULL)
 {
     DGUARDMETHODTIMED;
@@ -22,7 +22,7 @@ WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
 WebSocketHandler::~WebSocketHandler()
 {
     if (session_)
-        connection_->server()->sessionManager()->releaseSession(session_);
+        server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -40,7 +40,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         return;
     }
 
-    session_ = connection_->server()->sessionManager()->getNewSession();
+    session_ = server()->sessionManager()->getNewSession();
 
     connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
@@ -53,7 +53,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
-    return connection_->server()->sessionManager()->getSession(id) != NULL;
+    return server()->sessionManager()->getSession(id) != NULL;
 }
 
 void WebSocketHandler::handleMessagesAvailable()

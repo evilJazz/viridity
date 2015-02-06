@@ -48,13 +48,13 @@ int ViridityDataBridge::getNewResponseId()
 void ViridityDataBridge::registerHandler()
 {
     if (session_)
-        session_->registerHandler(this);
+        session_->registerMessageHandler(this);
 }
 
 void ViridityDataBridge::unregisterHandler()
 {
     if (session_)
-        session_->unregisterHandler(this);
+        session_->unregisterMessageHandler(this);
 }
 
 QVariant ViridityDataBridge::sendData(const QString &command, const QString &destinationSessionId)

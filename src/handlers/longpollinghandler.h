@@ -14,7 +14,7 @@ class LongPollingHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit LongPollingHandler(ViridityConnection *parent);
+    explicit LongPollingHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~LongPollingHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);

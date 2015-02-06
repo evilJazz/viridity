@@ -5,8 +5,8 @@
 
 #include "viriditywebserver.h"
 
-PatchRequestHandler::PatchRequestHandler(ViridityConnection *parent) :
-    ViridityBaseRequestHandler(parent)
+PatchRequestHandler::PatchRequestHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent)
 {
 }
 
@@ -17,17 +17,17 @@ PatchRequestHandler::~PatchRequestHandler()
 bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
-    return connection_->server()->sessionManager()->getSession(id) != NULL;
+    return server()->sessionManager()->getSession(id) != NULL;
 }
 
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
-    ViriditySession *session = connection_->server()->sessionManager()->acquireSession(id);
+    ViriditySession *session = server()->sessionManager()->acquireSession(id);
 
     if (session)
     {
-        connection_->server()->sessionManager()->releaseSession(session);
+        server()->sessionManager()->releaseSession(session);
 
         QString url = request->url();
 

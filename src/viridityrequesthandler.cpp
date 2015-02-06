@@ -4,9 +4,9 @@
 
 /* ViridityBaseRequestHandler */
 
-ViridityBaseRequestHandler::ViridityBaseRequestHandler(ViridityConnection *parent) :
+ViridityBaseRequestHandler::ViridityBaseRequestHandler(ViridityWebServer *server, QObject *parent) :
     QObject(parent),
-    connection_(parent)
+    server_(server)
 {
 }
 

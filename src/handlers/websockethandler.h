@@ -15,7 +15,7 @@ class WebSocketHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit WebSocketHandler(ViridityConnection *parent);
+    explicit WebSocketHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~WebSocketHandler();
 
     void handleUpgrade(Tufao::HttpServerRequest *request, const QByteArray &head);

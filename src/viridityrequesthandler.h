@@ -4,7 +4,7 @@
 #include <QObject>
 #include <Tufao/HttpServer>
 
-class ViridityConnection;
+class ViridityWebServer;
 
 class ViridityRequestHandler
 {
@@ -14,19 +14,21 @@ public:
     virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response) = 0;
 };
 
-class ViridityBaseRequestHandler : public QObject
+class ViridityBaseRequestHandler : public QObject, public ViridityRequestHandler
 {
     Q_OBJECT
 public:
-    explicit ViridityBaseRequestHandler(ViridityConnection *parent);
+    explicit ViridityBaseRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~ViridityBaseRequestHandler();
 
     // ViridityRequestHandler
     virtual bool doesHandleRequest(Tufao::HttpServerRequest *request);
     virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
+    ViridityWebServer *server() const { return server_; }
+
 protected:
-    ViridityConnection *connection_;
+    ViridityWebServer *server_;
 };
 
 #endif // VIRIDITYREQUESTHANDLER_H

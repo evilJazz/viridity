@@ -7,8 +7,8 @@
 QHash<QByteArray, QByteArray> FileRequestHandler::globalFileNames_;
 QHash<QByteArray, QByteArray> FileRequestHandler::globalContentTypes_;
 
-FileRequestHandler::FileRequestHandler(ViridityConnection *parent) :
-    ViridityBaseRequestHandler(parent)
+FileRequestHandler::FileRequestHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent)
 {
 }
 

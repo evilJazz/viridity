@@ -12,8 +12,8 @@
 #undef DEBUG
 #include "KCL/debug.h"
 
-SSEHandler::SSEHandler(ViridityConnection *parent) :
-    ViridityBaseRequestHandler(parent),
+SSEHandler::SSEHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent),
     session_(NULL)
 {
     DGUARDMETHODTIMED;
@@ -22,7 +22,7 @@ SSEHandler::SSEHandler(ViridityConnection *parent) :
 SSEHandler::~SSEHandler()
 {
     if (session_)
-        connection_->server()->sessionManager()->releaseSession(session_);
+        server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -38,11 +38,11 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
 
     QString id = UrlQuery(request->url()).queryItemValue("id");
 
-    ViriditySession *session = connection_->server()->sessionManager()->getSession(id);
+    ViriditySession *session = server()->sessionManager()->getSession(id);
 
     if (session)
     {
-        session_ = connection_->server()->sessionManager()->acquireSession(id);
+        session_ = server()->sessionManager()->acquireSession(id);
         setUpResponse(response);
 
         if (session_->pendingMessagesAvailable())
@@ -52,7 +52,7 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
     }
     else if (id.isEmpty()) // start new connection
     {
-        session_ = connection_->server()->sessionManager()->getNewSession();
+        session_ = server()->sessionManager()->getNewSession();
 
         DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
 

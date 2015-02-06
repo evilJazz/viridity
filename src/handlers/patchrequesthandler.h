@@ -12,7 +12,7 @@ class PatchRequestHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit PatchRequestHandler(ViridityConnection *parent);
+    explicit PatchRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~PatchRequestHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);

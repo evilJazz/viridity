@@ -289,8 +289,8 @@ private:
 
 /* FileUploadHandler */
 
-FileUploadHandler::FileUploadHandler(ViridityConnection *parent) :
-    ViridityBaseRequestHandler(parent)
+FileUploadHandler::FileUploadHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent)
 {
 }
 
@@ -310,7 +310,7 @@ void FileUploadHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::
 {
     QString id = UrlQuery(request->url()).queryItemValue("id");
 
-    ViriditySession *session = connection_->server()->sessionManager()->getSession(id);
+    ViriditySession *session = server()->sessionManager()->getSession(id);
 
     if (session)
     {

@@ -12,6 +12,7 @@
 #include "graphicsscenedisplaysessionmanager.h"
 #include "declarativescenesizehandler.h"
 #include "handlers/filerequesthandler.h"
+#include "handlers/fileuploadhandler.h"
 
 class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
 {
@@ -40,7 +41,7 @@ protected slots:
         QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
 
         DeclarativeSceneSizeHandler *sizeHandler = new DeclarativeSceneSizeHandler(id, item, item);
-        session()->registerHandler(sizeHandler);
+        session()->registerMessageHandler(sizeHandler);
 
         QGraphicsScene *scene = new QGraphicsScene(engine);
         scene->addItem(item);
@@ -84,9 +85,12 @@ void createLogic(ViriditySession *session)
     QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
     */
 
+    FileUploadHandler *fileUploadHandler = new FileUploadHandler(session->sessionManager()->server(), session);
+    session->registerRequestHandler(fileUploadHandler);
+
     MySceneDisplaySessionManager *displaySessionManager = new MySceneDisplaySessionManager(session, session);
     displaySessionManager->engine = engine;
-    session->registerHandler(displaySessionManager);
+    session->registerMessageHandler(displaySessionManager);
 
     session->logic = instance;
     QObject::connect(session->logic, SIGNAL(destroyed()), engine, SLOT(deleteLater()));

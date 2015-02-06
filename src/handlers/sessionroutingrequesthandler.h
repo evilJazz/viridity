@@ -14,7 +14,7 @@ class SessionRoutingRequestHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit SessionRoutingRequestHandler(ViridityConnection *parent);
+    explicit SessionRoutingRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SessionRoutingRequestHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);

@@ -14,7 +14,7 @@ class SSEHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit SSEHandler(ViridityConnection *parent);
+    explicit SSEHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SSEHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);

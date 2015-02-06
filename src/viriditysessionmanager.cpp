@@ -165,12 +165,21 @@ QString ViriditySession::parseIdFromUrl(const QByteArray &url)
 
 bool ViriditySession::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return false;
+    bool result = false;
+
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+    {
+        result = handler->doesHandleRequest(request);
+        if (result) break;
+    }
+
+    return result;
 }
 
 void ViriditySession::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
-
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+        handler->handleRequest(request, response);
 }
 
 void ViriditySession::updateCheckTimerTimeout()
@@ -188,21 +197,26 @@ void ViriditySession::triggerUpdateCheckTimer()
         updateCheckTimer_->start(updateCheckInterval_);
 }
 
-void ViriditySession::registerHandler(ViridityMessageHandler *handler)
+void ViriditySession::registerMessageHandler(ViridityMessageHandler *handler)
 {
     if (messageHandlers_.indexOf(handler) == -1)
         messageHandlers_.append(handler);
 }
 
-void ViriditySession::registerHandlers(const QList<ViridityMessageHandler *> &handlers)
-{
-    foreach (ViridityMessageHandler *handler, handlers)
-        registerHandler(handler);
-}
-
-void ViriditySession::unregisterHandler(ViridityMessageHandler *handler)
+void ViriditySession::unregisterMessageHandler(ViridityMessageHandler *handler)
 {
     messageHandlers_.removeAll(handler);
+}
+
+void ViriditySession::registerRequestHandler(ViridityRequestHandler *handler)
+{
+    if (requestHandlers_.indexOf(handler) == -1)
+        requestHandlers_.append(handler);
+}
+
+void ViriditySession::unregisterRequestHandler(ViridityRequestHandler *handler)
+{
+    requestHandlers_.removeAll(handler);
 }
 
 
@@ -210,6 +224,7 @@ void ViriditySession::unregisterHandler(ViridityMessageHandler *handler)
 
 ViriditySessionManager::ViriditySessionManager(QObject *parent) :
     QObject(parent),
+    server_(NULL),
     sessionMutex_(QMutex::Recursive)
 {
     DGUARDMETHODTIMED;

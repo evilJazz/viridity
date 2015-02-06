@@ -9,6 +9,7 @@
 
 #include "viridityrequesthandler.h"
 
+class ViridityWebServer;
 class ViriditySessionManager;
 class ViridityMessageHandler;
 
@@ -19,9 +20,11 @@ public:
     explicit ViriditySession(ViriditySessionManager *sessionManager, const QString &id);
     virtual ~ViriditySession();
 
-    void registerHandler(ViridityMessageHandler *handler);
-    void registerHandlers(const QList<ViridityMessageHandler *> &handlers);
-    void unregisterHandler(ViridityMessageHandler *handler);
+    void registerMessageHandler(ViridityMessageHandler *handler);
+    void unregisterMessageHandler(ViridityMessageHandler *handler);
+
+    void registerRequestHandler(ViridityRequestHandler *handler);
+    void unregisterRequestHandler(ViridityRequestHandler *handler);
 
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message);
     Q_INVOKABLE void dispatchMessageToClient(const QByteArray &message, const QString &targetId = QString::null);
@@ -62,6 +65,7 @@ protected:
     QString id_;
 
     QList<ViridityMessageHandler *> messageHandlers_;
+    QList<ViridityRequestHandler *> requestHandlers_;
 
     mutable QMutex dispatchMutex_;
     QList<QByteArray> messages_;
@@ -107,6 +111,9 @@ public:
     Q_INVOKABLE bool dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId);
     Q_INVOKABLE bool dispatchMessageToClient(const QByteArray &message, const QString &sessionId = QString::null, const QString &targetId = QString::null);
 
+    ViridityWebServer *server() const { return server_; }
+    void setServer(ViridityWebServer *server) { server_ = server; }
+
 signals:
     void newSessionCreated(ViriditySession *session);
     void sessionRemoved(ViriditySession *session);
@@ -125,6 +132,8 @@ private slots:
     void killExpiredSessions();
 
 private:
+    ViridityWebServer *server_;
+
     QMutex sessionMutex_;
     QHash<QString, ViriditySession *> sessions_;
     QTimer cleanupTimer_;

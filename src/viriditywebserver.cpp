@@ -22,7 +22,7 @@
 #include "handlers/longpollinghandler.h"
 #include "handlers/patchrequesthandler.h"
 #include "handlers/filerequesthandler.h"
-#include "handlers/fileuploadhandler.h"
+#include "handlers/sessionroutingrequesthandler.h"
 
 /* ViridityConnection */
 
@@ -75,12 +75,12 @@ void ViridityConnection::setupConnection()
 
     connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 
-    webSocketHandler_ = new WebSocketHandler(this);
-    sseHandler_ = new SSEHandler(this);
-    longPollingHandler_ = new LongPollingHandler(this);
-    patchRequestHandler_ = new PatchRequestHandler(this);
-    fileRequestHandler_ = new FileRequestHandler(this);
-    fileUploadHandler_ = new FileUploadHandler(this);
+    webSocketHandler_ = new WebSocketHandler(server_, this);
+    sseHandler_ = new SSEHandler(server_, this);
+    longPollingHandler_ = new LongPollingHandler(server_, this);
+    patchRequestHandler_ = new PatchRequestHandler(server_, this);
+    fileRequestHandler_ = new FileRequestHandler(server_, this);
+    sessionRoutingRequestHandler_ = new SessionRoutingRequestHandler(server_, this);
 }
 
 void ViridityConnection::onRequestReady()
@@ -102,10 +102,6 @@ void ViridityConnection::onRequestReady()
     {
         fileRequestHandler_->handleRequest(request, response);
     }
-    else if (fileUploadHandler_->doesHandleRequest(request))
-    {
-        fileUploadHandler_->handleRequest(request, response);
-    }
     else if (sseHandler_->doesHandleRequest(request))
     {
         sseHandler_->handleRequest(request, response);
@@ -117,6 +113,10 @@ void ViridityConnection::onRequestReady()
     else if (patchRequestHandler_->doesHandleRequest(request))
     {
         patchRequestHandler_->handleRequest(request, response);
+    }
+    else if (sessionRoutingRequestHandler_->doesHandleRequest(request))
+    {
+        sessionRoutingRequestHandler_->handleRequest(request, response);
     }
     else
     {
@@ -140,6 +140,7 @@ ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *se
     sessionManager_(sessionManager),
     incomingConnectionCount_(0)
 {
+    sessionManager_->setServer(this);
     connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(newSessionCreated(ViriditySession*)));
 }
 

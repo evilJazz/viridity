@@ -12,7 +12,7 @@ class FileRequestHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit FileRequestHandler(ViridityConnection *parent);
+    explicit FileRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~FileRequestHandler();
 
     void publishFile(const QByteArray &url, const QByteArray &fileName, const QByteArray &mimeType);

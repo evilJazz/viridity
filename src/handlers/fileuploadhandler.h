@@ -12,7 +12,7 @@ class FileUploadHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit FileUploadHandler(ViridityConnection *parent);
+    explicit FileUploadHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~FileUploadHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
