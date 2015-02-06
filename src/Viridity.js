@@ -73,7 +73,7 @@ if (!Array.prototype.indexOf) {
 
 var Viridity = function(options)
 {
-    var debugVerbosity = 2;
+    var debugVerbosity = 0;
     var originHref = window.location.href;
 
     var v =

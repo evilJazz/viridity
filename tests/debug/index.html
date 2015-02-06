@@ -52,14 +52,14 @@
             var dataBridge1 = new DataBridge(channel, "data1");
             var dataBridge2 = new DataBridge(channel, "data2");
 
-            dataBridge1.onNewCommandReceived = function (input)
+            dataBridge1.onNewDataReceived = function (input)
             {
                 console.dir(input);
                 alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
                 return "TEST1";
             }
 
-            dataBridge2.onNewCommandReceived = function (input)
+            dataBridge2.onNewDataReceived = function (input)
             {
                 console.dir(input);
                 alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
@@ -68,7 +68,7 @@
 
             $("#testInputButton1").click(function()
             {
-                dataBridge1.sendCommand({ blah: "test1", ghu: 12343142.22 }, function (response)
+                dataBridge1.sendData({ blah: "test1", ghu: 12343142.22 }, function (response)
                 {
                     console.dir(response);
                     alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
@@ -77,7 +77,7 @@
 
             $("#testInputButton2").click(function()
             {
-                dataBridge2.sendCommand({ blah: "test2", ghu: 12343142.22 }, function (response)
+                dataBridge2.sendData({ blah: "test2", ghu: 12343142.22 }, function (response)
                 {
                     console.dir(response);
                     alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));

@@ -7,8 +7,6 @@
         var debugVerbosity = 0;
         var debugDraw = false;
 
-        var originHref = window.location.href;
-
         var v = viridityChannel;
 
         var dr =
