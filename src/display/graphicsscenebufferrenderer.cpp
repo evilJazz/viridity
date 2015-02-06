@@ -153,8 +153,9 @@ void GraphicsSceneBufferRenderer::fullUpdate()
 {
     // TODO: This method is inefficient. Optimize!!
     QMutexLocker m(&bufferAndRegionMutex_);
-    otherBuffer_->fill(-1);
+    otherBuffer_->fill(0);
     workBuffer_->fill(0);
+    workBuffer_->invertPixels(QImage::InvertRgba);
     damageRegion_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
     emitUpdatesAvailable();
 }

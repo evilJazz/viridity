@@ -59,10 +59,16 @@
                 // and we are waiting for the full update? In this case update the size
                 // of the front canvas now.
                 if (dr.frontCanvas.width !== dr.canvas.width)
+                {
                     dr.frontCanvas.width = dr.canvas.width;
+                    $(dr.frontCanvas).css("width", dr.canvas.width);
+                }
 
                 if (dr.frontCanvas.height !== dr.canvas.height)
+                {
                     dr.frontCanvas.height = dr.canvas.height;
+                    $(dr.frontCanvas).css("height", dr.canvas.height);
+                }
 
                 dr.frontCtx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
                 dr.frontCtx.drawImage(dr.canvas, 0, 0);
@@ -400,13 +406,13 @@
                     if (debugVerbosity > 0)
                         console.log(dr.sceneId + " -> width: " + width + " height: " + height);
 
-                    $(dr.frontCanvas).css("width", width);
-                    $(dr.frontCanvas).css("height", height);
-
                     // Only set back canvas size.
                     // Front canvas size will be updated as soon as the update frame arrives.
                     dr.canvas.width = width;
                     dr.canvas.height = height;
+
+                    // Properly clip the canvas so it does not move outside of its container...
+                    $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
                     v.sendMessage("resize(" + width + "," + height + ")", dr.targetId);
 
@@ -449,16 +455,16 @@
                 // Set up timed resize callback to resize canvas, ie. when the style size was changed
                 // exogenously or indirectly.
                 // Note: jQuery plugins that are using MutationObserver or other means do not work reliable.
+                var container = $(containerElement);
                 var resizeCallback = function()
                 {
-                    var container = $(containerElement);
                     dr.resize(container.width(), container.height());
                 };
-                setInterval(resizeCallback, 1000);
+                setInterval(resizeCallback, 333);
 
                 // Set resize callback to allow triggering of a resize from jQuery...
                 $(containerElement).resize(resizeCallback);
-                $(window).resize(resizeCallback);
+                //$(window).resize(resizeCallback);
 
                 // Finally set size...
                 resizeCallback();
