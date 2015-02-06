@@ -6,10 +6,11 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class ViridityConnection;
+#include "viridityrequesthandler.h"
+
 class ViriditySession;
 
-class SSEHandler : public QObject
+class SSEHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
@@ -24,7 +25,6 @@ private slots:
     void handleResponseDestroyed();
 
 private:
-    ViridityConnection *connection_;
     ViriditySession *session_;
 
     Tufao::HttpServerResponse *response_;

@@ -6,20 +6,17 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class ViridityConnection;
-class GraphicsSceneDisplay;
+#include "viridityrequesthandler.h"
 
-class PatchRequestHandler : public QObject
+class PatchRequestHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
     explicit PatchRequestHandler(ViridityConnection *parent);
+    virtual ~PatchRequestHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
-
-private:
-    ViridityConnection *connection_;
 };
 
 #endif // PATCHREQUESTHANDLER_H

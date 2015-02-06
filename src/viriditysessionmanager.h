@@ -7,10 +7,12 @@
 #include <QTimer>
 #include <QHash>
 
+#include "viridityrequesthandler.h"
+
 class ViriditySessionManager;
 class ViridityMessageHandler;
 
-class ViriditySession : public QObject
+class ViriditySession : public QObject, public ViridityRequestHandler
 {
     Q_OBJECT
 public:
@@ -33,6 +35,10 @@ public:
     const QString id() const { return id_; }
 
     static QString parseIdFromUrl(const QByteArray &url);
+
+    // ViridityRequestHandler
+    virtual bool doesHandleRequest(Tufao::HttpServerRequest *request);
+    virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 signals:
     void newPendingMessagesAvailable();

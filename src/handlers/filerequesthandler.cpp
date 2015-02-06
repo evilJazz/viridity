@@ -1,14 +1,18 @@
 #include "filerequesthandler.h"
 
-#include "viriditywebserver.h"
 #include <QFile>
+
+#include "viriditywebserver.h"
 
 QHash<QByteArray, QByteArray> FileRequestHandler::globalFileNames_;
 QHash<QByteArray, QByteArray> FileRequestHandler::globalContentTypes_;
 
 FileRequestHandler::FileRequestHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent)
+    ViridityBaseRequestHandler(parent)
+{
+}
+
+FileRequestHandler::~FileRequestHandler()
 {
 }
 

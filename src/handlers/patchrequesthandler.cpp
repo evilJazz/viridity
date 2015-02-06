@@ -1,12 +1,16 @@
 #include "patchrequesthandler.h"
 
-#include "viriditywebserver.h"
 #include "graphicsscenedisplaysessionmanager.h"
 #include "graphicsscenedisplay.h"
 
+#include "viriditywebserver.h"
+
 PatchRequestHandler::PatchRequestHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent)
+    ViridityBaseRequestHandler(parent)
+{
+}
+
+PatchRequestHandler::~PatchRequestHandler()
 {
 }
 

@@ -24,7 +24,7 @@
 #include "handlers/filerequesthandler.h"
 #include "handlers/fileuploadhandler.h"
 
-/* GraphicsSceneWebServerThread */
+/* ViridityConnection */
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 ViridityConnection::ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor) :
@@ -217,4 +217,3 @@ void ViridityWebServer::incomingConnection(int handle)
 
     QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
 }
-

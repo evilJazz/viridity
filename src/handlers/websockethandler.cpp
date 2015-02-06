@@ -8,8 +8,7 @@
 #include "viriditywebserver.h"
 
 WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent),
+    ViridityBaseRequestHandler(parent),
     session_(NULL)
 {
     DGUARDMETHODTIMED;

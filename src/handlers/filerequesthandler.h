@@ -6,14 +6,14 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class ViridityConnection;
-class GraphicsSceneDisplay;
+#include "viridityrequesthandler.h"
 
-class FileRequestHandler : public QObject
+class FileRequestHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
     explicit FileRequestHandler(ViridityConnection *parent);
+    virtual ~FileRequestHandler();
 
     void publishFile(const QByteArray &url, const QByteArray &fileName, const QByteArray &mimeType);
     void unpublishFile(const QByteArray &url);
@@ -25,8 +25,6 @@ public:
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
-    ViridityConnection *connection_;
-
     QHash<QByteArray, QByteArray> fileNames_;
     QHash<QByteArray, QByteArray> contentTypes_;
 

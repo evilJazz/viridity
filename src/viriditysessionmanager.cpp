@@ -163,6 +163,16 @@ QString ViriditySession::parseIdFromUrl(const QByteArray &url)
     return id;
 }
 
+bool ViriditySession::doesHandleRequest(Tufao::HttpServerRequest *request)
+{
+    return false;
+}
+
+void ViriditySession::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+{
+
+}
+
 void ViriditySession::updateCheckTimerTimeout()
 {
     DGUARDMETHODTIMED;

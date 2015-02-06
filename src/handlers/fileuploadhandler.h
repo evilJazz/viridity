@@ -6,19 +6,17 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class ViridityConnection;
+#include "viridityrequesthandler.h"
 
-class FileUploadHandler : public QObject
+class FileUploadHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
     explicit FileUploadHandler(ViridityConnection *parent);
+    virtual ~FileUploadHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
-
-private:
-    ViridityConnection *connection_;
 };
 
 #endif // FILEUPLOADHANDLER_H

@@ -290,9 +290,13 @@ private:
 /* FileUploadHandler */
 
 FileUploadHandler::FileUploadHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent)
+    ViridityBaseRequestHandler(parent)
 {
+}
+
+FileUploadHandler::~FileUploadHandler()
+{
+
 }
 
 bool FileUploadHandler::doesHandleRequest(Tufao::HttpServerRequest *request)

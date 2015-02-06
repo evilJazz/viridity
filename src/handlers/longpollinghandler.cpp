@@ -14,8 +14,7 @@
 #include "KCL/debug.h"
 
 LongPollingHandler::LongPollingHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent),
+    ViridityBaseRequestHandler(parent),
     session_(NULL)
 {
     DGUARDMETHODTIMED;
