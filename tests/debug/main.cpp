@@ -76,15 +76,6 @@ void createLogic(ViriditySession *session)
     if (!instance)
         qFatal("Could not create instance of component.");
 
-    /*
-    QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
-
-    session->scene = new QGraphicsScene(engine);
-    session->scene->addItem(item);
-
-    QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
-    */
-
     FileUploadHandler *fileUploadHandler = new FileUploadHandler(session->sessionManager()->server(), session);
     session->registerRequestHandler(fileUploadHandler);
     engine->rootContext()->setContextProperty("fileUploadHandler", fileUploadHandler);

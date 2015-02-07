@@ -305,6 +305,7 @@ bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QSt
     return targetId == id_ && (
         message.startsWith("ready") ||
         message.startsWith("requestFullUpdate") ||
+        message.startsWith("resize") ||
         static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId)
     );
 }
@@ -324,6 +325,26 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
             renderer_, "fullUpdate",
             renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
+    else if (message.startsWith("resize"))
+    {
+        QString command;
+        QStringList params;
+
+        ViridityMessageHandler::splitMessage(message, command, params);
+
+        if (params.count() == 2)
+        {
+            int width = params[0].toInt();
+            int height = params[1].toInt();
+
+            QMetaObject::invokeMethod(
+                renderer_, "setSize",
+                renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+                Q_ARG(int, width),
+                Q_ARG(int, height)
+            );
+        }
+    }
     else
         QMetaObject::invokeMethod(
             commandInterpreter_, "handleMessage",

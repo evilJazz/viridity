@@ -50,8 +50,6 @@ void GraphicsSceneObserver::setEnabled(bool value)
                 sceneChangedHandler_ = NULL;
             }
 
-            //disconnect(scene_, SIGNAL(changed(QList<QRectF>)));
-            disconnect(scene_, SIGNAL(sceneRectChanged(QRectF)));
             disconnect(scene_, SIGNAL(destroyed()));
 
             sceneDetached();
@@ -71,7 +69,6 @@ void GraphicsSceneObserver::setEnabled(bool value)
                 connect(sceneChangedHandler_, SIGNAL(newUpdateAvailable(QList<QRectF>)), this, SLOT(sceneChanged(QList<QRectF>)));
             }
 
-            connect(scene_, SIGNAL(sceneRectChanged(QRectF)), this, SLOT(sceneSceneRectChanged(QRectF)));
             connect(scene_, SIGNAL(destroyed()), this, SLOT(sceneDestroyed()));
         }
     }
@@ -83,11 +80,6 @@ void GraphicsSceneObserver::sceneAttached()
 }
 
 void GraphicsSceneObserver::sceneChanged(QList<QRectF> rects)
-{
-    DGUARDMETHODTIMED;
-}
-
-void GraphicsSceneObserver::sceneSceneRectChanged(QRectF newRect)
 {
     DGUARDMETHODTIMED;
 }

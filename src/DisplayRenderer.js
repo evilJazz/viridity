@@ -413,8 +413,6 @@
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
                     v.sendMessage("resize(" + width + "," + height + ")", dr.targetId);
-
-                    dr.requestFullUpdate();
                 }
             },
 

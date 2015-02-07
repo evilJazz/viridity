@@ -31,13 +31,13 @@ public:
 
 public slots:
     void fullUpdate();
+    void setSize(int width, int height);
 
 signals:
     void damagedRegionAvailable();
 
 protected slots:
     void sceneAttached();
-    void sceneSceneRectChanged(QRectF newRect);
     void sceneChanged(QList<QRectF> rects);
     void sceneDetached();
 

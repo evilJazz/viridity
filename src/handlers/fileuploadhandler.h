@@ -19,6 +19,7 @@ public:
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 signals:
+    friend class FileUploadDataHandler;
     void newFilesUploaded(const QVariantList &files);
 };
 

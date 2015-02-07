@@ -74,13 +74,15 @@ bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
     QByteArray modMsg = message;
     QString targetId = ViridityMessageHandler::takeTargetFromMessage(modMsg);
 
+    bool result = false;
+
     foreach (ViridityMessageHandler *handler, messageHandlers_)
     {
         if (handler->canHandleMessage(modMsg, id_, targetId))
-            return handler->handleMessage(modMsg, id_, targetId);
+            result = handler->handleMessage(modMsg, id_, targetId);
     }
 
-    return false;
+    return result;
 }
 
 void ViriditySession::sendMessageToClient(const QByteArray &message, const QString &targetId)

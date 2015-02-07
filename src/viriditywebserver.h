@@ -18,7 +18,7 @@
     #include <QUrlQuery>
     #define UrlQuery(...) QUrlQuery(QUrl(__VA_ARGS__))
 #else
-    #define UrlQuery(...) QUrl(__VA_ARGS__);
+    #define UrlQuery(...) QUrl(__VA_ARGS__)
 #endif
 
 #include "viriditysessionmanager.h"

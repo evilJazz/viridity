@@ -160,13 +160,10 @@ void GraphicsSceneBufferRenderer::fullUpdate()
     emitUpdatesAvailable();
 }
 
-void GraphicsSceneBufferRenderer::setSizeFromScene()
+void GraphicsSceneBufferRenderer::setSize(int width, int height)
 {
     DGUARDMETHODFTIMED("GraphicsSceneBufferRenderer: %p", this);
     QMutexLocker m(&bufferAndRegionMutex_);
-
-    int width = scene_->width();
-    int height = scene_->height();
 
     if (buffer1_.width() != width || buffer1_.height() != height)
     {
@@ -185,14 +182,16 @@ void GraphicsSceneBufferRenderer::setSizeFromScene()
     }
 }
 
-void GraphicsSceneBufferRenderer::sceneAttached()
+void GraphicsSceneBufferRenderer::setSizeFromScene()
 {
-    setSizeFromScene();
+    int width = scene_->width();
+    int height = scene_->height();
+
+    setSize(width, height);
 }
 
-void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
+void GraphicsSceneBufferRenderer::sceneAttached()
 {
-    //qDebug("Scene rect changed!");
     setSizeFromScene();
 }
 
