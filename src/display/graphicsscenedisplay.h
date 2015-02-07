@@ -17,8 +17,6 @@
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-class ViridityWebServer;
-
 /* Patch */
 
 class Patch
@@ -26,9 +24,12 @@ class Patch
 public:
     QString id;
     QRect rect;
+    int artefactMargin;
     QBuffer data;
-    QString mimeType;
-    QByteArray dataBase64;
+    QByteArray mimeType;
+    bool packedAlpha;
+
+    QByteArray toBase64() const { return data.data().toBase64(); }
 };
 
 class GraphicsSceneDisplay : public QObject, public ViridityMessageHandler
@@ -43,15 +44,13 @@ public:
     bool isUpdateAvailable() const { return clientReady_ && patches_.count() == 0 && updateAvailable_; }
     Patch *takePatch(const QString &patchId);
 
-    QStringList getMessagesForPendingUpdates();
-
 signals:
     void updateAvailable();
 
 protected:
+    // ViridityMessageHandler
     virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
     virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
-
     virtual QList<QByteArray> takePendingMessages();
 
 private slots:
@@ -80,10 +79,11 @@ private:
     QImage patchBuffer_;
     QMutex patchesMutex_;
 
-    Patch *createPatch(const QRect &rect, bool createBase64);
+    Patch *createPatch(const QRect &rect);
     void clearPatches();
 
     void triggerUpdateCheckTimer();
+    QImage createPackedAlphaPatch(const QImage &input);
 };
 
 #endif // GRAPHICSSCENEDISPLAY_H

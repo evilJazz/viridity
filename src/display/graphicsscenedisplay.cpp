@@ -107,19 +107,29 @@ void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
     triggerUpdateCheckTimer();
 }
 
-Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
+Patch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 {
     Patch *patch = new Patch;
 
     patch->rect = rect;
 
+    // Account for encoding artifacts...
+    patch->artefactMargin = 8; // block size of JPEG
+
+    QRect rectEnlarged = rect.adjusted(
+        -patch->artefactMargin,
+        -patch->artefactMargin,
+        patch->artefactMargin,
+        patch->artefactMargin
+    );
+
     //QImage image(rect.size(), QImage::Format_RGB888);
-    QImage image(rect.size(), QImage::Format_ARGB32);
+    QImage image(rectEnlarged.size(), QImage::Format_ARGB32);
     image.fill(0);
 
     QPainter p;
     p.begin(&image);
-    p.drawImage(0, 0, patchBuffer_, rect.x(), rect.y());
+    p.drawImage(0, 0, patchBuffer_, rectEnlarged.x(), rectEnlarged.y());
     p.end();
 
     /*
@@ -143,7 +153,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     }
     //*/
 
-    //*
+    /*
     patch->data.open(QIODevice::ReadWrite);
 
     if (false && image.width() * image.height() > 9 * 9 * renderer_->tileSize() * renderer_->tileSize())
@@ -158,35 +168,47 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     }
     //*/
 
-    //image = image.convertToFormat(QImage::Format_Indexed8);
-    //image.save(&patch->data, "PNG");
-    //patch->mimeType = "image/png";
+    //    image.save(&patch->data, "JPEG", 50);
+//        patch->mimeType = "image/jpeg";
 
-    //image.save(&patch->data, "BMP"); patch->mimeType = "image/bmp";
+    /*
+    image = image.convertToFormat(QImage::Format_Indexed8);
+    image.save(&patch->data, "PNG");
+    patch->mimeType = "image/png";
+    //*/
+
+    image = createPackedAlphaPatch(image);
+    image.save(&patch->data, "JPEG", 90);
+    patch->mimeType = "image/jpeg";
+
+    patch->packedAlpha = true;
 
     patch->data.close();
 
-    if (createBase64)
-    {
-        patch->dataBase64 = patch->data.data().toBase64();
-
-        DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte), base64 size: %d kB (%d byte)",
-                rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
-                image.byteCount() / 1024, image.byteCount(),
-                patch->data.size() / 1024, patch->data.size(),
-                patch->dataBase64.size() / 1024, patch->dataBase64.size()
-                );
-    }
-    else
-    {
-        DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
-                rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
-                image.byteCount() / 1024, image.byteCount(),
-                patch->data.size() / 1024, patch->data.size()
-                );
-    }
+    DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
+            rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.constData(),
+            image.byteCount() / 1024, image.byteCount(),
+            patch->data.size() / 1024, patch->data.size()
+            );
 
     return patch;
+}
+
+QImage GraphicsSceneDisplay::createPackedAlphaPatch(const QImage &input)
+{
+    QImage result(input.width(), input.height() * 2, QImage::Format_RGB888);
+    result.fill(0);
+
+    QImage inputWithoutAlpha = input.convertToFormat(QImage::Format_RGB888);
+    QImage alpha = input.alphaChannel();
+
+    QPainter p;
+    p.begin(&result);
+    p.drawImage(0, 0, inputWithoutAlpha);
+    p.drawImage(0, input.height(), alpha);
+    p.end();
+
+    return result;
 }
 
 void GraphicsSceneDisplay::updateCheckTimerTimeout()
@@ -235,38 +257,39 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         {
             const QRect &rect = op.srcRect;
 
-            if (urlMode_)
+            Patch *patch = createPatch(rect);
+            QByteArray mimeType = patch->mimeType + (patch->packedAlpha ? ";pa" : "");
+
+            bool embedData = !urlMode_;
+            //if (patch->data.size() < 10 * 1024)
+            //    embedData = true;
+
+            if (embedData)
+                mimeType = mimeType + ";base64";
+
+            QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%d,%s):",
+                id_.toLatin1().constData(), frame_,
+                rect.x(), rect.y(), rect.width(), rect.height(),
+                patch->artefactMargin,
+                mimeType.constData()
+            );
+
+            if (!embedData)
             {
-                Patch *patch = createPatch(rect, false);
+                QMutexLocker l(&patchesMutex_);
                 patch->id = id_ + "_" + QString::number(frame_) + "_" + QString::number(i);
 
-                QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%s):%s",
-                    id_.toLatin1().constData(), frame_,
-                    rect.x(), rect.y(), rect.width(), rect.height(),
-                    patch->mimeType.toLatin1().constData(),
-                    QString("fb:" + patch->id).toLatin1().constData()
-                );
+                msg += QString("fb:" + patch->id).toLatin1().constData();
 
-                QMutexLocker l(&patchesMutex_);
                 patches_.insert(patch->id, patch);
-
-                messageList += msg.toUtf8();
             }
             else
             {
-                Patch *patch = createPatch(rect, true);
-
-                QString format = patch->mimeType + ";base64";
-                QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%s):",
-                    id_.toLatin1().constData(), frame_,
-                    rect.x(), rect.y(), rect.width(), rect.height(),
-                    format.toLatin1().constData()
-                );
-
-                messageList += msg.toUtf8() + patch->dataBase64;
-
+                msg += patch->toBase64();
                 delete patch;
             }
+
+            messageList += msg.toUtf8();
         }
         else if (op.type == uotMove)
         {

@@ -276,6 +276,17 @@
                 {
                     ++dr.pendingPatchesCount;
 
+                    var contentType = inputParams[6];
+
+                    var isPackedAlpha = false;
+                    if (contentType.indexOf(";pa") > -1)
+                    {
+                        isPackedAlpha = true;
+                        contentType.replace(";pa", "");
+                    }
+
+                    var margin = parseInt(inputParams[5]);
+
                     var img = new Image;
                     img.onload = function()
                     {
@@ -284,8 +295,55 @@
 
                         if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
 
-                        dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
-                        dr.ctx.drawImage(img, inputParams[1], inputParams[2]);
+                        var dstX = parseInt(inputParams[1]);
+                        var dstY = parseInt(inputParams[2]);
+                        var imgWidth = parseInt(inputParams[3]);
+                        var imgHeight = parseInt(inputParams[4]);
+
+                        dr.ctx.clearRect(dstX, dstY, imgWidth, imgHeight);
+
+                        if (isPackedAlpha)
+                        {
+                            var alphaCanvas = document.createElement("canvas");
+                            alphaCanvas.width = imgWidth;
+                            alphaCanvas.height = imgHeight;
+
+                            alphaCanvasCtx = alphaCanvas.getContext("2d");
+                            alphaCanvasCtx.drawImage(img,
+                                margin, imgHeight + margin * 3, imgWidth, imgHeight,
+                                0, 0, imgWidth, imgHeight
+                            );
+
+                            var idata = alphaCanvasCtx.getImageData(0, 0, imgWidth, imgHeight);
+                            var data = idata.data;
+                            var i = data.length - 1;
+
+                            for (; i > 0; i -= 4)
+                                data[i] = 255 - data[i - 3];
+
+                            alphaCanvasCtx.putImageData(idata, 0, 0);
+
+                            dr.ctx.save();
+
+                            dr.ctx.drawImage(img,
+                                margin, margin, imgWidth, imgHeight,
+                                dstX, dstY, imgWidth, imgHeight
+                            );
+
+                            dr.ctx.globalCompositeOperation = "xor";
+
+                            dr.ctx.drawImage(alphaCanvas,
+                                0, 0, imgWidth, imgHeight,
+                                dstX, dstY, imgWidth, imgHeight
+                            );
+
+                            dr.ctx.restore();
+                        }
+                        else
+                            dr.ctx.drawImage(img,
+                                margin, margin, imgWidth, imgHeight,
+                                dstX, dstY, imgWidth, imgHeight
+                            );
 
                         if (dr.useBlobBuilder)
                             URL.revokeObjectURL(img.src);
@@ -363,7 +421,7 @@
 
                         var buf = Base64Binary.decodeArrayBuffer(imageData);
 
-                        /*
+                        /* SLOW!
                         var rawData = atob(imageData);
 
                         var buf = new ArrayBuffer(rawData.length);
@@ -374,15 +432,14 @@
 
                         blobber.append(buf);
 
-                        var contentType = inputParams[5].split(";")[0]; // "image/jpeg" etc. remove base64
-                        //console.log("contentType: " + contentType);
+                        contentType = contentType.split(";")[0]; // "image/jpeg" etc. remove base64
 
                         var blob = blobber.getBlob(contentType);
                         var blobUrl = URL.createObjectURL(blob);
                         img.src = blobUrl;
                     }
                     else
-                        img.src = "data:" + inputParams[5] + "," + imageData;
+                        img.src = "data:" + contentType + "," + imageData;
                 }
                 else if (t.command === "info")
                 {
@@ -433,7 +490,6 @@
                 dr.canvas = document.createElement("canvas");
                 dr.ctx = dr.canvas.getContext("2d");
 
-                dr.frontCanvas = document.getElementById("canvas");
                 dr.frontCanvas = document.createElement("canvas");
                 dr.frontCtx = dr.frontCanvas.getContext("2d");
 

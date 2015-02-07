@@ -55,7 +55,7 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
                         patch->data.open(QIODevice::ReadOnly);
 
                         response->writeHead(Tufao::HttpServerResponse::OK);
-                        response->headers().insert("Content-Type", patch->mimeType.toUtf8().constData());
+                        response->headers().insert("Content-Type", patch->mimeType.constData());
                         response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
                         response->headers().insert("Pragma", "no-cache");
                         response->end(patch->data.readAll());
