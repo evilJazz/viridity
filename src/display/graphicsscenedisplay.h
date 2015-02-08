@@ -41,7 +41,7 @@ public:
 
     QString id() const { return id_; }
 
-    bool isUpdateAvailable() const { return clientReady_ && patches_.count() == 0 && updateAvailable_; }
+    bool isUpdateAvailable() const;
     Patch *takePatch(const QString &patchId);
 
 signals:
@@ -77,7 +77,7 @@ private:
 
     QHash<QString, Patch *> patches_;
     QImage patchBuffer_;
-    QMutex patchesMutex_;
+    mutable QMutex patchesMutex_;
 
     Patch *createPatch(const QRect &rect);
     void clearPatches();

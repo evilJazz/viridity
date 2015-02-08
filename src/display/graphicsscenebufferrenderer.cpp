@@ -112,6 +112,12 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     return ops;
 }
 
+QImage GraphicsSceneBufferRenderer::bufferCopy() const
+{
+    QMutexLocker m(&bufferAndRegionMutex_);
+    return workBuffer_->copy();
+}
+
 /*
 QRegion GraphicsSceneBufferRenderer::updateBuffer()
 {
@@ -164,6 +170,9 @@ void GraphicsSceneBufferRenderer::setSize(int width, int height)
 {
     DGUARDMETHODFTIMED("GraphicsSceneBufferRenderer: %p", this);
     QMutexLocker m(&bufferAndRegionMutex_);
+
+    if (width == 0 || height == 0)
+        return;
 
     if (buffer1_.width() != width || buffer1_.height() != height)
     {

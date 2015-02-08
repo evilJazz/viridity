@@ -56,6 +56,12 @@ GraphicsSceneDisplay::~GraphicsSceneDisplay()
     renderer_ = NULL;
 }
 
+bool GraphicsSceneDisplay::isUpdateAvailable() const
+{
+    QMutexLocker l(&patchesMutex_);
+    return clientReady_ && patches_.count() == 0 && updateAvailable_;
+}
+
 void GraphicsSceneDisplay::clearPatches()
 {
     DGUARDMETHODTIMED;
@@ -89,6 +95,7 @@ Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
 void GraphicsSceneDisplay::clientReady()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker l(&patchesMutex_);
     clientReady_ = true;
 
     if (patches_.count() != 0)
@@ -238,7 +245,7 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 
     updateAvailable_ = false;
     QList<UpdateOperation> ops = renderer_->updateBufferExt();
-    patchBuffer_ = renderer_->buffer();
+    patchBuffer_ = renderer_->bufferCopy();
 
     DPRINTF("Updates available: %d", ops.count());
 

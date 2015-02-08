@@ -24,7 +24,7 @@ public:
 
     //QRegion updateBuffer();
     UpdateOperationList updateBufferExt();
-    QImage &buffer() const { return *workBuffer_; }
+    QImage bufferCopy() const;
     bool updatesAvailable() const { return updatesAvailable_; }
 
     int tileSize() const { return comparer_ ? comparer_->tileSize() : 0; }
@@ -45,7 +45,7 @@ protected:
     bool minimizeDamageRegion_;
     bool updatesAvailable_;
 
-    QMutex bufferAndRegionMutex_;
+    mutable QMutex bufferAndRegionMutex_;
 
     QImage *workBuffer_;
     QImage *otherBuffer_;
