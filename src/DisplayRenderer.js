@@ -512,11 +512,12 @@
                 {
                     dr.resize(container.width(), container.height());
                 };
-                setInterval(resizeCallback, 333);
+                setInterval(resizeCallback, 2000);
 
                 // Set resize callback to allow triggering of a resize from jQuery...
                 $(containerElement).resize(resizeCallback);
-                //$(window).resize(resizeCallback);
+
+                $(window).resize(function() { setTimeout(resizeCallback, 50); });
 
                 // Finally set size...
                 resizeCallback();
