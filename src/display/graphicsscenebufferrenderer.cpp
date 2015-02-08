@@ -10,6 +10,13 @@
 //#define DIAGNOSTIC_OUTPUT
 #include "KCL/debug.h"
 
+/* GraphicsSceneBufferRendererLocker */
+
+GraphicsSceneBufferRendererLocker::GraphicsSceneBufferRendererLocker(GraphicsSceneBufferRenderer *renderer) :
+    m_(&renderer->bufferAndRegionMutex_)
+{
+}
+
 /* GraphicsSceneBufferRenderer */
 
 GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
@@ -49,7 +56,7 @@ void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
     minimizeDamageRegion_ = value;
 }
 
-UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
+UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
 {
     DGUARDMETHODTIMED;
     QMutexLocker m(&bufferAndRegionMutex_);
@@ -111,49 +118,6 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
 
     return ops;
 }
-
-QImage GraphicsSceneBufferRenderer::bufferCopy() const
-{
-    QMutexLocker m(&bufferAndRegionMutex_);
-    return workBuffer_->copy();
-}
-
-/*
-QRegion GraphicsSceneBufferRenderer::updateBuffer()
-{
-    DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferAndRegionMutex_);
-
-    QRegion result;
-    if (minimizeDamageRegion_)
-        result = QRegion();
-    else
-        result = region_;
-
-    QVector<QRect> rects = region_.rects();
-
-    swapWorkBuffer();
-    QPainter p(workBuffer_);
-
-    foreach (const QRect &rect, rects)
-    {
-        p.eraseRect(rect);
-        scene_->render(&p, rect, rect, Qt::IgnoreAspectRatio);
-
-        if (minimizeDamageRegion_)
-        {
-            QList<QRect> minRects = findUpdateRects(&buffer1_, &buffer2_, rect);
-            foreach (const QRect &minRect, minRects)
-                result += minRect;
-        }
-    }
-
-    region_ = TiledRegion();
-    updatesAvailable_ = false;
-
-    return result;
-}
-*/
 
 void GraphicsSceneBufferRenderer::fullUpdate()
 {
@@ -260,4 +224,3 @@ void GraphicsSceneBufferRenderer::emitUpdatesAvailable()
     updatesAvailable_ = true;
     emit damagedRegionAvailable();
 }
-

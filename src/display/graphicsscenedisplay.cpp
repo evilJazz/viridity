@@ -136,7 +136,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 
     QPainter p;
     p.begin(&image);
-    p.drawImage(0, 0, patchBuffer_, rectEnlarged.x(), rectEnlarged.y());
+    p.drawImage(0, 0, renderer_->buffer(), rectEnlarged.x(), rectEnlarged.y());
     p.end();
 
     /*
@@ -244,8 +244,9 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         return messageList;
 
     updateAvailable_ = false;
-    QList<UpdateOperation> ops = renderer_->updateBufferExt();
-    patchBuffer_ = renderer_->bufferCopy();
+
+    GraphicsSceneBufferRendererLocker l(renderer_); // Lock and hold until all patches are created!
+    QList<UpdateOperation> ops = renderer_->updateBuffer();
 
     DPRINTF("Updates available: %d", ops.count());
 

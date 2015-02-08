@@ -76,7 +76,6 @@ private:
     bool clientReady_;
 
     QHash<QString, Patch *> patches_;
-    QImage patchBuffer_;
     mutable QMutex patchesMutex_;
 
     Patch *createPatch(const QRect &rect);
