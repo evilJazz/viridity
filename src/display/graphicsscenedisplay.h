@@ -78,6 +78,7 @@ private:
     QHash<QString, Patch *> patches_;
     mutable QMutex patchesMutex_;
 
+    friend class GraphicsSceneDisplayThreadedCreatePatch;
     Patch *createPatch(const QRect &rect);
     void clearPatches();
 

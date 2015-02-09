@@ -12,6 +12,12 @@
 #include <QMutexLocker>
 #include <QUrl>
 
+#define USE_MULTITHREADING
+
+#ifdef USE_MULTITHREADING
+#include <QtConcurrentFilter>
+#endif
+
 /* GraphicsSceneDisplay */
 
 GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
@@ -234,6 +240,24 @@ void GraphicsSceneDisplay::updateCheckTimerTimeout()
     }
 }
 
+#ifdef USE_MULTITHREADING
+struct GraphicsSceneDisplayThreadedCreatePatch
+{
+    GraphicsSceneDisplayThreadedCreatePatch(GraphicsSceneDisplay *display) :
+        display(display)
+    {
+    }
+
+    bool operator()(UpdateOperation *op)
+    {
+        op->data = display->createPatch(op->srcRect);
+        return true;
+    }
+
+    GraphicsSceneDisplay *display;
+};
+#endif
+
 QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 {
     DGUARDMETHODTIMED;
@@ -257,6 +281,20 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         DPRINTF("New Frame Number: %d", frame_);
     }
 
+#ifdef USE_MULTITHREADING
+    QList<UpdateOperation *> updateOps;
+
+    for (int i = 0; i < ops.count(); ++i)
+    {
+        UpdateOperation *op = &ops[i];
+        if (op->type == uotUpdate)
+            updateOps.append(op);
+    }
+
+    if (updateOps.count() > 0)
+        QtConcurrent::blockingFilter(updateOps, GraphicsSceneDisplayThreadedCreatePatch(this));
+#endif
+
     for (int i = 0; i < ops.count(); ++i)
     {
         const UpdateOperation &op = ops.at(i);
@@ -265,7 +303,12 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         {
             const QRect &rect = op.srcRect;
 
-            Patch *patch = createPatch(rect);
+            Patch *patch;
+            if (op.data)
+                patch = static_cast<Patch *>(op.data);
+            else
+                patch = createPatch(rect);
+
             QByteArray mimeType = patch->mimeType + (patch->packedAlpha ? ";pa" : "");
 
             bool embedData = !urlMode_;

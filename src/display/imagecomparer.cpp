@@ -2,15 +2,17 @@
 #include "moveanalyzer.h"
 #include "tiledregion.h"
 
-#include <QtConcurrentMap>
-
 //#undef DEBUG
 #include "KCL/debug.h"
 
 //#define USE_MOVE_ANALYZER
 //#define USE_MOVE_ANALYZER_FINEGRAINED
 #define USE_FILL_ANALYZER
-//#define USE_MULTITHREADING
+#define USE_MULTITHREADING
+
+#ifdef USE_MULTITHREADING
+#include <QtConcurrentMap>
+#endif
 
 inline uint qHash(const QPoint& p)
 {
