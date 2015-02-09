@@ -18,6 +18,10 @@
 #include <QtConcurrentFilter>
 #endif
 
+#ifdef USE_IMPROVED_JPEG
+#include "private/jpeghandler.h"
+#endif
+
 /* GraphicsSceneDisplay */
 
 GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
@@ -191,7 +195,13 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     //*/
 
     image = createPackedAlphaPatch(image);
+
+#ifdef USE_IMPROVED_JPEG
+    patch->data.open(QIODevice::ReadWrite);
+    writeJPEG(image, &patch->data, 90, true, false);
+#else
     image.save(&patch->data, "JPEG", 90);
+#endif
     patch->mimeType = "image/jpeg";
 
     patch->packedAlpha = true;
