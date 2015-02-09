@@ -48,15 +48,15 @@ void FileRequestHandler::unpublishFileGlobally(const QByteArray &url)
 
 bool FileRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QUrl url(request->url());
-    QString filename = url.path();
-    return fileNames_.contains(filename.toUtf8()) || globalFileNames_.contains(filename.toUtf8());
+    QList<QByteArray> parts = request->url().split('?');
+    return parts.count() > 0 && (fileNames_.contains(parts.at(0)) || globalFileNames_.contains(parts.at(0)));
 }
 
 void FileRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
-    QUrl url(request->url());
-    QString filename = url.path();
+    QList<QByteArray> parts = request->url().split('?');
+
+    QString filename = QString::fromUtf8(parts.at(0));
     QString localFileName = fileNames_.value(filename.toUtf8());
     QByteArray contentType = contentTypes_.value(request->url());
 

@@ -29,14 +29,14 @@ SSEHandler::~SSEHandler()
 
 bool SSEHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().startsWith("/events");
+    return request->url().endsWith("/v/ev");
 }
 
 void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
-    QString id = UrlQuery(request->url()).queryItemValue("id");
+    QString id = ViriditySession::parseIdFromUrl(request->url());
 
     ViriditySession *session = server()->sessionManager()->getSession(id);
 
@@ -50,7 +50,7 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
 
         return;
     }
-    else if (id.isEmpty()) // start new connection
+    else // start new connection
     {
         session_ = server()->sessionManager()->getNewSession();
 

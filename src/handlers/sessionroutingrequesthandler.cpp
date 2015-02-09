@@ -13,14 +13,14 @@ SessionRoutingRequestHandler::~SessionRoutingRequestHandler()
 
 bool SessionRoutingRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QString id = UrlQuery(request->url()).queryItemValue("id");
+    QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = server()->sessionManager()->getSession(id);
     return session != NULL && session->doesHandleRequest(request);
 }
 
 void SessionRoutingRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
-    QString id = UrlQuery(request->url()).queryItemValue("id");
+    QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = server()->sessionManager()->getSession(id);
 
     if (session)

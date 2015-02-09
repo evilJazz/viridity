@@ -327,14 +327,12 @@ FileUploadHandler::~FileUploadHandler()
 
 bool FileUploadHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QUrl url(request->url());
-    QString filename = url.path();
-    return filename == "/upload";
+    return request->url().endsWith("/upload");
 }
 
 void FileUploadHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
-    QString id = UrlQuery(request->url()).queryItemValue("id");
+    QString id = ViriditySession::parseIdFromUrl(request->url());
 
     ViriditySession *session = server()->sessionManager()->getSession(id);
 

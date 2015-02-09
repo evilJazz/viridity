@@ -138,7 +138,7 @@ var Viridity = function(options)
                 var options =
                 {
                     type: "POST",
-                    url: v.fullLocation + "/viridity?id=" + v.sessionId,
+                    url: v.fullLocation + "/" + v.sessionId + "/v",
                     async: true,
                     cache: false,
                     timeout: v.timeout,
@@ -182,7 +182,7 @@ var Viridity = function(options)
             var options =
             {
                 type: "GET",
-                url: v.fullLocation + "/viridity?id=" + v.sessionId,
+                url: v.fullLocation + "/" + v.sessionId + "/v",
 
                 async: true,
                 cache: false,
@@ -376,13 +376,15 @@ var Viridity = function(options)
             }
             else if (v.connectionMethod === ConnectionMethod.ServerSentEvents)
             {
-                v.eventSource = new EventSource("events");
+                v.eventSource = new EventSource(v.fullLocation + "/" + v.sessionId + "/v/ev");
                 v.eventSource.onmessage = v._serverSentEventsMessageReceived;
                 v.eventSource.onerror = v.reconnect;
             }
             else if (v.connectionMethod === ConnectionMethod.WebSockets)
             {
-                v.socket = new WebSocket("ws://" + v.location + "/viridity");
+                var ws = (v.fullLocation.indexOf("https:") > -1 ? "wss:" : "ws:");
+
+                v.socket = new WebSocket(ws + "//" + v.location + "/v/ws");
 
                 v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
                 v.socket.onopen = v._sendQueuedMessages;

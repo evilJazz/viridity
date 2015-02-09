@@ -388,24 +388,6 @@ struct MapProcessRect
     QVector<QRect> *additionalSearchAreas;
 };
 
-struct ReduceProcessRect
-{
-    ReduceProcessRect(ImageComparer *comparer) :
-        comparer(comparer)
-    {
-    }
-
-    typedef UpdateOperationList result_type;
-
-    void operator()(UpdateOperationList &list, const UpdateOperation &op)
-    {
-        if (op.type != uotNoOp)
-            list.append(op);
-    }
-
-    ImageComparer *comparer;
-};
-
 void reduceProcessRectToList(UpdateOperationList &list, const UpdateOperation &op)
 {
     if (op.type != uotNoOp)

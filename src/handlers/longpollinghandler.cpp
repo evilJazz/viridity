@@ -30,46 +30,42 @@ LongPollingHandler::~LongPollingHandler()
 
 bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().startsWith("/viridity?");
+    QList<QByteArray> parts = request->url().split('?');
+    return parts.count() > 0 && parts[0].endsWith("/v");
 }
 
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
-    QString id = UrlQuery(request->url()).queryItemValue("id");
+    QString id = ViriditySession::parseIdFromUrl(request->url());
 
     ViriditySession *session = server()->sessionManager()->getSession(id);
 
     if (session)
     {
-        if (request->url().startsWith("/viridity?")) // long polling
+        if (request->method() == "GET") // long polling output
         {
-            if (request->method() == "GET") // long polling output
-            {
-                session_ = server()->sessionManager()->acquireSession(id);
+            session_ = server()->sessionManager()->acquireSession(id);
 
-                response_ = response;
-                connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
+            response_ = response;
+            connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-                connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
-                if (session_->pendingMessagesAvailable())
-                    handleMessagesAvailable();
+            if (session_->pendingMessagesAvailable())
+                handleMessagesAvailable();
 
-                return;
-            }
-            else if (request->method() == "POST") // long polling input
-            {
-                InputPostHandler *handler = new InputPostHandler(request, response, session);
-                connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
-                return;
-            }
+            return;
         }
-
-        return;
+        else if (request->method() == "POST") // long polling input
+        {
+            InputPostHandler *handler = new InputPostHandler(request, response, session);
+            connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+            return;
+        }
     }
-    else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/viridity?")*/) // start new connection
+    else // start new connection
     {
         session = server()->sessionManager()->getNewSession();
 

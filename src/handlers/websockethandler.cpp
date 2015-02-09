@@ -31,7 +31,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 {
     DGUARDMETHODTIMED;
 
-    if (request->url() != "/viridity")
+    if (request->url() != "/v/ws")
     {
         Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
         response.writeHead(404);

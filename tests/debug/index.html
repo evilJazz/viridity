@@ -34,13 +34,13 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            var channel = new Viridity({ connectionMethod: ConnectionMethod.ServerSentEvents });
+            var channel = new Viridity({ connectionMethod: ConnectionMethod.WebSockets });
 
             channel.on("sessionStart", function(sessionId)
             {
                 $("#fileuploader").uploadFile(
                 {
-                    url: "upload?id=" + sessionId,
+                    url: "/" + sessionId + "/upload",
                     fileName: "myfile"
                 });
             });
