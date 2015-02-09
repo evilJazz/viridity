@@ -181,7 +181,8 @@ bool ViriditySession::doesHandleRequest(Tufao::HttpServerRequest *request)
 void ViriditySession::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     foreach (ViridityRequestHandler *handler, requestHandlers_)
-        handler->handleRequest(request, response);
+        if (handler->doesHandleRequest(request))
+            handler->handleRequest(request, response);
 }
 
 void ViriditySession::updateCheckTimerTimeout()

@@ -6,6 +6,7 @@
 
 #include "viriditysessionmanager.h"
 #include "graphicsscenedisplay.h"
+#include "handlers/patchrequesthandler.h"
 
 class MainThreadGateway;
 
@@ -64,6 +65,8 @@ private:
     QTimer cleanupTimer_;
 
     static QList<GraphicsSceneDisplaySessionManager *> activeSessionManagers_;
+
+    PatchRequestHandler *patchRequestHandler_;
 
     MainThreadGateway *mainThreadGateway_;
 };

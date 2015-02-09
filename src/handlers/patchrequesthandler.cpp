@@ -17,7 +17,7 @@ PatchRequestHandler::~PatchRequestHandler()
 bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
-    return server()->sessionManager()->getSession(id) != NULL;
+    return request->url().contains("/p/") && request->url().contains("_") && server()->sessionManager()->getSession(id) != NULL;
 }
 
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)

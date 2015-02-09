@@ -78,7 +78,6 @@ void ViridityConnection::setupConnection()
     webSocketHandler_ = new WebSocketHandler(server_, this);
     sseHandler_ = new SSEHandler(server_, this);
     longPollingHandler_ = new LongPollingHandler(server_, this);
-    patchRequestHandler_ = new PatchRequestHandler(server_, this);
     fileRequestHandler_ = new FileRequestHandler(server_, this);
     sessionRoutingRequestHandler_ = new SessionRoutingRequestHandler(server_, this);
 }
@@ -109,10 +108,6 @@ void ViridityConnection::onRequestReady()
     else if (longPollingHandler_->doesHandleRequest(request))
     {
         longPollingHandler_->handleRequest(request, response);
-    }
-    else if (patchRequestHandler_->doesHandleRequest(request))
-    {
-        patchRequestHandler_->handleRequest(request, response);
     }
     else if (sessionRoutingRequestHandler_->doesHandleRequest(request))
     {

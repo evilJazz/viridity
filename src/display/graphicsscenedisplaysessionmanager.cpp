@@ -41,6 +41,9 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViridityS
     connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
     cleanupTimer_.start(10000);
 
+    patchRequestHandler_ = new PatchRequestHandler(session->sessionManager()->server(), this);
+    session->registerRequestHandler(patchRequestHandler_);
+
     activeSessionManagers_.append(this);
 
     mainThreadGateway_ = new MainThreadGateway();

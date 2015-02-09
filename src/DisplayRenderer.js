@@ -355,7 +355,7 @@
 
                     if (imageData.substring(0,3) === "fb:")
                     {
-                        img.src = v.sessionId + "/" + imageData.substring(3);
+                        img.src = v.sessionId + "/p/" + imageData.substring(3);
                     }
                     else if (imageData.substring(0,4) === "http")
                     {

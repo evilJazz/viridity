@@ -26,7 +26,6 @@
 class WebSocketHandler;
 class SSEHandler;
 class LongPollingHandler;
-class PatchRequestHandler;
 class FileRequestHandler;
 class SessionRoutingRequestHandler;
 
@@ -57,7 +56,6 @@ private:
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
-    PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;
     SessionRoutingRequestHandler *sessionRoutingRequestHandler_;
 
