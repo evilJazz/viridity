@@ -1,7 +1,9 @@
 <RCC>
     <qresource prefix="/qml">
-        <file>test.qml</file>
+        <file>logic.qml</file>
         <file>preview1.qml</file>
         <file>preview2.qml</file>
+        <file alias="test.qml">../../examples/qmlwebviewer/test.qml</file>
+        <file alias="CheckBox.qml">../../examples/qmlwebviewer/CheckBox.qml</file>
     </qresource>
 </RCC>

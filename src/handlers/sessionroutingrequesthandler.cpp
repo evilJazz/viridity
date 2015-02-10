@@ -15,7 +15,7 @@ bool SessionRoutingRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *r
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = server()->sessionManager()->getSession(id);
-    return session != NULL && session->doesHandleRequest(request);
+    return session && session->doesHandleRequest(request);
 }
 
 void SessionRoutingRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)

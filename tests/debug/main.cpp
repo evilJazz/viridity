@@ -66,7 +66,7 @@ void createLogic(ViriditySession *session)
     qmlRegisterType<ViridityDataBridge>("Viridity", 1, 0, "NativeViridityDataBridge");
     qmlRegisterUncreatableType<ViriditySession>("Viridity", 1, 0, "ViriditySession", "Can't create a session out of thin air.");
 
-    QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
+    QDeclarativeComponent component(engine, QUrl("qrc:/qml/logic.qml"));
 
     if (component.status() != QDeclarativeComponent::Ready)
         qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());

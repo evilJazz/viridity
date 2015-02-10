@@ -88,5 +88,7 @@ viridity_use_improved_jpeg {
     LIBS += -ljpeg
 }
 
+QML_IMPORT_PATH += $$VIRIDITY_SRC_PATH/qml/
+
 RESOURCES += \
     $$VIRIDITY_RES_PATH/viridityresources.qrc

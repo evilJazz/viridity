@@ -1,13 +1,13 @@
 <RCC>
     <qresource prefix="/Viridity">
-        <file>ViridityDataBridge.js</file>
-        <file>ViridityDataBridge.qml</file>
-        <file>qmldir</file>
+        <file alias="ViridityDataBridge.js">../src/qml/Viridity/ViridityDataBridge.js</file>
+        <file alias="ViridityDataBridge.qml">../src/qml/Viridity/ViridityDataBridge.qml</file>
+        <file alias="qmldir">../src/qml/Viridity/qmldir</file>
     </qresource>
     <qresource prefix="/Client">
-        <file alias="Viridity.js">../src/Viridity.js</file>
-        <file alias="DataBridge.js">../src/DataBridge.js</file>
-        <file alias="DisplayRenderer.js">../src/DisplayRenderer.js</file>
-        <file alias="jquery.mousewheel.js">../src/jquery.mousewheel.js</file>
+        <file alias="Viridity.js">../src/js/Viridity.js</file>
+        <file alias="DataBridge.js">../src/js/DataBridge.js</file>
+        <file alias="DisplayRenderer.js">../src/js/DisplayRenderer.js</file>
+        <file alias="jquery.mousewheel.js">../src/js/jquery.mousewheel.js</file>
     </qresource>
 </RCC>

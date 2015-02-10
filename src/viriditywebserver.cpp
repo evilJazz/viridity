@@ -97,7 +97,11 @@ void ViridityConnection::onRequestReady()
     if (request->headers().contains("Expect", "100-continue"))
         response->writeContinue();
 
-    if (fileRequestHandler_->doesHandleRequest(request))
+    if (sessionRoutingRequestHandler_->doesHandleRequest(request))
+    {
+        sessionRoutingRequestHandler_->handleRequest(request, response);
+    }
+    else if (fileRequestHandler_->doesHandleRequest(request))
     {
         fileRequestHandler_->handleRequest(request, response);
     }
@@ -108,10 +112,6 @@ void ViridityConnection::onRequestReady()
     else if (longPollingHandler_->doesHandleRequest(request))
     {
         longPollingHandler_->handleRequest(request, response);
-    }
-    else if (sessionRoutingRequestHandler_->doesHandleRequest(request))
-    {
-        sessionRoutingRequestHandler_->handleRequest(request, response);
     }
     else
     {
