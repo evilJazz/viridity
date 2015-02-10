@@ -44,6 +44,8 @@ public:
     bool isUpdateAvailable() const;
     Patch *takePatch(const QString &patchId);
 
+    void requestFullUpdate();
+
 signals:
     void updateAvailable();
 

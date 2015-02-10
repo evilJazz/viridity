@@ -98,22 +98,23 @@ var Viridity = function(options)
         targetCallbacks: {},
 
         callbacks: {
-            sessionStart: []
+            sessionStart: [],
+            sessionReattached: []
         },
 
         on: function(eventName, callback)
         {
-            if (eventName === "sessionStart")
-                v.callbacks.sessionStart.push(callback);
+            if (eventName in v.callbacks)
+                v.callbacks[eventName].push(callback);
         },
 
         off: function(eventName, callback)
         {
-            if (eventName === "sessionStart")
+            if (eventName in v.callbacks)
             {
-                var index = v.callbacks.sessionStart.indexOf(callback);
+                var index = v.callbacks[eventName].indexOf(callback);
                 if (index > -1)
-                    v.callbacks.sessionStart.splice(index, 1);
+                    v.callbacks[eventName].splice(index, 1);
             }
         },
 
@@ -179,10 +180,12 @@ var Viridity = function(options)
 
         _longPollingReceiveOutputMessages: function()
         {
+            var param = !v.inputEventsStarted ? "?a=init" : "";
+
             var options =
             {
                 type: "GET",
-                url: v.fullLocation + "/" + v.sessionId + "/v",
+                url: v.fullLocation + "/" + v.sessionId + "/v" + param,
 
                 async: true,
                 cache: false,
@@ -282,11 +285,17 @@ var Viridity = function(options)
                 v.sessionId = inputParams[0];
                 v._triggerCallback("sessionStart", v.sessionId);
             }
+            else if (t.command === "reattached")
+            {
+                v.sessionId = inputParams[0];
+                v._triggerCallback("sessionReattached", v.sessionId);
+            }
+
         },
 
         sendMessage: function(msg, targetId)
         {
-            if (typeof(targetId) !== "undefined")
+            if (typeof(targetId) !== "undefined" && targetId !== "")
                 msg = targetId + ">" + msg;
 
             if (debugVerbosity > 0)
@@ -329,7 +338,7 @@ var Viridity = function(options)
 
         getCallback: function(targetId)
         {
-            if (v.targetCallbacks.hasOwnProperty(targetId))
+            if (targetId in v.targetCallbacks)
                 return v.targetCallbacks[targetId];
             else
                 return false;
@@ -337,7 +346,7 @@ var Viridity = function(options)
 
         unregisterCallback: function(targetId)
         {
-            if (v.targetCallbacks.hasOwnProperty(targetId))
+            if (targetId in v.targetCallbacks)
             {
                 delete v.targetCallbacks[targetId];
                 return true;
@@ -351,7 +360,7 @@ var Viridity = function(options)
             location.reload(); // For now.
         },
 
-        init: function(connectionMethod)
+        init: function(connectionMethod, sessionId)
         {
             v.connectionMethod = connectionMethod;
 
@@ -363,6 +372,9 @@ var Viridity = function(options)
 
             if (v.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
                 v.connectionMethod = ConnectionMethod.LongPolling;
+
+            if (typeof(sessionId) != "undefined" && sessionId != "")
+                v.sessionId = sessionId;
 
             v.fullLocation = window.location.href.replace(/\/$/, "");
             console.log("v.fullLocation: " + v.fullLocation);
@@ -384,7 +396,7 @@ var Viridity = function(options)
             {
                 var ws = (v.fullLocation.indexOf("https:") > -1 ? "wss:" : "ws:");
 
-                v.socket = new WebSocket(ws + "//" + v.location + "/v/ws");
+                v.socket = new WebSocket(ws + "//" + v.location + "/" + v.sessionId + "/v/ws");
 
                 v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
                 v.socket.onopen = v._sendQueuedMessages;
@@ -394,7 +406,7 @@ var Viridity = function(options)
         }
     }
 
-    v.init(options.connectionMethod);
+    v.init(options.connectionMethod, options.sessionId);
 
     return v;
 };

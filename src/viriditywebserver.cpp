@@ -48,6 +48,13 @@ ViridityConnection::~ViridityConnection()
     DGUARDMETHODTIMED;
 }
 
+void ViridityConnection::addNoCachingResponseHeaders(Tufao::HttpServerResponse *response)
+{
+    response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate");
+    response->headers().insert("Pragma", "no-cache");
+    response->headers().insert("Expires", "0");
+}
+
 void ViridityConnection::setupConnection()
 {
     DGUARDMETHODTIMED;

@@ -31,29 +31,47 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 {
     DGUARDMETHODTIMED;
 
-    if (request->url() != "/v/ws")
+    if (request->url().endsWith("/v/ws"))
     {
-        Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
-        response.writeHead(404);
-        response.end("Not found");
-        request->socket()->close();
+        QString id = ViriditySession::parseIdFromUrl(request->url());
+
+        ViriditySession *session = server()->sessionManager()->getSession(id);
+
+        if (session)
+        {
+            session_ = server()->sessionManager()->acquireSession(id);
+
+            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
+
+            socket_->startServerHandshake(request, head);
+
+            QString info = "reattached(" + session_->id() + ")";
+            socket_->sendMessage(info.toUtf8().constData());
+        }
+        else
+        {
+            session_ = server()->sessionManager()->getNewSession();
+
+            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
+
+            socket_->startServerHandshake(request, head);
+
+            QString info = "info(" + session_->id() + ")";
+            socket_->sendMessage(info.toUtf8().constData());
+        }
+
         return;
     }
 
-    session_ = server()->sessionManager()->getNewSession();
-
-    connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
-
-    socket_->startServerHandshake(request, head);
-
-    QString info = "info(" + session_->id() + ")";
-    socket_->sendMessage(info.toUtf8().constData());
+    Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
+    response.writeHead(404);
+    response.end("Not found");
+    request->socket()->close();
 }
 
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QString id = ViriditySession::parseIdFromUrl(request->url());
-    return server()->sessionManager()->getSession(id) != NULL;
+    return request->url().endsWith("/v/ws");
 }
 
 void WebSocketHandler::handleMessagesAvailable()

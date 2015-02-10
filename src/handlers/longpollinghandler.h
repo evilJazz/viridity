@@ -28,6 +28,8 @@ private:
     ViriditySession *session_;
 
     Tufao::HttpServerResponse *response_;
+
+    void pushMessageAndEnd(Tufao::HttpServerResponse *response, const QByteArray &msg);
 };
 
 #endif // LONGPOLLINGHANDLER_H

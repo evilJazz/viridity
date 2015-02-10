@@ -394,6 +394,14 @@ bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QSt
     );
 }
 
+void GraphicsSceneDisplay::requestFullUpdate()
+{
+    QMetaObject::invokeMethod(
+        renderer_, "fullUpdate",
+        renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+    );
+}
+
 bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     DGUARDMETHODTIMED;
@@ -405,10 +413,7 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
             this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else if (message.startsWith("requestFullUpdate"))
-        QMetaObject::invokeMethod(
-            renderer_, "fullUpdate",
-            renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
-        );
+        requestFullUpdate();
     else if (message.startsWith("resize"))
     {
         QString command;

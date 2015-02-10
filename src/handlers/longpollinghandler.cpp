@@ -46,15 +46,28 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     {
         if (request->method() == "GET") // long polling output
         {
-            session_ = server()->sessionManager()->acquireSession(id);
+            if (request->url().contains("?a=init"))
+            {
+                session = server()->sessionManager()->acquireSession(id);
 
-            response_ = response;
-            connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
+                QByteArray info = "reattached(" + session->id().toLatin1() + ")";
 
-            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+                server()->sessionManager()->releaseSession(session);
 
-            if (session_->pendingMessagesAvailable())
-                handleMessagesAvailable();
+                pushMessageAndEnd(response, info);
+            }
+            else
+            {
+                session_ = server()->sessionManager()->acquireSession(id);
+
+                response_ = response;
+                connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
+
+                connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+
+                if (session_->pendingMessagesAvailable())
+                    handleMessagesAvailable();
+            }
 
             return;
         }
@@ -71,15 +84,11 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
 
         DPRINTF("NEW DISPLAY: %s", session->id().toLatin1().constData());
 
-        QString info = "info(" + session->id() + ")";
+        QByteArray info = "info(" + session->id().toLatin1() + ")";
 
         server()->sessionManager()->releaseSession(session);
 
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", "text/plain; charset=utf8");
-        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response->headers().insert("Pragma", "no-cache");
-        response->end(info.toUtf8());
+        pushMessageAndEnd(response, info);
 
         return;
     }
@@ -103,11 +112,7 @@ void LongPollingHandler::handleMessagesAvailable()
         foreach (const QByteArray &message, messages)
             out += message + "\n";
 
-        response_->writeHead(Tufao::HttpServerResponse::OK);
-        response_->headers().insert("Content-Type", "text/plain; charset=utf8");
-        response_->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response_->headers().insert("Pragma", "no-cache");
-        response_->end(out);
+        pushMessageAndEnd(response_, out);
     }
 }
 
@@ -116,5 +121,13 @@ void LongPollingHandler::handleResponseDestroyed()
     DGUARDMETHODTIMED;
 
     response_ = NULL;
+}
+
+void LongPollingHandler::pushMessageAndEnd(Tufao::HttpServerResponse *response, const QByteArray &msg)
+{
+    response->writeHead(Tufao::HttpServerResponse::OK);
+    response->headers().insert("Content-Type", "text/plain; charset=utf8");
+    ViridityConnection::addNoCachingResponseHeaders(response);
+    response->end(msg);
 }
 

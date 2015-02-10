@@ -45,6 +45,12 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
         session_ = server()->sessionManager()->acquireSession(id);
         setUpResponse(response);
 
+        QString info = "data: reattached(" + session_->id() + ")\n\n";
+
+        setUpResponse(response);
+        response_->write(info.toUtf8());
+        response_->flush();
+
         if (session_->pendingMessagesAvailable())
             handleMessagesAvailable();
 
@@ -74,7 +80,7 @@ void SSEHandler::setUpResponse(Tufao::HttpServerResponse *response)
     response_ = response;
 
     response_->headers().insert("Content-Type", "text/event-stream");
-    response_->headers().insert("Cache-Control", "no-cache");
+    ViridityConnection::addNoCachingResponseHeaders(response_);
     response_->writeHead(Tufao::HttpServerResponse::OK);
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));

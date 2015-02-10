@@ -1,6 +1,6 @@
 (function($)
 {
-    $.fn.viridity = function(viridityChannel, sceneId)
+    $.fn.viridity = function(viridityChannel, targetId, sceneId)
     {
         var containerElement = this;
 
@@ -475,10 +475,10 @@
 
             init: function()
             {
-                dr.targetId = v.registerCallback(dr._messageCallback);
+                dr.targetId = v.registerCallback(dr._messageCallback, targetId);
                 dr.sceneId = sceneId;
 
-                v.sendMessage("newDisplay(" + dr.targetId + "," + dr.sceneId + ")");
+                v.sendMessage("newDisplay(" + dr.sceneId + ")", dr.targetId);
 
                 dr.fullLocation = window.location.href.replace(/\/$/, "");
                 if (debugVerbosity > 0)

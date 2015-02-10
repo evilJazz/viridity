@@ -102,7 +102,7 @@ bool GraphicsSceneDisplaySessionManager::canHandleMessage(const QByteArray &mess
 {
     QMutexLocker l(&displayMutex_);
     return
-        (targetId.isEmpty() && message.startsWith("newDisplay")) ||
+        message.startsWith("newDisplay") ||
         (displays_.contains(targetId) && static_cast<ViridityMessageHandler *>(displays_.value(targetId))->canHandleMessage(message, sessionId, targetId));
 }
 
@@ -111,7 +111,9 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
     DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
 
-    if (targetId.isEmpty())
+    GraphicsSceneDisplay *display = getDisplay(targetId);
+
+    if (!display)
     {
         QString command;
         QStringList params;
@@ -121,9 +123,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
         if (command.startsWith("newDisplay"))
         {
             QStringList modParams = params;
-            QString id = modParams.takeFirst();
-
-            GraphicsSceneDisplay *display = getNewDisplay(id, modParams);
+            GraphicsSceneDisplay *display = getNewDisplay(targetId, modParams);
 
             if (display)
             {
@@ -135,12 +135,22 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
     }
     else
     {
-        GraphicsSceneDisplay *display = acquireDisplay(targetId);
+        display = acquireDisplay(targetId);
         if (display)
         {
-            bool result = static_cast<ViridityMessageHandler *>(display)->handleMessage(message, sessionId, targetId);
-            releaseDisplay(display);
-            return result;
+            // Are we reattaching?
+            if (message.startsWith("newDisplay"))
+            {
+                // Ignore all params and send full update...
+                display->requestFullUpdate();
+                return true;
+            }
+            else
+            {
+                bool result = static_cast<ViridityMessageHandler *>(display)->handleMessage(message, sessionId, targetId);
+                releaseDisplay(display);
+                return result;
+            }
         }
     }
 
