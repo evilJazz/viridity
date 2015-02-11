@@ -98,7 +98,8 @@ var Viridity = function(options)
 
         callbacks: {
             sessionStart: [],
-            sessionReattached: []
+            sessionReattached: [],
+            sessionInUse: []
         },
 
         on: function(eventName, callback)
@@ -289,7 +290,11 @@ var Viridity = function(options)
                 v.sessionId = inputParams[0];
                 v._triggerCallback("sessionReattached", v.sessionId);
             }
-
+            else if (t.command === "inuse")
+            {
+                v.sessionId = inputParams[0];
+                v._triggerCallback("sessionInUse", v.sessionId);
+            }
         },
 
         sendMessage: function(msg, targetId)

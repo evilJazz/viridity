@@ -42,17 +42,27 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
 
     if (session)
     {
-        session_ = server()->sessionManager()->acquireSession(id);
-        setUpResponse(response);
+        if (session->useCount == 0)
+        {
+            session_ = server()->sessionManager()->acquireSession(id);
+            QString msg = "data: reattached(" + session_->id() + ")\n\n";
 
-        QString info = "data: reattached(" + session_->id() + ")\n\n";
+            setUpResponse(response);
+            response_->write(msg.toUtf8());
+            response_->flush();
 
-        setUpResponse(response);
-        response_->write(info.toUtf8());
-        response_->flush();
+            if (session_->pendingMessagesAvailable())
+                handleMessagesAvailable();
+        }
+        else
+        {
+            session_ = NULL;
+            QString info = "data: inuse(" + session->id() + ")\n\n";
 
-        if (session_->pendingMessagesAvailable())
-            handleMessagesAvailable();
+            setUpResponse(response);
+            response_->write(info.toUtf8());
+            response_->flush();
+        }
 
         return;
     }
@@ -85,7 +95,8 @@ void SSEHandler::setUpResponse(Tufao::HttpServerResponse *response)
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-    connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+    if (session_)
+        connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 }
 
 void SSEHandler::handleMessagesAvailable()

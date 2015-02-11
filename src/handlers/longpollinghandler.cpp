@@ -48,13 +48,20 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
         {
             if (request->url().contains("?a=init"))
             {
-                session = server()->sessionManager()->acquireSession(id);
+                QByteArray msg;
 
-                QByteArray info = "reattached(" + session->id().toLatin1() + ")";
+                if (session->useCount == 0)
+                {
+                    session = server()->sessionManager()->acquireSession(id);
+                    msg = "reattached(" + session->id().toLatin1() + ")";
+                    server()->sessionManager()->releaseSession(session);
+                }
+                else
+                {
+                    msg = "inuse(" + session->id().toLatin1() + ")";
+                }
 
-                server()->sessionManager()->releaseSession(session);
-
-                pushMessageAndEnd(response, info);
+                pushMessageAndEnd(response, msg);
             }
             else
             {

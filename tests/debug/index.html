@@ -42,7 +42,7 @@
         $(document).ready(function() {
             var channel = new Viridity({ connectionMethod: ConnectionMethod.LongPolling, sessionId: $.cookie("vsessionId") });
 
-            var initScene = function(sessionId)
+            var initSession = function(sessionId)
             {
                 $.cookie("vsessionId", sessionId);
 
@@ -51,61 +51,65 @@
                     url: "/" + sessionId + "/upload",
                     fileName: "myfile"
                 });
+
+                var display1 = $("#displayContainer1").viridity(channel, "display1", "test");
+                var display2 = $("#displayContainer2").viridity(channel, "display2", "preview1");
+                var display3 = $("#displayContainer3").viridity(channel, "display3", "preview2");
+
+                var dataBridge1 = new DataBridge(channel, "data1");
+                var dataBridge2 = new DataBridge(channel, "data2");
+                var dataBridgeScene1 = new DataBridge(channel, "sceneData1");
+
+                dataBridge1.onNewDataReceived = function (input)
+                {
+                    console.dir(input);
+                    alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
+                    return "TEST1";
+                }
+
+                dataBridge2.onNewDataReceived = function (input)
+                {
+                    console.dir(input);
+                    alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
+                    return "TEST2";
+                }
+
+                dataBridgeScene1.onNewDataReceived = function (input)
+                {
+                    console.dir(input);
+                    alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
+                    return "TEST1";
+                }
+
+                $("#testInputButton1").click(function()
+                {
+                    dataBridge1.sendData({ blah: "test1", ghu: 12343142.22 }, function (response)
+                    {
+                        console.dir(response);
+                        alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
+                    });
+                });
+
+                $("#testInputButton2").click(function()
+                {
+                    dataBridge2.sendData({ blah: "test2", ghu: 12343142.22 }, function (response)
+                    {
+                        console.dir(response);
+                        alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
+                    });
+                });
+
+                $("#showDetail1").click(function()
+                {
+                    window.location = "detail1.html";
+                });
             };
 
-            channel.on("sessionStart", initScene);
-            channel.on("sessionReattached", initScene);
-
-            var display1 = $("#displayContainer1").viridity(channel, "display1", "test");
-            var display2 = $("#displayContainer2").viridity(channel, "display2", "preview1");
-            var display3 = $("#displayContainer3").viridity(channel, "display3", "preview2");
-
-            var dataBridge1 = new DataBridge(channel, "data1");
-            var dataBridge2 = new DataBridge(channel, "data2");
-            var dataBridgeScene1 = new DataBridge(channel, "sceneData1");
-
-            dataBridge1.onNewDataReceived = function (input)
+            channel.on("sessionStart", initSession);
+            channel.on("sessionReattached", initSession);
+            channel.on("sessionInUse", function(sessionId)
             {
-                console.dir(input);
-                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
-                return "TEST1";
-            }
-
-            dataBridge2.onNewDataReceived = function (input)
-            {
-                console.dir(input);
-                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
-                return "TEST2";
-            }
-
-            dataBridgeScene1.onNewDataReceived = function (input)
-            {
-                console.dir(input);
-                alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
-                return "TEST1";
-            }
-
-            $("#testInputButton1").click(function()
-            {
-                dataBridge1.sendData({ blah: "test1", ghu: 12343142.22 }, function (response)
-                {
-                    console.dir(response);
-                    alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
-                });
-            });
-
-            $("#testInputButton2").click(function()
-            {
-                dataBridge2.sendData({ blah: "test2", ghu: 12343142.22 }, function (response)
-                {
-                    console.dir(response);
-                    alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
-                });
-            });
-
-            $("#showDetail1").click(function()
-            {
-                window.location = "detail1.html";
+                alert("This session is already in use.");
             });
         });
     </script>

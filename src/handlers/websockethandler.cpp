@@ -39,14 +39,26 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 
         if (session)
         {
-            session_ = server()->sessionManager()->acquireSession(id);
+            QString msg;
 
-            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
+            if (session->useCount == 0)
+            {
+                session_ = server()->sessionManager()->acquireSession(id);
 
-            socket_->startServerHandshake(request, head);
+                connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
-            QString info = "reattached(" + session_->id() + ")";
-            socket_->sendMessage(info.toUtf8().constData());
+                socket_->startServerHandshake(request, head);
+
+                msg = "reattached(" + session_->id() + ")";
+            }
+            else
+            {
+                socket_->startServerHandshake(request, head);
+
+                msg = "inuse(" + session->id() + ")";
+            }
+
+            socket_->sendMessage(msg.toUtf8().constData());
         }
         else
         {
