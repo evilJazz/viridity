@@ -56,6 +56,7 @@ ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const Q
     updateCheckInterval_(10),
     dispatchMutex_(QMutex::Recursive)
 {
+    DGUARDMETHODTIMED;
     updateCheckTimer_ = new QTimer(this);
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
     updateCheckTimer_->setSingleShot(false);
@@ -64,7 +65,7 @@ ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const Q
 
 ViriditySession::~ViriditySession()
 {
-
+    DGUARDMETHODTIMED;
 }
 
 bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
@@ -232,7 +233,7 @@ ViriditySessionManager::ViriditySessionManager(QObject *parent) :
 {
     DGUARDMETHODTIMED;
     connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
-    cleanupTimer_.start(10000);
+    cleanupTimer_.start(5000);
 }
 
 ViriditySessionManager::~ViriditySessionManager()

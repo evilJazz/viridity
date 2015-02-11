@@ -16,6 +16,7 @@ class ViridityMessageHandler;
 class ViriditySession : public QObject, public ViridityRequestHandler
 {
     Q_OBJECT
+    Q_PROPERTY(QString id READ id CONSTANT)
 public:
     explicit ViriditySession(ViriditySessionManager *sessionManager, const QString &id);
     virtual ~ViriditySession();

@@ -109,6 +109,7 @@ int main(int argc, char *argv[])
 
     FileRequestHandler::publishFileGlobally("/", ":/index.html", "text/html; charset=utf8");
     FileRequestHandler::publishFileGlobally("/index.html", ":/index.html", "text/html; charset=utf8");
+    FileRequestHandler::publishFileGlobally("/detail1.html", ":/detail1.html", "text/html; charset=utf8");
     FileRequestHandler::publishFileGlobally("/testimages/backtile.png", ":/testimages/backtile.png", "image/png");
 
     FileRequestHandler::publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");

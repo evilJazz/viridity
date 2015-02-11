@@ -396,10 +396,15 @@ bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QSt
 
 void GraphicsSceneDisplay::requestFullUpdate()
 {
+    QMutexLocker l(&patchesMutex_);
+    clearPatches();
+
     QMetaObject::invokeMethod(
         renderer_, "fullUpdate",
         renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
     );
+
+    clientReady();
 }
 
 bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)

@@ -62,5 +62,5 @@ QtObjectWithChildren {
         //testTimer.start();
     }
 
-    Component.onDestruction: console.log("GOODBYE WORLD!")
+    Component.onDestruction: console.log("Logic of session " + currentSession.id + " destroyed!")
 }

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>QGraphicsScene Web Controller</title>
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+    body {
+        margin: 0;
+    }
+
+    #displayContainer1 {
+        height: 600px;
+    }
+    </style>
+
+    <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+
+    <script src="Viridity.js"></script>
+    <script src="DataBridge.js"></script>
+    <script src="DisplayRenderer.js"></script>
+
+    <link href="http://hayageek.github.io/jQuery-Upload-File/uploadfile.min.css" rel="stylesheet">
+    <script src="http://hayageek.github.io/jQuery-Upload-File/jquery.uploadfile.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var channel = new Viridity({ connectionMethod: ConnectionMethod.LongPolling, sessionId: $.cookie("vsessionId") });
+
+            var initScene = function(sessionId)
+            {
+                $.cookie("vsessionId", sessionId);
+
+                $("#fileuploader").uploadFile(
+                {
+                    url: "/" + sessionId + "/upload",
+                    fileName: "myfile"
+                });
+            };
+
+            channel.on("sessionStart", initScene);
+            channel.on("sessionReattached", initScene);
+
+            var display1 = $("#displayContainer1").viridity(channel, "display1", "test");
+
+            $("#showIndex").click(function()
+            {
+                window.location = "index.html";
+            });
+        });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+
+      <div class="page-header">
+        <h1>Viridity test</h1>
+        <p class="lead">Lorem ipsum dolor sit amet.</p>
+      </div>
+
+      <div class="row">
+        <div id="fileuploader">Upload</div>
+      </div>
+
+      <div class="row">
+        <div id="displayContainer1"></div>
+        <button class="btn btn-default" type="submit" id="showIndex">Back</button>
+      </div>
+    </div>
+  </body>
+</html>

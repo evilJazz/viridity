@@ -15,4 +15,6 @@ Image {
             console.log(JSON.stringify(files));
         }
     }
+
+    Component.onDestruction: console.log("Instance of preview1.qml destroyed!")
 }

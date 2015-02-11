@@ -5,5 +5,6 @@
     </qresource>
     <qresource prefix="/">
         <file alias="index.html">../debug/index.html</file>
+        <file alias="detail1.html">../debug/detail1.html</file>
     </qresource>
 </RCC>

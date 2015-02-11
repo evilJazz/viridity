@@ -43,4 +43,6 @@ Item {
         height: 100
         color: "red"
     }
+
+    Component.onDestruction: console.log("Instance of preview2.qml destroyed!")
 }

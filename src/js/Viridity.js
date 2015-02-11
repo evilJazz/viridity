@@ -74,7 +74,6 @@ if (!Array.prototype.indexOf) {
 var Viridity = function(options)
 {
     var debugVerbosity = 0;
-    var originHref = window.location.href;
 
     var v =
     {
@@ -360,7 +359,7 @@ var Viridity = function(options)
             location.reload(); // For now.
         },
 
-        init: function(connectionMethod, sessionId)
+        init: function(connectionMethod, sessionId, originUri)
         {
             v.connectionMethod = connectionMethod;
 
@@ -376,11 +375,24 @@ var Viridity = function(options)
             if (typeof(sessionId) != "undefined" && sessionId != "")
                 v.sessionId = sessionId;
 
-            v.fullLocation = window.location.href.replace(/\/$/, "");
-            console.log("v.fullLocation: " + v.fullLocation);
+            var parser;
+            if (typeof(originUri) !== "undefined")
+            {
+                parser = document.createElement('a');
+                parser.href = originUri;
+            }
+            else
+                parser = window.location;
 
-            var hostWithPath = window.location.host + window.location.pathname;
+            var pathnameNoFilename = String(parser.pathname);
+            pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/"));
+
+            var hostWithPath = parser.host + pathnameNoFilename;
             v.location = hostWithPath.replace(/\/$/, "");
+            v.fullLocation = parser.protocol + "//" + v.location;
+
+            console.log("v.location: " + v.location);
+            console.log("v.fullLocation: " + v.fullLocation);
 
             if (v.connectionMethod === ConnectionMethod.LongPolling)
             {
@@ -406,7 +418,7 @@ var Viridity = function(options)
         }
     }
 
-    v.init(options.connectionMethod, options.sessionId);
+    v.init(options.connectionMethod, options.sessionId, options.originUri);
 
     return v;
 };
