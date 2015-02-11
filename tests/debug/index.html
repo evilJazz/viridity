@@ -98,18 +98,18 @@
                         alert("Response received: " + response + "\nas JSON: " + JSON.stringify(response));
                     });
                 });
-
-                $("#showDetail1").click(function()
-                {
-                    window.location = "detail1.html";
-                });
             };
 
             channel.on("sessionStart", initSession);
             channel.on("sessionReattached", initSession);
             channel.on("sessionInUse", function(sessionId)
             {
-                alert("This session is already in use.");
+                alert("This session is already in use in another tab or window.");
+            });
+
+            $("#showDetail1").click(function()
+            {
+                window.location = "detail1.html";
             });
         });
     </script>

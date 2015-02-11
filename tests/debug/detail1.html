@@ -37,6 +37,8 @@
             {
                 $.cookie("vsessionId", sessionId);
 
+                var display1 = $("#displayContainer1").viridity(channel, "display1", "test");
+
                 $("#fileuploader").uploadFile(
                 {
                     url: "/" + sessionId + "/upload",
@@ -46,8 +48,10 @@
 
             channel.on("sessionStart", initScene);
             channel.on("sessionReattached", initScene);
-
-            var display1 = $("#displayContainer1").viridity(channel, "display1", "test");
+            channel.on("sessionInUse", function(sessionId)
+            {
+                alert("This session is already in use in another tab or window.");
+            });
 
             $("#showIndex").click(function()
             {
