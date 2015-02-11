@@ -384,16 +384,6 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
     return messageList;
 }
 
-bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
-{
-    return targetId == id_ && (
-        message.startsWith("ready") ||
-        message.startsWith("requestFullUpdate") ||
-        message.startsWith("resize") ||
-        static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId)
-    );
-}
-
 void GraphicsSceneDisplay::requestFullUpdate()
 {
     QMutexLocker l(&patchesMutex_);
@@ -405,6 +395,17 @@ void GraphicsSceneDisplay::requestFullUpdate()
     );
 
     clientReady();
+}
+
+bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+{
+    return targetId == id_ && (
+        message.startsWith("ready") ||
+        message.startsWith("requestFullUpdate") ||
+        message.startsWith("resize") ||
+        message.startsWith("keepAlive") ||
+        static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId)
+    );
 }
 
 bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)

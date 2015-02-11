@@ -24,6 +24,8 @@
             pendingPatchesCount: 0,
             frameCommands: [],
 
+            keepAliveInterval: 60000,
+
             frontCanvas: 0,
             frontCtx: 0,
 
@@ -75,6 +77,11 @@
             requestFullUpdate: function()
             {
                 v.sendMessage("requestFullUpdate()", dr.targetId);
+            },
+
+            _sendKeepAlive: function()
+            {
+                v.sendMessage("keepAlive()", dr.targetId);
             },
 
             createDebugOverlay: function()
@@ -637,6 +644,9 @@
                 $(dr.frontCanvas).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
                 $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
                 $(dr.frontCanvas).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
+
+                // Finally set up keep alive...
+                setInterval(dr._sendKeepAlive, dr.keepAliveInterval);
             }
         }
 

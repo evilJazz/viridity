@@ -43,12 +43,15 @@ protected:
 
 protected slots:
     friend class MainThreadGateway;
-    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params) = 0; // Always executed in thread of session manager
+    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params) = 0; // Always executed in thread of qApp
+    virtual void tearDownDisplayInstance(GraphicsSceneDisplay *display); // Always executed in thread of qApp
 
 private slots:
     void killObsoleteDisplays();
+    void killAllDisplays();
 
     void handleDisplayUpdateAvailable();
+    void handleSessionDestroyed();
 
 private:
     ViriditySession *session_;
@@ -98,7 +101,10 @@ public:
 
 protected slots:
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params);
+    virtual void tearDownDisplayInstance(GraphicsSceneDisplay *display);
+
     virtual QGraphicsScene *getScene(const QString &id, const QStringList &params) = 0;
+    virtual void tearDownScene(const QString &id, QGraphicsScene *scene);
 };
 
 #endif // GRAPHICSSCENEDISPLAYSESSIONMANAGER_H

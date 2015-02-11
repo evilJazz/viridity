@@ -44,6 +44,9 @@ signals:
     void targetIdChanged();
     void responseChanged();
 
+private slots:
+    void handleSessionDestroyed();
+
 private:
     ViriditySession *session_;
     QString targetId_;

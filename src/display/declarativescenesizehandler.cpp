@@ -2,16 +2,20 @@
 
 #include "KCL/debug.h"
 
-DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(const QString &id, QDeclarativeItem *rootItem, QObject *parent) :
+DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, QDeclarativeItem *rootItem, QObject *parent) :
     QObject(parent),
+    session_(session),
     id_(id),
     rootItem_(rootItem)
 {
+    if (session_)
+        session_->registerMessageHandler(this);
 }
 
 DeclarativeSceneSizeHandler::~DeclarativeSceneSizeHandler()
 {
-
+    if (session_)
+        session_->unregisterMessageHandler(this);
 }
 
 bool DeclarativeSceneSizeHandler::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)

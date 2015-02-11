@@ -82,7 +82,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     {
         session = server()->sessionManager()->getNewSession();
 
-        DPRINTF("NEW DISPLAY: %s", session->id().toLatin1().constData());
+        DPRINTF("NEW SESSION: %s", session->id().toLatin1().constData());
 
         QByteArray info = "info(" + session->id().toLatin1() + ")";
 

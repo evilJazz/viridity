@@ -41,6 +41,8 @@ public:
 
     QString id() const { return id_; }
 
+    QGraphicsScene *scene() const { return scene_; }
+
     bool isUpdateAvailable() const;
     Patch *takePatch(const QString &patchId);
 

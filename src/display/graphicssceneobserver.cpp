@@ -19,7 +19,6 @@ GraphicsSceneObserver::GraphicsSceneObserver(QObject *parent) :
 GraphicsSceneObserver::~GraphicsSceneObserver()
 {
     DGUARDMETHODTIMED;
-    setEnabled(false);
 }
 
 void GraphicsSceneObserver::setTargetGraphicsScene(QGraphicsScene *scene)

@@ -10,7 +10,7 @@ class DeclarativeSceneSizeHandler : public QObject, public ViridityMessageHandle
 {
     Q_OBJECT
 public:
-    explicit DeclarativeSceneSizeHandler(const QString &id, QDeclarativeItem *rootItem, QObject *parent = 0);
+    explicit DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, QDeclarativeItem *rootItem, QObject *parent = 0);
     virtual ~DeclarativeSceneSizeHandler();
 
     QString id() const { return id_; }
@@ -23,6 +23,7 @@ protected:
     Q_INVOKABLE bool localHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
 private:
+    ViriditySession *session_;
     QString id_;
     QDeclarativeItem *rootItem_;
 };

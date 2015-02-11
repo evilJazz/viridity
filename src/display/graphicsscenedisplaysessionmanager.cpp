@@ -25,6 +25,12 @@ public:
         return display;
     }
 
+    Q_INVOKABLE void tearDownDisplayInstance(GraphicsSceneDisplay *display)
+    {
+        DGUARDMETHODTIMED;
+        manager->tearDownDisplayInstance(display);
+    }
+
     GraphicsSceneDisplaySessionManager *manager;
 };
 
@@ -41,20 +47,40 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViridityS
     connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
     cleanupTimer_.start(10000);
 
-    patchRequestHandler_ = new PatchRequestHandler(session->sessionManager()->server(), this);
-    session->registerRequestHandler(patchRequestHandler_);
-
     activeSessionManagers_.append(this);
 
     mainThreadGateway_ = new MainThreadGateway();
     mainThreadGateway_->manager = this;
     mainThreadGateway_->moveToThread(qApp->thread());
+
+    patchRequestHandler_ = new PatchRequestHandler(session->sessionManager()->server(), this);
+    session->registerRequestHandler(patchRequestHandler_);
+    session->registerMessageHandler(this);
+
+    connect(session, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
 }
 
 GraphicsSceneDisplaySessionManager::~GraphicsSceneDisplaySessionManager()
 {
-    activeSessionManagers_.removeAll(this);
     DGUARDMETHODTIMED;
+    QMutexLocker l(&displayMutex_);
+
+    if (session_)
+    {
+        session_->unregisterMessageHandler(this);
+        session_->unregisterRequestHandler(patchRequestHandler_);
+    }
+
+    activeSessionManagers_.removeAll(this);
+
+    killAllDisplays();
+
+    delete mainThreadGateway_;
+}
+
+void GraphicsSceneDisplaySessionManager::handleSessionDestroyed()
+{
+    session_ = NULL;
 }
 
 GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay(const QString &id, const QStringList &params)
@@ -95,7 +121,17 @@ void GraphicsSceneDisplaySessionManager::removeDisplay(GraphicsSceneDisplay *dis
     displays_.remove(display->id());
     displayResources_.remove(display);
 
-    metaObject()->invokeMethod(display, "deleteLater");
+    metaObject()->invokeMethod(
+        mainThreadGateway_, "tearDownDisplayInstance",
+        mainThreadGateway_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        Q_ARG(GraphicsSceneDisplay *, display)
+    );
+
+    delete display;
+}
+
+void GraphicsSceneDisplaySessionManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
+{
 }
 
 bool GraphicsSceneDisplaySessionManager::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -129,6 +165,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
             {
                 connect(display, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));
                 session_->dispatchMessageToClient("done()", targetId);
+                releaseDisplay(display);
                 return true;
             }
         }
@@ -143,6 +180,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
             {
                 // Ignore all params and send full update...
                 display->requestFullUpdate();
+                releaseDisplay(display);
                 return true;
             }
             else
@@ -212,10 +250,21 @@ void GraphicsSceneDisplaySessionManager::killObsoleteDisplays()
     QMutexLocker l(&displayMutex_);
 
     foreach (const DisplayResource &res, displayResources_.values())
-        if (res.useCount == 0 && res.lastUsed.elapsed() > 5000)
+    {
+        if (res.useCount == 0 && res.lastUsed.elapsed() > 120000)
+        {
             removeDisplay(res.display);
+        }
+    }
 }
 
+void GraphicsSceneDisplaySessionManager::killAllDisplays()
+{
+    QMutexLocker l(&displayMutex_);
+
+    foreach (const DisplayResource &res, displayResources_.values())
+        removeDisplay(res.display);
+}
 
 /* SingleGraphicsSceneDisplaySessionManager */
 
@@ -249,9 +298,18 @@ GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInst
     ci->setTargetGraphicsScene(scene);
 
     GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, scene, ci);
-    connect(display, SIGNAL(destroyed()), scene, SLOT(deleteLater()));
 
     return display;
+}
+
+void MultiGraphicsSceneDisplaySessionManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
+{
+    tearDownScene(display->id(), display->scene());
+}
+
+void MultiGraphicsSceneDisplaySessionManager::tearDownScene(const QString &id, QGraphicsScene *scene)
+{
+    delete scene;
 }
 
 #include "graphicsscenedisplaysessionmanager.moc" // for MainThreadGateway

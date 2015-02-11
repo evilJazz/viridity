@@ -15,6 +15,12 @@ ViridityDataBridge::ViridityDataBridge(QObject *parent) :
 
 ViridityDataBridge::~ViridityDataBridge()
 {
+    unregisterHandler();
+}
+
+void ViridityDataBridge::handleSessionDestroyed()
+{
+    session_ = NULL;
 }
 
 void ViridityDataBridge::setSession(ViriditySession *session)
@@ -48,13 +54,19 @@ int ViridityDataBridge::getNewResponseId()
 void ViridityDataBridge::registerHandler()
 {
     if (session_)
+    {
         session_->registerMessageHandler(this);
+        connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
+    }
 }
 
 void ViridityDataBridge::unregisterHandler()
 {
     if (session_)
+    {
+        disconnect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()));
         session_->unregisterMessageHandler(this);
+    }
 }
 
 QVariant ViridityDataBridge::sendData(const QString &command, const QString &destinationSessionId)

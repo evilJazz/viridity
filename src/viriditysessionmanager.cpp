@@ -434,7 +434,7 @@ void ViriditySessionManager::killExpiredSessions()
     QMutexLocker l(&sessionMutex_);
 
     foreach (ViriditySession *session, sessions_.values())
-        if (session->useCount == 0 && session->lastUsed.elapsed() > 5000)
+        if (session->useCount == 0 && session->lastUsed.elapsed() > 600000)
             removeSession(session);
 }
 

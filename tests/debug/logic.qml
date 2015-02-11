@@ -59,8 +59,10 @@ QtObjectWithChildren {
 
     Component.onCompleted:
     {
-        //testTimer.start();
+        sessionId = currentSession.id;
     }
 
-    Component.onDestruction: console.log("Logic of session " + currentSession.id + " destroyed!")
+    property string sessionId
+
+    Component.onDestruction: console.log("Logic of session " + sessionId + " destroyed!")
 }

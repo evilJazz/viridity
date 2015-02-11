@@ -40,13 +40,19 @@ protected slots:
 
         QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
 
-        DeclarativeSceneSizeHandler *sizeHandler = new DeclarativeSceneSizeHandler(id, item, item);
-        session()->registerMessageHandler(sizeHandler);
+        // Install message handler for resize() commands on the item...
+        new DeclarativeSceneSizeHandler(session(), id, item, item);
 
         QGraphicsScene *scene = new QGraphicsScene(engine);
         scene->addItem(item);
 
         return scene;
+    }
+
+    virtual void tearDownScene(const QString &id, QGraphicsScene *scene)
+    {
+        // RUNS IN MAIN THREAD!
+        delete scene;
     }
 };
 
@@ -55,7 +61,7 @@ void createLogic(ViriditySession *session)
     // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
 
     DGUARDMETHODTIMED;
-    QDeclarativeEngine *engine = new QDeclarativeEngine();
+    QDeclarativeEngine *engine = new QDeclarativeEngine(); // Will hang here if you have QML debugging enabled and debugger was previously attached...
 
     KCLPlugin *kcl = new KCLPlugin;
     kcl->initializeEngine(engine, "KCL");
@@ -76,16 +82,17 @@ void createLogic(ViriditySession *session)
     if (!instance)
         qFatal("Could not create instance of component.");
 
-    FileUploadHandler *fileUploadHandler = new FileUploadHandler(session->sessionManager()->server(), session);
-    session->registerRequestHandler(fileUploadHandler);
+    QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
+
+    // Add handlers...
+    FileUploadHandler *fileUploadHandler = new FileUploadHandler(session, session);
     engine->rootContext()->setContextProperty("fileUploadHandler", fileUploadHandler);
 
     MySceneDisplaySessionManager *displaySessionManager = new MySceneDisplaySessionManager(session, session);
     displaySessionManager->engine = engine;
-    session->registerMessageHandler(displaySessionManager);
 
     session->logic = instance;
-    QObject::connect(session->logic, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
+    QObject::connect(session, SIGNAL(destroyed()), instance, SLOT(deleteLater()));
 }
 
 class MySingleSessionManager : public SingleLogicSessionManager

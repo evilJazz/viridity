@@ -6,6 +6,8 @@
 #include <QDir>
 #include "KCL/filesystemutils.h"
 
+#include "viriditysessionmanager.h"
+
 /* FileUploadDataHandler */
 
 class FileUploadDataHandler : public QObject
@@ -316,13 +318,28 @@ private:
 /* FileUploadHandler */
 
 FileUploadHandler::FileUploadHandler(ViridityWebServer *server, QObject *parent) :
-    ViridityBaseRequestHandler(server, parent)
+    ViridityBaseRequestHandler(server, parent),
+    session_(NULL)
 {
+}
+
+FileUploadHandler::FileUploadHandler(ViriditySession *session, QObject *parent) :
+    ViridityBaseRequestHandler(session->sessionManager()->server(), parent),
+    session_(session)
+{
+    session_->registerRequestHandler(this);
+    connect(session, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
 }
 
 FileUploadHandler::~FileUploadHandler()
 {
+    if (session_)
+        session_->unregisterRequestHandler(this);
+}
 
+void FileUploadHandler::handleSessionDestroyed()
+{
+    session_ = NULL;
 }
 
 bool FileUploadHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
