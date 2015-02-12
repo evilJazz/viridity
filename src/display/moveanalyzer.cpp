@@ -1,8 +1,6 @@
 #include "moveanalyzer.h"
 #include "imagecomparer.h"
 
-#include <QtConcurrentFilter>
-
 //#define DIAGNOSTIC_OUTPUT
 #include "KCL/debug.h"
 
@@ -19,6 +17,10 @@
 #ifdef SHOW_MOVEANALYZER_DEBUGVIEW
 #include "private/moveanalyzerdebugview.h"
 #undef USE_MULTITHREADING
+#endif
+
+#ifdef USE_MULTITHREADING
+#include <QtConcurrentFilter>
 #endif
 
 /* AreaFingerPrint */

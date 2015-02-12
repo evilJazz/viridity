@@ -26,7 +26,6 @@ public:
 protected slots:
     virtual void sceneAttached();
     virtual void sceneChanged(QList<QRectF> rects);
-    virtual void sceneSceneRectChanged(QRectF newRect);
     virtual void sceneDetaching();
     virtual void sceneDetached();
     virtual void sceneDestroyed();

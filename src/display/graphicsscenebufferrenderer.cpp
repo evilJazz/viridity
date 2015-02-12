@@ -10,6 +10,13 @@
 //#define DIAGNOSTIC_OUTPUT
 #include "KCL/debug.h"
 
+/* GraphicsSceneBufferRendererLocker */
+
+GraphicsSceneBufferRendererLocker::GraphicsSceneBufferRendererLocker(GraphicsSceneBufferRenderer *renderer) :
+    m_(&renderer->bufferAndRegionMutex_)
+{
+}
+
 /* GraphicsSceneBufferRenderer */
 
 GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
@@ -49,7 +56,7 @@ void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
     minimizeDamageRegion_ = value;
 }
 
-UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
+UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
 {
     DGUARDMETHODTIMED;
     QMutexLocker m(&bufferAndRegionMutex_);
@@ -58,6 +65,11 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
 
     DTIMERINIT(paintTimer);
     QPainter p(workBuffer_);
+
+    // Properly set up to make eraseRect work the way we expect it to work,
+    // ie. replace with the defined transparent brush instead of merging/blending
+    p.setBackground(QBrush(QColor(255, 255, 255, 0)));
+    p.setCompositionMode(QPainter::CompositionMode_Source);
 
 #ifdef USE_SCENE_DAMAGEREGION
     QVector<QRect> rects = damageRegion_.rects();
@@ -107,67 +119,32 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBufferExt()
     return ops;
 }
 
-/*
-QRegion GraphicsSceneBufferRenderer::updateBuffer()
-{
-    DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferAndRegionMutex_);
-
-    QRegion result;
-    if (minimizeDamageRegion_)
-        result = QRegion();
-    else
-        result = region_;
-
-    QVector<QRect> rects = region_.rects();
-
-    swapWorkBuffer();
-    QPainter p(workBuffer_);
-
-    foreach (const QRect &rect, rects)
-    {
-        p.eraseRect(rect);
-        scene_->render(&p, rect, rect, Qt::IgnoreAspectRatio);
-
-        if (minimizeDamageRegion_)
-        {
-            QList<QRect> minRects = findUpdateRects(&buffer1_, &buffer2_, rect);
-            foreach (const QRect &minRect, minRects)
-                result += minRect;
-        }
-    }
-
-    region_ = TiledRegion();
-    updatesAvailable_ = false;
-
-    return result;
-}
-*/
-
 void GraphicsSceneBufferRenderer::fullUpdate()
 {
     // TODO: This method is inefficient. Optimize!!
     QMutexLocker m(&bufferAndRegionMutex_);
+    otherBuffer_->fill(0);
     workBuffer_->fill(0);
+    workBuffer_->invertPixels(QImage::InvertRgba);
     damageRegion_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
     emitUpdatesAvailable();
 }
 
-void GraphicsSceneBufferRenderer::setSizeFromScene()
+void GraphicsSceneBufferRenderer::setSize(int width, int height)
 {
     DGUARDMETHODFTIMED("GraphicsSceneBufferRenderer: %p", this);
     QMutexLocker m(&bufferAndRegionMutex_);
 
-    int width = scene_->width();
-    int height = scene_->height();
+    if (width == 0 || height == 0)
+        return;
 
     if (buffer1_.width() != width || buffer1_.height() != height)
     {
         if (width != buffer1_.width() || height != buffer1_.height())
-            buffer1_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
+            buffer1_ = QImage(width, height, QImage::Format_ARGB32);
 
         if (width != buffer2_.width() || height != buffer2_.height())
-            buffer2_ = QImage(width, height, QImage::Format_ARGB32_Premultiplied);
+            buffer2_ = QImage(width, height, QImage::Format_ARGB32);
 
         workBuffer_ = &buffer1_;
         otherBuffer_ = &buffer2_;
@@ -178,14 +155,16 @@ void GraphicsSceneBufferRenderer::setSizeFromScene()
     }
 }
 
-void GraphicsSceneBufferRenderer::sceneAttached()
+void GraphicsSceneBufferRenderer::setSizeFromScene()
 {
-    setSizeFromScene();
+    int width = scene_->width();
+    int height = scene_->height();
+
+    setSize(width, height);
 }
 
-void GraphicsSceneBufferRenderer::sceneSceneRectChanged(QRectF newRect)
+void GraphicsSceneBufferRenderer::sceneAttached()
 {
-    //qDebug("Scene rect changed!");
     setSizeFromScene();
 }
 
@@ -245,4 +224,3 @@ void GraphicsSceneBufferRenderer::emitUpdatesAvailable()
     updatesAvailable_ = true;
     emit damagedRegionAvailable();
 }
-

@@ -1,8 +1,0 @@
-<RCC>
-    <qresource prefix="/webcontrol">
-        <file alias="index.html">../src/index.html</file>
-        <file alias="displayRenderer.js">../src/displayRenderer.js</file>
-        <file alias="jquery.mousewheel.js">../src/jquery.mousewheel.js</file>
-        <file>Display.js</file>
-    </qresource>
-</RCC>

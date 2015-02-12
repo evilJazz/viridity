@@ -2,15 +2,17 @@
 #include "moveanalyzer.h"
 #include "tiledregion.h"
 
-#include <QtConcurrentMap>
-
 //#undef DEBUG
 #include "KCL/debug.h"
 
 //#define USE_MOVE_ANALYZER
-#define USE_MOVE_ANALYZER_FINEGRAINED
+//#define USE_MOVE_ANALYZER_FINEGRAINED
 #define USE_FILL_ANALYZER
-//#define USE_MULTITHREADING
+#define USE_MULTITHREADING
+
+#ifdef USE_MULTITHREADING
+#include <QtConcurrentMap>
+#endif
 
 inline uint qHash(const QPoint& p)
 {
@@ -386,24 +388,6 @@ struct MapProcessRect
     QVector<QRect> *additionalSearchAreas;
 };
 
-struct ReduceProcessRect
-{
-    ReduceProcessRect(ImageComparer *comparer) :
-        comparer(comparer)
-    {
-    }
-
-    typedef UpdateOperationList result_type;
-
-    void operator()(UpdateOperationList &list, const UpdateOperation &op)
-    {
-        if (op.type != uotNoOp)
-            list.append(op);
-    }
-
-    ImageComparer *comparer;
-};
-
 void reduceProcessRectToList(UpdateOperationList &list, const UpdateOperation &op)
 {
     if (op.type != uotNoOp)
@@ -520,9 +504,11 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<
             );
     */
 
+#if defined(USE_MOVE_ANALYZER)
     DPRINTF("No move operation found for: %d, %d + %d x %d",
             minRect.left(), minRect.top(), minRect.width(), minRect.height()
             );
+#endif
 
     op.type = uotUpdate;
     op.srcRect = minRect;

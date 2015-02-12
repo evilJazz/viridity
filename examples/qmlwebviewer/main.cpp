@@ -39,14 +39,14 @@ void createScene(ViriditySession *session)
     QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 }
 
-class MySingleSessionManager : public SingleGraphicsSceneDisplaySessionManager
+class MySingleSessionManager : public SingleLogicSessionManager
 {
-    void setScene(ViriditySession *session) { createScene(session); }
+    void setLogic(ViriditySession *session) { createScene(session); }
 };
 
-class MyMultiSessionManager : public MultiGraphicsSceneDisplaySessionManager
+class MyMultiSessionManager : public MultiLogicSessionManager
 {
-    void setScene(ViriditySession *session) { createScene(session); }
+    void setLogic(ViriditySession *session) { createScene(session); }
 };
 
 int main(int argc, char *argv[])

@@ -1,25 +1,93 @@
-#ifndef GRAPHICSSCENEDISPLAYSESSIONMANAGER_H
-#define GRAPHICSSCENEDISPLAYSESSIONMANAGER_H
+#ifndef VIRIDITYSESSIONMANAGER_H
+#define VIRIDITYSESSIONMANAGER_H
 
 #include <QObject>
+#include <QMutex>
 #include <QElapsedTimer>
+#include <QTimer>
+#include <QHash>
 
-#include "graphicsscenedisplay.h"
+#include "viridityrequesthandler.h"
 
+class ViridityWebServer;
 class ViriditySessionManager;
+class ViridityMessageHandler;
 
-struct ViriditySession
+class ViriditySession : public QObject, public ViridityRequestHandler
 {
-    QString id;
+    Q_OBJECT
+    Q_PROPERTY(QString id READ id CONSTANT)
+public:
+    explicit ViriditySession(ViriditySessionManager *sessionManager, const QString &id);
+    virtual ~ViriditySession();
 
-    ViriditySessionManager *sessionManager;
-    QGraphicsScene *scene;
-    GraphicsSceneDisplay *display;
-    GraphicsSceneWebControlCommandInterpreter *commandInterpreter;
-    QList<MessageHandler *> commandHandlers;
+    void registerMessageHandler(ViridityMessageHandler *handler);
+    void unregisterMessageHandler(ViridityMessageHandler *handler);
+
+    void registerRequestHandler(ViridityRequestHandler *handler);
+    void unregisterRequestHandler(ViridityRequestHandler *handler);
+
+    Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message);
+    Q_INVOKABLE void dispatchMessageToClient(const QByteArray &message, const QString &targetId = QString::null);
+
+    bool pendingMessagesAvailable() const;
+    QList<QByteArray> takePendingMessages();
+
+    void handlerIsReadyForDispatch(ViridityMessageHandler *handler);
+
+    ViriditySessionManager *sessionManager() { return sessionManager_; }
+    const QString id() const { return id_; }
+
+    static QString parseIdFromUrl(const QByteArray &url);
+
+    // ViridityRequestHandler
+    virtual bool doesHandleRequest(Tufao::HttpServerRequest *request);
+    virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+
+signals:
+    void newPendingMessagesAvailable();
+
+public:
+    QObject *logic;
 
     QElapsedTimer lastUsed;
     int useCount;
+
+private slots:
+    void updateCheckTimerTimeout();
+
+private:
+    Q_INVOKABLE bool sendMessageToHandlers(const QByteArray &message);
+    Q_INVOKABLE void sendMessageToClient(const QByteArray &message, const QString &targetId);
+
+protected:
+    friend class ViriditySessionManager;
+    ViriditySessionManager *sessionManager_;
+    QString id_;
+
+    QList<ViridityMessageHandler *> messageHandlers_;
+    QList<ViridityRequestHandler *> requestHandlers_;
+
+    mutable QMutex dispatchMutex_;
+    QList<QByteArray> messages_;
+    QList<ViridityMessageHandler *> messageHandlersRequestingMessageDispatch_;
+
+    QTimer *updateCheckTimer_;
+    int updateCheckInterval_;
+    void triggerUpdateCheckTimer();
+};
+
+class ViridityMessageHandler
+{
+public:
+    virtual ~ViridityMessageHandler() {}
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
+
+    virtual QList<QByteArray> takePendingMessages() {}
+
+    static QString takeTargetFromMessage(QByteArray &message);
+    static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
 };
 
 class ViriditySessionManager : public QObject
@@ -29,48 +97,55 @@ public:
     ViriditySessionManager(QObject *parent = 0);
     virtual ~ViriditySessionManager();
 
-    GraphicsSceneDisplay *getNewDisplay();
+    ViriditySession *getNewSession();
 
-    GraphicsSceneDisplay *getDisplay(const QString &id);
+    ViriditySession *getSession(const QString &id);
 
-    GraphicsSceneDisplay *acquireDisplay(const QString &id);
-    void releaseDisplay(GraphicsSceneDisplay *display);
+    ViriditySession *acquireSession(const QString &id);
+    void releaseSession(ViriditySession *display);
 
-    QStringList displaysIds(QGraphicsScene *scene = 0);
+    QStringList sessionIds(QObject *logic = NULL);
 
-    int displayCount() const { return displays_.count(); }
+    int sessionCount() const { return sessions_.count(); }
+
+    Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId = QString::null);
+    Q_INVOKABLE bool dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId);
+    Q_INVOKABLE bool dispatchMessageToClient(const QByteArray &message, const QString &sessionId = QString::null, const QString &targetId = QString::null);
+
+    ViridityWebServer *server() const { return server_; }
+    void setServer(ViridityWebServer *server) { server_ = server; }
 
 signals:
-    void newDisplayCreated(GraphicsSceneDisplay *display);
-    void displayRemoved(GraphicsSceneDisplay *display);
+    void newSessionCreated(ViriditySession *session);
+    void sessionRemoved(ViriditySession *session);
 
 protected:
-    void removeDisplay(GraphicsSceneDisplay *display);
+    void removeSession(ViriditySession *session);
 
-    virtual ViriditySession *createNewSessionInstance();
-    virtual void setScene(ViriditySession *session) = 0;
+    virtual ViriditySession *createNewSessionInstance(const QString &id);
+    virtual void setLogic(ViriditySession *session) = 0;
 
 protected slots:
     virtual void registerHandlers(ViriditySession *session);
     virtual ViriditySession *createSession(const QString &id) = 0; // Always executed in thread of session manager
 
 private slots:
-    void killObsoleteDisplays();
+    void killExpiredSessions();
 
 private:
-    QMutex displayMutex_;
-    QHash<QString, GraphicsSceneDisplay *> displays_;
+    ViridityWebServer *server_;
 
-    QHash<GraphicsSceneDisplay *, ViriditySession *> sessions_;
+    QMutex sessionMutex_;
+    QHash<QString, ViriditySession *> sessions_;
     QTimer cleanupTimer_;
 };
 
-class SingleGraphicsSceneDisplaySessionManager : public ViriditySessionManager
+class SingleLogicSessionManager : public ViriditySessionManager
 {
     Q_OBJECT
 public:
-    SingleGraphicsSceneDisplaySessionManager(QObject *parent = 0);
-    virtual ~SingleGraphicsSceneDisplaySessionManager();
+    SingleLogicSessionManager(QObject *parent = 0);
+    virtual ~SingleLogicSessionManager();
 
 protected slots:
     virtual ViriditySession *createSession(const QString &id);
@@ -79,15 +154,15 @@ private:
     ViriditySession *protoSession_;
 };
 
-class MultiGraphicsSceneDisplaySessionManager : public ViriditySessionManager
+class MultiLogicSessionManager : public ViriditySessionManager
 {
     Q_OBJECT
 public:
-    MultiGraphicsSceneDisplaySessionManager(QObject *parent = 0);
-    virtual ~MultiGraphicsSceneDisplaySessionManager() {}
+    MultiLogicSessionManager(QObject *parent = 0);
+    virtual ~MultiLogicSessionManager() {}
 
 protected slots:
     virtual ViriditySession *createSession(const QString &id);
 };
 
-#endif // GRAPHICSSCENEDISPLAYSESSIONMANAGER_H
+#endif // VIRIDITYSESSIONMANAGER_H

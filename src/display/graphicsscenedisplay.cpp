@@ -12,6 +12,16 @@
 #include <QMutexLocker>
 #include <QUrl>
 
+#define USE_MULTITHREADING
+
+#ifdef USE_MULTITHREADING
+#include <QtConcurrentFilter>
+#endif
+
+#ifdef USE_IMPROVED_JPEG
+#include "private/jpeghandler.h"
+#endif
+
 /* GraphicsSceneDisplay */
 
 GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
@@ -19,7 +29,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     scene_(scene),
     id_(id),
     commandInterpreter_(commandInterpreter),
-    urlMode_(false),
+    urlMode_(true),
     updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),
@@ -56,6 +66,12 @@ GraphicsSceneDisplay::~GraphicsSceneDisplay()
     renderer_ = NULL;
 }
 
+bool GraphicsSceneDisplay::isUpdateAvailable() const
+{
+    QMutexLocker l(&patchesMutex_);
+    return clientReady_ && patches_.count() == 0 && updateAvailable_;
+}
+
 void GraphicsSceneDisplay::clearPatches()
 {
     DGUARDMETHODTIMED;
@@ -86,35 +102,10 @@ Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
     }
 }
 
-bool GraphicsSceneDisplay::handleReceivedMessage(const QByteArray &message)
-{
-    bool result = true;
-
-    if (message.startsWith("ready"))
-        QMetaObject::invokeMethod(
-            this, "clientReady",
-            this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
-        );
-    else if (message.startsWith("requestFullUpdate"))
-        QMetaObject::invokeMethod(
-            renderer_, "fullUpdate",
-            renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
-        );
-    else
-        QMetaObject::invokeMethod(
-            commandInterpreter_, "dispatchMessage",
-            commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-            Q_RETURN_ARG(bool, result),
-            Q_ARG(const QByteArray &, message),
-            Q_ARG(const QString &, this->id())
-        );
-
-    return result;
-}
-
 void GraphicsSceneDisplay::clientReady()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker l(&patchesMutex_);
     clientReady_ = true;
 
     if (patches_.count() != 0)
@@ -133,17 +124,29 @@ void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
     triggerUpdateCheckTimer();
 }
 
-Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
+Patch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 {
     Patch *patch = new Patch;
 
     patch->rect = rect;
 
-    QImage image(rect.size(), QImage::Format_RGB888);
+    // Account for encoding artifacts...
+    patch->artefactMargin = 8; // block size of JPEG
+
+    QRect rectEnlarged = rect.adjusted(
+        -patch->artefactMargin,
+        -patch->artefactMargin,
+        patch->artefactMargin,
+        patch->artefactMargin
+    );
+
+    //QImage image(rect.size(), QImage::Format_RGB888);
+    QImage image(rectEnlarged.size(), QImage::Format_ARGB32);
+    image.fill(0);
 
     QPainter p;
     p.begin(&image);
-    p.drawImage(0, 0, patchBuffer_, rect.x(), rect.y());
+    p.drawImage(0, 0, renderer_->buffer(), rectEnlarged.x(), rectEnlarged.y());
     p.end();
 
     /*
@@ -167,7 +170,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     }
     //*/
 
-    //*
+    /*
     patch->data.open(QIODevice::ReadWrite);
 
     if (false && image.width() * image.height() > 9 * 9 * renderer_->tileSize() * renderer_->tileSize())
@@ -182,35 +185,53 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect, bool createBase64)
     }
     //*/
 
-    //image = image.convertToFormat(QImage::Format_Indexed8);
-    //image.save(&patch->data, "PNG");
-    //patch->mimeType = "image/png";
+    //    image.save(&patch->data, "JPEG", 50);
+//        patch->mimeType = "image/jpeg";
 
-    //image.save(&patch->data, "BMP"); patch->mimeType = "image/bmp";
+    /*
+    image = image.convertToFormat(QImage::Format_Indexed8);
+    image.save(&patch->data, "PNG");
+    patch->mimeType = "image/png";
+    //*/
+
+    image = createPackedAlphaPatch(image);
+
+#ifdef USE_IMPROVED_JPEG
+    patch->data.open(QIODevice::ReadWrite);
+    writeJPEG(image, &patch->data, 90, true, false);
+#else
+    image.save(&patch->data, "JPEG", 90);
+#endif
+    patch->mimeType = "image/jpeg";
+
+    patch->packedAlpha = true;
 
     patch->data.close();
 
-    if (createBase64)
-    {
-        patch->dataBase64 = patch->data.data().toBase64();
-
-        DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte), base64 size: %d kB (%d byte)",
-                rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
-                image.byteCount() / 1024, image.byteCount(),
-                patch->data.size() / 1024, patch->data.size(),
-                patch->dataBase64.size() / 1024, patch->dataBase64.size()
-                );
-    }
-    else
-    {
-        DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
-                rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.toLatin1().constData(),
-                image.byteCount() / 1024, image.byteCount(),
-                patch->data.size() / 1024, patch->data.size()
-                );
-    }
+    DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
+            rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.constData(),
+            image.byteCount() / 1024, image.byteCount(),
+            patch->data.size() / 1024, patch->data.size()
+            );
 
     return patch;
+}
+
+QImage GraphicsSceneDisplay::createPackedAlphaPatch(const QImage &input)
+{
+    QImage result(input.width(), input.height() * 2, QImage::Format_RGB888);
+    result.fill(0);
+
+    QImage inputWithoutAlpha = input.convertToFormat(QImage::Format_RGB888);
+    QImage alpha = input.alphaChannel();
+
+    QPainter p;
+    p.begin(&result);
+    p.drawImage(0, 0, inputWithoutAlpha);
+    p.drawImage(0, input.height(), alpha);
+    p.end();
+
+    return result;
 }
 
 void GraphicsSceneDisplay::updateCheckTimerTimeout()
@@ -229,15 +250,37 @@ void GraphicsSceneDisplay::updateCheckTimerTimeout()
     }
 }
 
-QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
+#ifdef USE_MULTITHREADING
+struct GraphicsSceneDisplayThreadedCreatePatch
+{
+    GraphicsSceneDisplayThreadedCreatePatch(GraphicsSceneDisplay *display) :
+        display(display)
+    {
+    }
+
+    bool operator()(UpdateOperation *op)
+    {
+        op->data = display->createPatch(op->srcRect);
+        return true;
+    }
+
+    GraphicsSceneDisplay *display;
+};
+#endif
+
+QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 {
     DGUARDMETHODTIMED;
 
-    QStringList messageList;
+    QList<QByteArray> messageList;
+
+    if (!isUpdateAvailable())
+        return messageList;
 
     updateAvailable_ = false;
-    QList<UpdateOperation> ops = renderer_->updateBufferExt();
-    patchBuffer_ = renderer_->buffer();
+
+    GraphicsSceneBufferRendererLocker l(renderer_); // Lock and hold until all patches are created!
+    QList<UpdateOperation> ops = renderer_->updateBuffer();
 
     DPRINTF("Updates available: %d", ops.count());
 
@@ -248,6 +291,20 @@ QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
         DPRINTF("New Frame Number: %d", frame_);
     }
 
+#ifdef USE_MULTITHREADING
+    QList<UpdateOperation *> updateOps;
+
+    for (int i = 0; i < ops.count(); ++i)
+    {
+        UpdateOperation *op = &ops[i];
+        if (op->type == uotUpdate)
+            updateOps.append(op);
+    }
+
+    if (updateOps.count() > 0)
+        QtConcurrent::blockingFilter(updateOps, GraphicsSceneDisplayThreadedCreatePatch(this));
+#endif
+
     for (int i = 0; i < ops.count(); ++i)
     {
         const UpdateOperation &op = ops.at(i);
@@ -256,79 +313,142 @@ QStringList GraphicsSceneDisplay::getMessagesForPendingUpdates()
         {
             const QRect &rect = op.srcRect;
 
-            if (urlMode_)
+            Patch *patch;
+            if (op.data)
+                patch = static_cast<Patch *>(op.data);
+            else
+                patch = createPatch(rect);
+
+            QByteArray mimeType = patch->mimeType + (patch->packedAlpha ? ";pa" : "");
+
+            bool embedData = !urlMode_;
+            //if (patch->data.size() < 10 * 1024)
+            //    embedData = true;
+
+            if (embedData)
+                mimeType = mimeType + ";base64";
+
+            QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%d,%s):",
+                id_.toLatin1().constData(), frame_,
+                rect.x(), rect.y(), rect.width(), rect.height(),
+                patch->artefactMargin,
+                mimeType.constData()
+            );
+
+            if (!embedData)
             {
-                Patch *patch = createPatch(rect, false);
-                patch->id = QString::number(frame_) + "_" + QString::number(i);
-
-                QString msg = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):%s",
-                    frame_,
-                    rect.x(), rect.y(), rect.width(), rect.height(),
-                    patch->mimeType.toLatin1().constData(),
-                    QString("fb:" + id() + "/" + patch->id).toLatin1().constData()
-                );
-
                 QMutexLocker l(&patchesMutex_);
-                patches_.insert(patch->id, patch);
+                patch->id = id_ + "_" + QString::number(frame_) + "_" + QString::number(i);
 
-                messageList += msg;
+                msg += QString("fb:" + patch->id).toLatin1().constData();
+
+                patches_.insert(patch->id, patch);
             }
             else
             {
-                Patch *patch = createPatch(rect, true);
-
-                QString format = patch->mimeType + ";base64";
-                QString msg = QString().sprintf("drawImage(%d,%d,%d,%d,%d,%s):",
-                    frame_,
-                    rect.x(), rect.y(), rect.width(), rect.height(),
-                    format.toLatin1().constData()
-                );
-
-                messageList += msg + patch->dataBase64;
-
+                msg += patch->toBase64();
                 delete patch;
             }
+
+            messageList += msg.toUtf8();
         }
         else if (op.type == uotMove)
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("moveImage(%d,%d,%d,%d,%d,%d,%d):",
-                frame_,
+            QString msg = QString().sprintf("%s>moveImage(%d,%d,%d,%d,%d,%d,%d):",
+                id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.dstPoint.x(), op.dstPoint.y()
             );
 
-            messageList += msg;
+            messageList += msg.toUtf8();
         }
         else if (op.type == uotFill)
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("fillRect(%d,%d,%d,%d,%d,%s):",
-                frame_,
+            QString msg = QString().sprintf("%s>fillRect(%d,%d,%d,%d,%d,%d,%d,%d,%d):",
+                id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
-                op.fillColor.name().toLatin1().constData()
+                op.fillColor.red(), op.fillColor.green(), op.fillColor.blue(), op.fillColor.alpha()
             );
 
-            messageList += msg;
+            messageList += msg.toUtf8();
         }
     }
 
     if (ops.count() > 0)
-        messageList += QString().sprintf("end(%d):", frame_);
-
-    if (additionalMessages_.count() > 0)
-    {
-        messageList += additionalMessages_;
-        additionalMessages_.clear();
-    }
+        messageList += QString().sprintf("%s>end(%d):", id_.toLatin1().constData(), frame_).toUtf8();
 
     return messageList;
 }
 
-void GraphicsSceneDisplay::dispatchAdditionalMessages(const QStringList &messages)
+void GraphicsSceneDisplay::requestFullUpdate()
 {
-    additionalMessages_ += messages;
-    triggerUpdateCheckTimer();
+    QMutexLocker l(&patchesMutex_);
+    clearPatches();
+
+    QMetaObject::invokeMethod(
+        renderer_, "fullUpdate",
+        renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+    );
+
+    clientReady();
+}
+
+bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+{
+    return targetId == id_ && (
+        message.startsWith("ready") ||
+        message.startsWith("requestFullUpdate") ||
+        message.startsWith("resize") ||
+        message.startsWith("keepAlive") ||
+        static_cast<ViridityMessageHandler *>(commandInterpreter_)->canHandleMessage(message, sessionId, targetId)
+    );
+}
+
+bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+{
+    DGUARDMETHODTIMED;
+    bool result = true;
+
+    if (message.startsWith("ready"))
+        QMetaObject::invokeMethod(
+            this, "clientReady",
+            this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
+        );
+    else if (message.startsWith("requestFullUpdate"))
+        requestFullUpdate();
+    else if (message.startsWith("resize"))
+    {
+        QString command;
+        QStringList params;
+
+        ViridityMessageHandler::splitMessage(message, command, params);
+
+        if (params.count() == 2)
+        {
+            int width = params[0].toInt();
+            int height = params[1].toInt();
+
+            QMetaObject::invokeMethod(
+                renderer_, "setSize",
+                renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+                Q_ARG(int, width),
+                Q_ARG(int, height)
+            );
+        }
+    }
+    else
+        QMetaObject::invokeMethod(
+            commandInterpreter_, "handleMessage",
+            commandInterpreter_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+            Q_RETURN_ARG(bool, result),
+            Q_ARG(const QByteArray &, message),
+            Q_ARG(const QString &, sessionId),
+            Q_ARG(const QString &, targetId)
+        );
+
+    return result;
 }

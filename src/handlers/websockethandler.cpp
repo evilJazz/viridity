@@ -6,12 +6,10 @@
 #include "KCL/debug.h"
 
 #include "viriditywebserver.h"
-#include "graphicsscenedisplay.h"
 
-WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent),
-    display_(NULL)
+WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent),
+    session_(NULL)
 {
     DGUARDMETHODTIMED;
     socket_ = new Tufao::WebSocket(this);
@@ -23,8 +21,8 @@ WebSocketHandler::WebSocketHandler(ViridityConnection *parent) :
 
 WebSocketHandler::~WebSocketHandler()
 {
-    if (display_)
-        connection_->server()->sessionManager()->releaseDisplay(display_);
+    if (session_)
+        server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
@@ -33,46 +31,76 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 {
     DGUARDMETHODTIMED;
 
-    if (request->url() != "/display")
+    if (request->url().endsWith("/v/ws"))
     {
-        Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
-        response.writeHead(404);
-        response.end("Not found");
-        request->socket()->close();
+        QString id = ViriditySession::parseIdFromUrl(request->url());
+
+        ViriditySession *session = server()->sessionManager()->getSession(id);
+
+        if (session)
+        {
+            QString msg;
+
+            if (session->useCount == 0)
+            {
+                session_ = server()->sessionManager()->acquireSession(id);
+
+                connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
+
+                socket_->startServerHandshake(request, head);
+
+                msg = "reattached(" + session_->id() + ")";
+            }
+            else
+            {
+                socket_->startServerHandshake(request, head);
+
+                msg = "inuse(" + session->id() + ")";
+            }
+
+            socket_->sendMessage(msg.toUtf8().constData());
+        }
+        else
+        {
+            session_ = server()->sessionManager()->getNewSession();
+
+            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
+
+            socket_->startServerHandshake(request, head);
+
+            QString info = "info(" + session_->id() + ")";
+            socket_->sendMessage(info.toUtf8().constData());
+        }
+
         return;
     }
 
-    display_ = connection_->server()->sessionManager()->getNewDisplay();
-
-    connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()));
-
-    socket_->startServerHandshake(request, head);
-
-    QString info = "info(" + display_->id() + ")";
-    socket_->sendMessage(info.toUtf8().constData());
+    Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
+    response.writeHead(404);
+    response.end("Not found");
+    request->socket()->close();
 }
 
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    QString id = QString(request->url()).mid(1, 40);
-    return connection_->server()->sessionManager()->getDisplay(id) != NULL;
+    return request->url().endsWith("/v/ws");
 }
 
-void WebSocketHandler::handleDisplayUpdateAvailable()
+void WebSocketHandler::handleMessagesAvailable()
 {
-    if (display_ && display_->isUpdateAvailable())
+    if (session_ && session_->pendingMessagesAvailable())
     {
-        QStringList commandList = display_->getMessagesForPendingUpdates();
+        QList<QByteArray> messages = session_->takePendingMessages();
 
-        foreach (QString command, commandList)
-            socket_->sendMessage(command.toLatin1());
+        foreach (const QByteArray &message, messages)
+            socket_->sendMessage(message);
     }
 }
 
 void WebSocketHandler::clientMessageReceived(QByteArray data)
 {
-    if (display_)
-        display_->handleReceivedMessage(data);
+    if (session_)
+        session_->dispatchMessageToHandlers(data);
 }
 
 void WebSocketHandler::clientDisconnected()

@@ -6,26 +6,26 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class ViridityConnection;
-class GraphicsSceneDisplay;
+#include "viridityrequesthandler.h"
 
-class SSEHandler : public QObject
+class ViriditySession;
+
+class SSEHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit SSEHandler(ViridityConnection *parent);
+    explicit SSEHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SSEHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private slots:
-    void handleDisplayUpdateAvailable();
+    void handleMessagesAvailable();
     void handleResponseDestroyed();
 
 private:
-    ViridityConnection *connection_;
-    GraphicsSceneDisplay *display_;
+    ViriditySession *session_;
 
     Tufao::HttpServerResponse *response_;
 

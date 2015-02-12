@@ -1,7 +1,11 @@
 #include "viriditysessionmanager.h"
 
+#include <QStringList>
+
 #include <QUuid>
 #include <QCryptographicHash>
+
+#include <QThread>
 
 //#undef DEBUG
 #include "KCL/debug.h"
@@ -12,13 +16,224 @@ QString createUniqueID()
     return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
 }
 
-ViriditySessionManager::ViriditySessionManager(QObject *parent) :
-    QObject(parent),
-    displayMutex_(QMutex::Recursive)
+
+/* ViridityMessageHandler */
+
+QString ViridityMessageHandler::takeTargetFromMessage(QByteArray &message)
+{
+    QByteArray bm = message.left(message.indexOf("("));
+    int indexOfMarker = bm.indexOf('>');
+
+    if (indexOfMarker > -1)
+    {
+        message.remove(0, indexOfMarker + 1);
+        return bm.left(indexOfMarker);
+    }
+    else
+        return QString::null;
+}
+
+void ViridityMessageHandler::splitMessage(const QByteArray &message, QString &command, QStringList &params)
+{
+    QString rawMsg = message;
+
+    int paramStartIndex = rawMsg.indexOf("(");
+    int paramStopIndex = rawMsg.indexOf(")");
+
+    command = rawMsg.mid(0, paramStartIndex);
+    QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+
+    params = rawParams.split(",", QString::KeepEmptyParts);
+}
+
+
+/* ViriditySession */
+
+ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const QString &id) :
+    QObject(), // No parent since we move this object into different thread later on...
+    sessionManager_(sessionManager),
+    id_(id),
+    updateCheckInterval_(10),
+    dispatchMutex_(QMutex::Recursive)
 {
     DGUARDMETHODTIMED;
-    connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
-    cleanupTimer_.start(10000);
+    updateCheckTimer_ = new QTimer(this);
+    connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
+    updateCheckTimer_->setSingleShot(false);
+    updateCheckTimer_->start(updateCheckInterval_);
+}
+
+ViriditySession::~ViriditySession()
+{
+    DGUARDMETHODTIMED;
+}
+
+bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
+{
+    DGUARDMETHODTIMED;
+
+    QByteArray modMsg = message;
+    QString targetId = ViridityMessageHandler::takeTargetFromMessage(modMsg);
+
+    bool result = false;
+
+    foreach (ViridityMessageHandler *handler, messageHandlers_)
+    {
+        if (handler->canHandleMessage(modMsg, id_, targetId))
+            result = handler->handleMessage(modMsg, id_, targetId);
+    }
+
+    return result;
+}
+
+void ViriditySession::sendMessageToClient(const QByteArray &message, const QString &targetId)
+{
+    QMutexLocker l(&dispatchMutex_);
+
+    if (targetId.isEmpty())
+        messages_ += message;
+    else
+        messages_ += targetId.toUtf8() + ">" + message;
+
+    triggerUpdateCheckTimer();
+}
+
+bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
+{
+    DGUARDMETHODTIMED;
+
+    bool result = false;
+
+    QMetaObject::invokeMethod(
+        this, "sendMessageToHandlers",
+        this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(bool, result),
+        Q_ARG(const QByteArray &, message)
+    );
+
+    return result;
+}
+
+void ViriditySession::dispatchMessageToClient(const QByteArray &message, const QString &targetId)
+{
+    DGUARDMETHODTIMED;
+
+    QMetaObject::invokeMethod(
+        this, "sendMessageToClient",
+        Qt::QueuedConnection,
+        Q_ARG(const QByteArray &, message),
+        Q_ARG(const QString &, targetId)
+    );
+}
+
+bool ViriditySession::pendingMessagesAvailable() const
+{
+    QMutexLocker l(&dispatchMutex_);
+    return messages_.count() > 0 || messageHandlersRequestingMessageDispatch_.count() > 0;
+}
+
+QList<QByteArray> ViriditySession::takePendingMessages()
+{
+    QMutexLocker l(&dispatchMutex_);
+
+    QList<QByteArray> messages = messages_;
+
+    foreach (ViridityMessageHandler *handler, messageHandlersRequestingMessageDispatch_)
+    {
+        messages += handler->takePendingMessages();
+    }
+
+    messages_.clear();
+    messageHandlersRequestingMessageDispatch_.clear();
+
+    return messages;
+}
+
+void ViriditySession::handlerIsReadyForDispatch(ViridityMessageHandler *handler)
+{
+    DGUARDMETHODTIMED;
+    QMutexLocker l(&dispatchMutex_);
+
+    if (!messageHandlersRequestingMessageDispatch_.contains(handler))
+        messageHandlersRequestingMessageDispatch_.append(handler);
+
+    triggerUpdateCheckTimer();
+}
+
+QString ViriditySession::parseIdFromUrl(const QByteArray &url)
+{
+    QString id = url.mid(1, 10);
+    return id;
+}
+
+bool ViriditySession::doesHandleRequest(Tufao::HttpServerRequest *request)
+{
+    bool result = false;
+
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+    {
+        result = handler->doesHandleRequest(request);
+        if (result) break;
+    }
+
+    return result;
+}
+
+void ViriditySession::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+{
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+        if (handler->doesHandleRequest(request))
+            handler->handleRequest(request, response);
+}
+
+void ViriditySession::updateCheckTimerTimeout()
+{
+    DGUARDMETHODTIMED;
+    updateCheckTimer_->stop();
+
+    if (pendingMessagesAvailable())
+        emit newPendingMessagesAvailable();
+}
+
+void ViriditySession::triggerUpdateCheckTimer()
+{
+    if (!updateCheckTimer_->isActive())
+        updateCheckTimer_->start(updateCheckInterval_);
+}
+
+void ViriditySession::registerMessageHandler(ViridityMessageHandler *handler)
+{
+    if (messageHandlers_.indexOf(handler) == -1)
+        messageHandlers_.append(handler);
+}
+
+void ViriditySession::unregisterMessageHandler(ViridityMessageHandler *handler)
+{
+    messageHandlers_.removeAll(handler);
+}
+
+void ViriditySession::registerRequestHandler(ViridityRequestHandler *handler)
+{
+    if (requestHandlers_.indexOf(handler) == -1)
+        requestHandlers_.append(handler);
+}
+
+void ViriditySession::unregisterRequestHandler(ViridityRequestHandler *handler)
+{
+    requestHandlers_.removeAll(handler);
+}
+
+
+/* ViriditySessionManager */
+
+ViriditySessionManager::ViriditySessionManager(QObject *parent) :
+    QObject(parent),
+    server_(NULL),
+    sessionMutex_(QMutex::Recursive)
+{
+    DGUARDMETHODTIMED;
+    connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
+    cleanupTimer_.start(5000);
 }
 
 ViriditySessionManager::~ViriditySessionManager()
@@ -26,184 +241,251 @@ ViriditySessionManager::~ViriditySessionManager()
     DGUARDMETHODTIMED;
 }
 
-GraphicsSceneDisplay *ViriditySessionManager::getNewDisplay()
+ViriditySession *ViriditySessionManager::getNewSession()
 {
     DGUARDMETHODTIMED;
-    QMutexLocker l(&displayMutex_);
+    QMutexLocker l(&sessionMutex_);
 
-    // Create new display instance in thread of session manager...
-    ViriditySession *resources = NULL;
+    // Create new session instance in thread of session manager...
+    ViriditySession *session = NULL;
 
     QMetaObject::invokeMethod(
         this, "createSession",
         this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
-        Q_RETURN_ARG(ViriditySession *, resources),
-        Q_ARG(const QString &, createUniqueID())
+        Q_RETURN_ARG(ViriditySession *, session),
+        Q_ARG(const QString &, createUniqueID().left(10))
     );
 
-    if (resources && resources->display)
+    if (session)
     {
-        displays_.insert(resources->display->id(), resources->display);
+        sessions_.insert(session->id(), session);
 
-        resources->lastUsed.restart();
-        resources->useCount = 1;
+        session->lastUsed.restart();
+        session->useCount = 1;
 
-        sessions_.insert(resources->display, resources);
+        emit newSessionCreated(session);
 
-        emit newDisplayCreated(resources->display);
-
-        return resources->display;
+        return session;
     }
     else
         return NULL;
 }
 
-void ViriditySessionManager::removeDisplay(GraphicsSceneDisplay *display)
+void ViriditySessionManager::removeSession(ViriditySession *session)
 {
-    QMutexLocker l(&displayMutex_);
-    displays_.remove(display->id());
-
-    ViriditySession *resources = sessions_.take(display);
-    delete resources;
-
-    QMetaObject::invokeMethod(display, "deleteLater");
+    QMutexLocker l(&sessionMutex_);
+    sessions_.remove(session->id());
+    QMetaObject::invokeMethod(session, "deleteLater");
 }
 
-ViriditySession *ViriditySessionManager::createNewSessionInstance()
+ViriditySession *ViriditySessionManager::createNewSessionInstance(const QString &id)
 {
-    return new ViriditySession;
+    ViriditySession *session = new ViriditySession(this, id);
+    return session;
 }
 
 void ViriditySessionManager::registerHandlers(ViriditySession *session)
 {
-    session->commandInterpreter->registerHandlers(session->commandHandlers);
 }
 
-GraphicsSceneDisplay *ViriditySessionManager::getDisplay(const QString &id)
+ViriditySession *ViriditySessionManager::getSession(const QString &id)
 {
-    QMutexLocker l(&displayMutex_);
-    if (displays_.contains(id))
-        return displays_[id];
+    QMutexLocker l(&sessionMutex_);
+    if (sessions_.contains(id))
+        return sessions_[id];
 
     return NULL;
 }
 
-GraphicsSceneDisplay *ViriditySessionManager::acquireDisplay(const QString &id)
+ViriditySession *ViriditySessionManager::acquireSession(const QString &id)
 {
-    QMutexLocker l(&displayMutex_);
+    QMutexLocker l(&sessionMutex_);
 
-    GraphicsSceneDisplay *display = getDisplay(id);
+    ViriditySession *session = getSession(id);
 
-    if (display)
+    if (session)
     {
-        ViriditySession *res = sessions_[display];
-        ++res->useCount;
-        res->lastUsed.restart();
+        ++session->useCount;
+        session->lastUsed.restart();
     }
 
-    return display;
+    return session;
 }
 
-void ViriditySessionManager::releaseDisplay(GraphicsSceneDisplay *display)
+void ViriditySessionManager::releaseSession(ViriditySession *session)
 {
-    QMutexLocker l(&displayMutex_);
+    QMutexLocker l(&sessionMutex_);
 
-    if (display)
+    if (session)
     {
-        ViriditySession *res = sessions_[display];
-        --res->useCount;
-        res->lastUsed.restart();
+        --session->useCount;
+        session->lastUsed.restart();
     }
 }
 
-QStringList ViriditySessionManager::displaysIds(QGraphicsScene *scene)
+QStringList ViriditySessionManager::sessionIds(QObject *logic)
 {
-    QMutexLocker l(&displayMutex_);
+    QMutexLocker l(&sessionMutex_);
 
     QStringList result;
 
     foreach (ViriditySession *session, sessions_.values())
     {
-        if (!scene || session->scene == scene)
-            result << session->id;
+        if (!logic || session->logic == logic)
+            result << session->id_;
     }
 
     return result;
 }
 
-void ViriditySessionManager::killObsoleteDisplays()
+bool ViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId)
 {
-    QMutexLocker l(&displayMutex_);
+    QMutexLocker l(&sessionMutex_);
 
-    foreach (ViriditySession *res, sessions_.values())
-        if (res->useCount == 0 && res->lastUsed.elapsed() > 5000)
-            removeDisplay(res->display);
+    bool result = false;
+
+    if (sessionId.isEmpty())
+    {
+        foreach (ViriditySession *session, sessions_.values())
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToHandlers",
+                session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+                Q_RETURN_ARG(bool, result),
+                Q_ARG(const QByteArray &, message)
+            );
+    }
+    else
+    {
+        ViriditySession *session = getSession(sessionId);
+        if (session)
+        {
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToHandlers",
+                session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+                Q_RETURN_ARG(bool, result),
+                Q_ARG(const QByteArray &, message)
+            );
+        }
+    }
+
+    return result;
+}
+
+bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId)
+{
+    QMutexLocker l(&sessionMutex_);
+
+    int dispatched = 0;
+
+    foreach (ViriditySession *session, sessions_.values())
+        if (session->logic == logic)
+        {
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToClient",
+                Qt::QueuedConnection,
+                Q_ARG(const QByteArray &, message),
+                Q_ARG(const QString &, targetId)
+            );
+            ++dispatched;
+        }
+
+    return dispatched > 0;
+}
+
+bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, const QString &sessionId, const QString &targetId)
+{
+    QMutexLocker l(&sessionMutex_);
+
+    int dispatched = 0;
+
+    if (sessionId.isEmpty())
+    {
+        foreach (ViriditySession *session, sessions_.values())
+        {
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToClient",
+                Qt::QueuedConnection,
+                Q_ARG(const QByteArray &, message),
+                Q_ARG(const QString &, targetId)
+            );
+            ++dispatched;
+        }
+    }
+    else
+    {
+        ViriditySession *session = getSession(sessionId);
+        if (session)
+        {
+            QMetaObject::invokeMethod(
+                session, "dispatchMessageToClient",
+                Qt::QueuedConnection,
+                Q_ARG(const QByteArray &, message),
+                Q_ARG(const QString &, targetId)
+            );
+            ++dispatched;
+        }
+    }
+
+    return dispatched > 0;
+}
+
+void ViriditySessionManager::killExpiredSessions()
+{
+    QMutexLocker l(&sessionMutex_);
+
+    foreach (ViriditySession *session, sessions_.values())
+        if (session->useCount == 0 && session->lastUsed.elapsed() > 600000)
+            removeSession(session);
 }
 
 
 /* SingleGraphicsSceneDisplaySessionManager */
 
-SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(QObject *parent) :
+SingleLogicSessionManager::SingleLogicSessionManager(QObject *parent) :
     ViriditySessionManager(parent),
     protoSession_(NULL)
 {
 }
 
-SingleGraphicsSceneDisplaySessionManager::~SingleGraphicsSceneDisplaySessionManager()
+SingleLogicSessionManager::~SingleLogicSessionManager()
 {
     if (protoSession_)
-        delete protoSession_;
+        protoSession_->deleteLater();
 }
 
-ViriditySession *SingleGraphicsSceneDisplaySessionManager::createSession(const QString &id)
+ViriditySession *SingleLogicSessionManager::createSession(const QString &id)
 {
     DGUARDMETHODTIMED;
 
     if (!protoSession_)
     {
-        protoSession_ = createNewSessionInstance();
-        protoSession_->id = id;
-        protoSession_->sessionManager = this;
-
-        setScene(protoSession_);
-        protoSession_->scene->setParent(this);
-
-        protoSession_->commandInterpreter = new GraphicsSceneWebControlCommandInterpreter(protoSession_->scene);
-        protoSession_->commandInterpreter->setTargetGraphicsScene(protoSession_->scene);
-
+        protoSession_ = createNewSessionInstance(id);
+        setLogic(protoSession_);
         registerHandlers(protoSession_);
     }
 
-    ViriditySession *session = createNewSessionInstance();
-    *session = *protoSession_;
-
-    session->id = id;
-    session->display = new GraphicsSceneDisplay(id, protoSession_->scene, protoSession_->commandInterpreter);
+    ViriditySession *session = createNewSessionInstance(id);
+    session->logic = protoSession_->logic;
+    registerHandlers(session);
 
     return session;
 }
 
 /* MultiGraphicsSceneDisplaySessionManager */
 
-MultiGraphicsSceneDisplaySessionManager::MultiGraphicsSceneDisplaySessionManager(QObject *parent) :
+MultiLogicSessionManager::MultiLogicSessionManager(QObject *parent) :
     ViriditySessionManager(parent)
 {
 
 }
 
-ViriditySession *MultiGraphicsSceneDisplaySessionManager::createSession(const QString &id)
+ViriditySession *MultiLogicSessionManager::createSession(const QString &id)
 {
-    ViriditySession *session = createNewSessionInstance();
-    session->id = id;
-    session->sessionManager = this;
+    DGUARDMETHODTIMED;
+    ViriditySession *session = createNewSessionInstance(id);
+    setLogic(session);
 
-    setScene(session);
-
-    session->commandInterpreter = new GraphicsSceneWebControlCommandInterpreter(session->scene);
-    session->commandInterpreter->setTargetGraphicsScene(session->scene);
-
-    session->display = new GraphicsSceneDisplay(id, session->scene, session->commandInterpreter);
-    connect(session->display, SIGNAL(destroyed()), session->scene, SLOT(deleteLater()));
+    connect(session, SIGNAL(destroyed()), session->logic, SLOT(deleteLater()));
 
     registerHandlers(session);
 

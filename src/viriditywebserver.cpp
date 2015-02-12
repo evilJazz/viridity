@@ -16,17 +16,15 @@
 #include <QMutexLocker>
 #include <QUrl>
 
-#include "graphicsscenedisplay.h"
-
-#include "handlers/graphicssceneinputposthandler.h"
-#include "handlers/commandposthandler.h"
+#include "handlers/inputposthandler.h"
 #include "handlers/websockethandler.h"
 #include "handlers/ssehandler.h"
 #include "handlers/longpollinghandler.h"
 #include "handlers/patchrequesthandler.h"
 #include "handlers/filerequesthandler.h"
+#include "handlers/sessionroutingrequesthandler.h"
 
-/* GraphicsSceneWebServerThread */
+/* ViridityConnection */
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 ViridityConnection::ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor) :
@@ -37,7 +35,7 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDesc
     webSocketHandler_(NULL),
     sseHandler_(NULL),
     longPollingHandler_(NULL),
-    patchRequestHandler_(NULL),
+//    patchRequestHandler_(NULL),
     fileRequestHandler_(NULL),
     server_(parent),
     socketDescriptor_(socketDescriptor)
@@ -48,6 +46,13 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDesc
 ViridityConnection::~ViridityConnection()
 {
     DGUARDMETHODTIMED;
+}
+
+void ViridityConnection::addNoCachingResponseHeaders(Tufao::HttpServerResponse *response)
+{
+    response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate");
+    response->headers().insert("Pragma", "no-cache");
+    response->headers().insert("Expires", "0");
 }
 
 void ViridityConnection::setupConnection()
@@ -77,15 +82,11 @@ void ViridityConnection::setupConnection()
 
     connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 
-    webSocketHandler_ = new WebSocketHandler(this);
-    sseHandler_ = new SSEHandler(this);
-    longPollingHandler_ = new LongPollingHandler(this);
-    patchRequestHandler_ = new PatchRequestHandler(this);
-    fileRequestHandler_ = new FileRequestHandler(this);
-    fileRequestHandler_->insertFileInformation("/", ":/webcontrol/index.html", "text/html; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/index.html", ":/webcontrol/index.html", "text/html; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/displayRenderer.js", ":/webcontrol/displayRenderer.js", "application/javascript; charset=utf8");
-    fileRequestHandler_->insertFileInformation("/jquery.mousewheel.js", ":/webcontrol/jquery.mousewheel.js", "application/javascript; charset=utf8");
+    webSocketHandler_ = new WebSocketHandler(server_, this);
+    sseHandler_ = new SSEHandler(server_, this);
+    longPollingHandler_ = new LongPollingHandler(server_, this);
+    fileRequestHandler_ = new FileRequestHandler(server_, this);
+    sessionRoutingRequestHandler_ = new SessionRoutingRequestHandler(server_, this);
 }
 
 void ViridityConnection::onRequestReady()
@@ -103,7 +104,11 @@ void ViridityConnection::onRequestReady()
     if (request->headers().contains("Expect", "100-continue"))
         response->writeContinue();
 
-    if (fileRequestHandler_->doesHandleRequest(request))
+    if (sessionRoutingRequestHandler_->doesHandleRequest(request))
+    {
+        sessionRoutingRequestHandler_->handleRequest(request, response);
+    }
+    else if (fileRequestHandler_->doesHandleRequest(request))
     {
         fileRequestHandler_->handleRequest(request, response);
     }
@@ -114,10 +119,6 @@ void ViridityConnection::onRequestReady()
     else if (longPollingHandler_->doesHandleRequest(request))
     {
         longPollingHandler_->handleRequest(request, response);
-    }
-    else if (patchRequestHandler_->doesHandleRequest(request))
-    {
-        patchRequestHandler_->handleRequest(request, response);
     }
     else
     {
@@ -141,7 +142,8 @@ ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *se
     sessionManager_(sessionManager),
     incomingConnectionCount_(0)
 {
-    connect(sessionManager_, SIGNAL(newDisplayCreated(GraphicsSceneDisplay*)), this, SLOT(newDisplayCreated(GraphicsSceneDisplay*)));
+    sessionManager_->setServer(this);
+    connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(newSessionCreated(ViriditySession*)));
 }
 
 ViridityWebServer::~ViridityWebServer()
@@ -157,17 +159,17 @@ ViridityWebServer::~ViridityWebServer()
     }
 
     // the thread can't have a parent then...
-    foreach (QThread* t, displayThreads_)
+    foreach (QThread* t, sessionThreads_)
         t->quit();
 
-    foreach (QThread* t, displayThreads_)
+    foreach (QThread* t, sessionThreads_)
     {
         t->wait();
         delete t;
     }
 }
 
-void ViridityWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
+bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
 {
     connectionThreads_.reserve(threadsNumber);
 
@@ -179,11 +181,11 @@ void ViridityWebServer::listen(const QHostAddress &address, quint16 port, int th
 
     for (int i = 0; i < threadsNumber; ++i)
     {
-        displayThreads_.append(new QThread(this));
-        displayThreads_.at(i)->start();
+        sessionThreads_.append(new QThread(this));
+        sessionThreads_.at(i)->start();
     }
 
-    QTcpServer::listen(address, port);
+    return QTcpServer::listen(address, port);
 }
 
 ViriditySessionManager *ViridityWebServer::sessionManager()
@@ -191,15 +193,15 @@ ViriditySessionManager *ViridityWebServer::sessionManager()
     return sessionManager_;
 }
 
-void ViridityWebServer::newDisplayCreated(GraphicsSceneDisplay *display)
+void ViridityWebServer::newSessionCreated(ViriditySession *session)
 {
     DGUARDMETHODTIMED;
 
-    int threadIndex = sessionManager_->displayCount() % displayThreads_.count();
-    QThread *workerThread = displayThreads_.at(threadIndex);
-    display->moveToThread(workerThread); // Move display to thread's event loop
+    int threadIndex = sessionManager_->sessionCount() % sessionThreads_.count();
+    QThread *workerThread = sessionThreads_.at(threadIndex);
+    session->moveToThread(workerThread); // Move session to thread's event loop
 
-    DPRINTF("New worker thread %p for display id %s", workerThread, display->id().toLatin1().constData());
+    DPRINTF("New worker thread %p for session id %s", workerThread, session->id().toLatin1().constData());
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -218,4 +220,3 @@ void ViridityWebServer::incomingConnection(int handle)
 
     QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
 }
-

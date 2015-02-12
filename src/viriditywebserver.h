@@ -1,5 +1,5 @@
-#ifndef GRAPHICSSCENEWEBCONTROL_H
-#define GRAPHICSSCENEWEBCONTROL_H
+#ifndef VIRIDITYWEBSERVER_H
+#define VIRIDITYWEBSERVER_H
 
 #include "viridity_global.h"
 
@@ -12,20 +12,24 @@
 #include <QMutex>
 #include <QWaitCondition>
 
-#include <QGraphicsScene>
+#include <QUrl>
 
-#include "graphicsscenewebcontrolcommandinterpreter.h"
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    #include <QUrlQuery>
+    #define UrlQuery(...) QUrlQuery(QUrl(__VA_ARGS__))
+#else
+    #define UrlQuery(...) QUrl(__VA_ARGS__)
+#endif
 
 #include "viriditysessionmanager.h"
 
 class WebSocketHandler;
 class SSEHandler;
 class LongPollingHandler;
-class PatchRequestHandler;
 class FileRequestHandler;
+class SessionRoutingRequestHandler;
 
 class ViridityWebServer;
-class GraphicsSceneDisplay;
 
 class ViridityConnection : public QObject
 {
@@ -41,6 +45,8 @@ public:
 
     ViridityWebServer *server() { return server_; }
 
+    static void addNoCachingResponseHeaders(Tufao::HttpServerResponse *response);
+
 public slots:
     void setupConnection();
 
@@ -52,8 +58,8 @@ private:
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
-    PatchRequestHandler *patchRequestHandler_;
     FileRequestHandler *fileRequestHandler_;
+    SessionRoutingRequestHandler *sessionRoutingRequestHandler_;
 
     ViridityWebServer *server_;
 
@@ -71,7 +77,7 @@ public:
     explicit ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager);
     virtual ~ViridityWebServer();
 
-    void listen(const QHostAddress &address, quint16 port, int threadsNumber);
+    bool listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
     ViriditySessionManager *sessionManager();
 
@@ -83,7 +89,7 @@ protected:
 #endif
 
 private slots:
-    void newDisplayCreated(GraphicsSceneDisplay *display);
+    void newSessionCreated(ViriditySession *session);
 
 private:
     ViriditySessionManager *sessionManager_;
@@ -91,7 +97,7 @@ private:
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;
 
-    QList<QThread *> displayThreads_;
+    QList<QThread *> sessionThreads_;
 };
 
-#endif // GRAPHICSSCENEWEBCONTROL_H
+#endif // VIRIDITYWEBSERVER_H

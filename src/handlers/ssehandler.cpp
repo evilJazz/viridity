@@ -8,64 +8,71 @@
 #include <QStringList>
 
 #include "viriditywebserver.h"
-#include "graphicsscenedisplay.h"
-#include "graphicssceneinputposthandler.h"
-#include "commandposthandler.h"
 
 #undef DEBUG
 #include "KCL/debug.h"
 
-SSEHandler::SSEHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent),
-    display_(NULL)
+SSEHandler::SSEHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent),
+    session_(NULL)
 {
     DGUARDMETHODTIMED;
 }
 
 SSEHandler::~SSEHandler()
 {
-    if (display_)
-        connection_->server()->sessionManager()->releaseDisplay(display_);
+    if (session_)
+        server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
 
 bool SSEHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().startsWith("/events");
+    return request->url().endsWith("/v/ev");
 }
 
 void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
-    QString url(request->url());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    QString id = QUrlQuery(QUrl(request->url())).queryItemValue("id");
-#else
-    QString id = QUrl(request->url()).queryItemValue("id");
-#endif
+    QString id = ViriditySession::parseIdFromUrl(request->url());
 
-    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->getDisplay(id);
+    ViriditySession *session = server()->sessionManager()->getSession(id);
 
-    if (display)
+    if (session)
     {
-        display_ = connection_->server()->sessionManager()->acquireDisplay(id);
-        setUpResponse(response);
+        if (session->useCount == 0)
+        {
+            session_ = server()->sessionManager()->acquireSession(id);
+            QString msg = "data: reattached(" + session_->id() + ")\n\n";
 
-        if (display_->isUpdateAvailable())
-            handleDisplayUpdateAvailable();
+            setUpResponse(response);
+            response_->write(msg.toUtf8());
+            response_->flush();
+
+            if (session_->pendingMessagesAvailable())
+                handleMessagesAvailable();
+        }
+        else
+        {
+            session_ = NULL;
+            QString info = "data: inuse(" + session->id() + ")\n\n";
+
+            setUpResponse(response);
+            response_->write(info.toUtf8());
+            response_->flush();
+        }
 
         return;
     }
-    else if (id.isEmpty()) // start new connection
+    else // start new connection
     {
-        display_ = connection_->server()->sessionManager()->getNewDisplay();
+        session_ = server()->sessionManager()->getNewSession();
 
-        DPRINTF("NEW DISPLAY: %s", display_->id().toLatin1().constData());
+        DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
 
-        QString info = "data: info(" + display_->id() + ")\n\n";
+        QString info = "data: info(" + session_->id() + ")\n\n";
 
         setUpResponse(response);
         response_->write(info.toUtf8());
@@ -83,26 +90,26 @@ void SSEHandler::setUpResponse(Tufao::HttpServerResponse *response)
     response_ = response;
 
     response_->headers().insert("Content-Type", "text/event-stream");
-    response_->headers().insert("Cache-Control", "no-cache");
+    ViridityConnection::addNoCachingResponseHeaders(response_);
     response_->writeHead(Tufao::HttpServerResponse::OK);
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-    connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+    if (session_)
+        connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 }
 
-void SSEHandler::handleDisplayUpdateAvailable()
+void SSEHandler::handleMessagesAvailable()
 {
     DGUARDMETHODTIMED;
 
-    if (response_ && display_ && display_->isUpdateAvailable())
+    if (response_ && session_ && session_->pendingMessagesAvailable())
     {
-        QStringList commandList = display_->getMessagesForPendingUpdates();
+        QList<QByteArray> messages = session_->takePendingMessages();
 
         QByteArray out;
-
-        foreach (const QString &command, commandList)
-            out += "data: " + command.toUtf8() + "\n";
+        foreach (const QByteArray &message, messages)
+            out += "data: " + message + "\n";
 
         response_->write(out + "\n");
         response_->flush();

@@ -17,8 +17,6 @@
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-class ViridityWebServer;
-
 /* Patch */
 
 class Patch
@@ -26,12 +24,15 @@ class Patch
 public:
     QString id;
     QRect rect;
+    int artefactMargin;
     QBuffer data;
-    QString mimeType;
-    QByteArray dataBase64;
+    QByteArray mimeType;
+    bool packedAlpha;
+
+    QByteArray toBase64() const { return data.data().toBase64(); }
 };
 
-class GraphicsSceneDisplay : public QObject
+class GraphicsSceneDisplay : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
 public:
@@ -40,18 +41,21 @@ public:
 
     QString id() const { return id_; }
 
-    bool isUpdateAvailable() const { return clientReady_ && patches_.count() == 0 && updateAvailable_; }
+    QGraphicsScene *scene() const { return scene_; }
+
+    bool isUpdateAvailable() const;
     Patch *takePatch(const QString &patchId);
 
-    bool handleReceivedMessage(const QByteArray &message);
-
-    QStringList getMessagesForPendingUpdates();
-
-public slots:
-    void dispatchAdditionalMessages(const QStringList &messages);
+    void requestFullUpdate();
 
 signals:
     void updateAvailable();
+
+protected:
+    // ViridityMessageHandler
+    virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
+    virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
+    virtual QList<QByteArray> takePendingMessages();
 
 private slots:
     void sceneDamagedRegionsAvailable();
@@ -76,15 +80,14 @@ private:
     bool clientReady_;
 
     QHash<QString, Patch *> patches_;
-    QImage patchBuffer_;
-    QMutex patchesMutex_;
+    mutable QMutex patchesMutex_;
 
-    QStringList additionalMessages_;
-
-    Patch *createPatch(const QRect &rect, bool createBase64);
+    friend class GraphicsSceneDisplayThreadedCreatePatch;
+    Patch *createPatch(const QRect &rect);
     void clearPatches();
 
     void triggerUpdateCheckTimer();
+    QImage createPackedAlphaPatch(const QImage &input);
 };
 
 #endif // GRAPHICSSCENEDISPLAY_H

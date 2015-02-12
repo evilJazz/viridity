@@ -1,7 +1,6 @@
 import QtQuick 1.1
 import KCL 1.0
-
-import "qrc:/webcontrol/Display.js" as Display
+import Viridity 1.0
 
 FocusScope {
     id: scene
@@ -10,16 +9,20 @@ FocusScope {
     height: 768
     focus: true
 
-    Component.onCompleted:
-    {
-        Display.onNewCommandReceived = function(input)
+    ViridityDataBridge {
+        id: dataBridge
+        session: currentSession
+        targetId: "sceneData1"
+
+        function onNewCommandReceived(input)
         {
-            console.log("input: " + input);
-            return { action: "blah", test: 1243234.3423 };
+            testTimer1.start();
+            console.log("input1: " + input);
+            return { action: "blah111", test: 1243234.3423 };
         }
     }
 
-    Component.onDestruction: console.log("GOODBYE WORLD!")
+    Component.onDestruction: console.log("Instance of test.qml destroyed!")
 
     Rectangle {
         anchors.fill: parent
@@ -165,55 +168,6 @@ FocusScope {
         rect.y = rect.y + diffY * multiplier;
     }
 
-    Connections {
-        target: commandBridge
-
-        onCommandReceived:
-        {
-//            console.log("command received: " + command + " for session with ID: " + id);
-            var paramStartIndex = command.indexOf("(");
-            var paramEndIndex = command.indexOf(")");
-
-            var cmd = command.substring(0, paramStartIndex).trim();
-            var params = command.substring(paramStartIndex + 1, paramEndIndex);
-            var inputParams = params.split(/[\s,]+/);
-
-            if (cmd === "colorDropped")
-            {
-                var color = inputParams[0];
-                var mouseX = inputParams[1];
-                var mouseY = inputParams[2];
-
-                var itemsAtXY = SceneUtils.getItemsBelow(mouseArea, mouseX, mouseY);
-
-                if (itemsAtXY.length > 0)
-                {
-                    var itemAtXY = itemsAtXY[0];
-
-                    if (itemAtXY.hasOwnProperty("color"))
-                    {
-                        itemAtXY.color = ColorUtils.parseColor(color);
-                        commandBridge.response = "applied color " + color + " to " + itemAtXY.objectName;
-                    }
-                    else
-                    {
-                        commandBridge.response = "did not apply color " + color + " to the item " + itemAtXY.objectName;
-                    }
-                }
-
-            }
-            else if (cmd === "switchRectColor")
-            {
-                rect.color = (rect.color == "#808080") ? "red" : "gray";
-                commandBridge.response = "switched";
-            }
-            else
-            {
-                commandBridge.response = "invalid command";
-            }
-        }
-    }
-
     Column {
         x: 10
         y: 110
@@ -241,7 +195,7 @@ FocusScope {
 
             onCheckedChanged:
             {
-                Display.sendCommand(["Hello World! " + checked, checked], function (response, displayId)
+                dataBridge.sendData(["Hello World! " + checked, checked], function (response, displayId)
                 {
                     console.log("Response from display " + displayId + ": " + response);
                 });

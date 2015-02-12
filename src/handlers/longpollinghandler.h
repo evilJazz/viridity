@@ -6,28 +6,30 @@
 #include "Tufao/WebSocket"
 #include "Tufao/HttpServerRequest"
 
-class ViridityConnection;
-class GraphicsSceneDisplay;
+#include "viridityrequesthandler.h"
 
-class LongPollingHandler : public QObject
+class ViriditySession;
+
+class LongPollingHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit LongPollingHandler(ViridityConnection *parent);
+    explicit LongPollingHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~LongPollingHandler();
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private slots:
-    void handleDisplayUpdateAvailable();
+    void handleMessagesAvailable();
     void handleResponseDestroyed();
 
 private:
-    ViridityConnection *connection_;
-    GraphicsSceneDisplay *display_;
+    ViriditySession *session_;
 
     Tufao::HttpServerResponse *response_;
+
+    void pushMessageAndEnd(Tufao::HttpServerResponse *response, const QByteArray &msg);
 };
 
 #endif // LONGPOLLINGHANDLER_H

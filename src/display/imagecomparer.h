@@ -16,10 +16,12 @@ enum UpdateOperationType { uotUpdate, uotMove, uotFill, uotNoOp };
 
 struct UpdateOperation
 {
+    UpdateOperation() : type(uotNoOp), data(NULL) {}
     UpdateOperationType type;
     QRect srcRect;
     QPoint dstPoint;
     QColor fillColor;
+    void *data;
 };
 
 typedef QList<UpdateOperation> UpdateOperationList;

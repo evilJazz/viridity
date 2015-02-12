@@ -12,6 +12,16 @@
 #include "imagecomparer.h"
 #include "tiledregion.h"
 
+class GraphicsSceneBufferRenderer;
+
+class GraphicsSceneBufferRendererLocker
+{
+public:
+    GraphicsSceneBufferRendererLocker(GraphicsSceneBufferRenderer *renderer);
+private:
+    QMutexLocker m_;
+};
+
 class VIRIDITY_EXPORT GraphicsSceneBufferRenderer : public GraphicsSceneObserver
 {
     Q_OBJECT
@@ -22,22 +32,22 @@ public:
     void setMinimizeDamageRegion(bool value);
     bool minimizeDamageRegion() { return minimizeDamageRegion_; }
 
-    //QRegion updateBuffer();
-    UpdateOperationList updateBufferExt();
-    QImage buffer() const { return *workBuffer_; }
+    UpdateOperationList updateBuffer();
+
+    const QImage &buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
 
     int tileSize() const { return comparer_ ? comparer_->tileSize() : 0; }
 
 public slots:
     void fullUpdate();
+    void setSize(int width, int height);
 
 signals:
     void damagedRegionAvailable();
 
 protected slots:
     void sceneAttached();
-    void sceneSceneRectChanged(QRectF newRect);
     void sceneChanged(QList<QRectF> rects);
     void sceneDetached();
 
@@ -45,7 +55,8 @@ protected:
     bool minimizeDamageRegion_;
     bool updatesAvailable_;
 
-    QMutex bufferAndRegionMutex_;
+    friend class GraphicsSceneBufferRendererLocker;
+    mutable QMutex bufferAndRegionMutex_;
 
     QImage *workBuffer_;
     QImage *otherBuffer_;

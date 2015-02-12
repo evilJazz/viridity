@@ -8,95 +8,94 @@
 #include <QStringList>
 
 #include "viriditywebserver.h"
-#include "graphicsscenedisplay.h"
-#include "graphicssceneinputposthandler.h"
-#include "commandposthandler.h"
+#include "inputposthandler.h"
 
 #undef DEBUG
 #include "KCL/debug.h"
 
-LongPollingHandler::LongPollingHandler(ViridityConnection *parent) :
-    QObject(parent),
-    connection_(parent),
-    display_(NULL)
+LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *parent) :
+    ViridityBaseRequestHandler(server, parent),
+    session_(NULL)
 {
     DGUARDMETHODTIMED;
 }
 
 LongPollingHandler::~LongPollingHandler()
 {
-    if (display_)
-        connection_->server()->sessionManager()->releaseDisplay(display_);
+    if (session_)
+        server()->sessionManager()->releaseSession(session_);
 
     DGUARDMETHODTIMED;
 }
 
 bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().startsWith("/display?") || request->url().startsWith("/command?");
+    QList<QByteArray> parts = request->url().split('?');
+    return parts.count() > 0 && parts[0].endsWith("/v");
 }
 
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
-    QString url(request->url());
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    QString id = QUrlQuery(QUrl(request->url())).queryItemValue("id");
-#else
-    QString id = QUrl(request->url()).queryItemValue("id");
-#endif
+    QString id = ViriditySession::parseIdFromUrl(request->url());
 
-    GraphicsSceneDisplay *display = connection_->server()->sessionManager()->getDisplay(id);
+    ViriditySession *session = server()->sessionManager()->getSession(id);
 
-    if (display)
+    if (session)
     {
-        if (url.startsWith("/display?")) // long polling
+        if (request->method() == "GET") // long polling output
         {
-            if (request->method() == "GET") // long polling output
+            if (request->url().contains("?a=init"))
             {
-                display_ = connection_->server()->sessionManager()->acquireDisplay(id);
+                QByteArray msg;
+
+                if (session->useCount == 0)
+                {
+                    session = server()->sessionManager()->acquireSession(id);
+                    msg = "reattached(" + session->id().toLatin1() + ")";
+                    server()->sessionManager()->releaseSession(session);
+                }
+                else
+                {
+                    msg = "inuse(" + session->id().toLatin1() + ")";
+                }
+
+                pushMessageAndEnd(response, msg);
+            }
+            else
+            {
+                session_ = server()->sessionManager()->acquireSession(id);
 
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-                connect(display_, SIGNAL(updateAvailable()), this, SLOT(handleDisplayUpdateAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+                connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
-                if (display_->isUpdateAvailable())
-                    handleDisplayUpdateAvailable();
+                if (session_->pendingMessagesAvailable())
+                    handleMessagesAvailable();
+            }
 
-                return;
-            }
-            else if (request->method() == "POST") // long polling input
-            {
-                GraphicsSceneInputPostHandler *handler = new GraphicsSceneInputPostHandler(request, response, display);
-                connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
-                return;
-            }
+            return;
         }
-        else if (url.startsWith("/command?") && request->method() == "POST") // long polling command
+        else if (request->method() == "POST") // long polling input
         {
-            CommandPostHandler *handler = new CommandPostHandler(request, response);
+            InputPostHandler *handler = new InputPostHandler(request, response, session);
             connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+            return;
         }
-
-        return;
     }
-    else if (id.isEmpty()/* && request->method() == "GET" && url.startsWith("/display?")*/) // start new connection
+    else // start new connection
     {
-        display = connection_->server()->sessionManager()->getNewDisplay();
+        session = server()->sessionManager()->getNewSession();
 
-        DPRINTF("NEW DISPLAY: %s", display->id().toLatin1().constData());
+        DPRINTF("NEW SESSION: %s", session->id().toLatin1().constData());
 
-        QString info = "info(" + display->id() + ")";
+        QByteArray info = "info(" + session->id().toLatin1() + ")";
 
-        connection_->server()->sessionManager()->releaseDisplay(display);
+        server()->sessionManager()->releaseSession(session);
 
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", "text/plain; charset=utf8");
-        response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response->headers().insert("Pragma", "no-cache");
-        response->end(info.toUtf8());
+        pushMessageAndEnd(response, info);
 
         return;
     }
@@ -105,25 +104,22 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     response->end("Not found");
 }
 
-void LongPollingHandler::handleDisplayUpdateAvailable()
+void LongPollingHandler::handleMessagesAvailable()
 {
     DGUARDMETHODTIMED;
 
-    if (response_ && display_ && display_->isUpdateAvailable())
+    if (response_ && session_ && session_->pendingMessagesAvailable())
     {
-        QStringList commandList = display_->getMessagesForPendingUpdates();
+        QList<QByteArray> messages = session_->takePendingMessages();
 
-        connection_->server()->sessionManager()->releaseDisplay(display_);
-        display_ = NULL;
+        server()->sessionManager()->releaseSession(session_);
+        session_ = NULL;
 
         QByteArray out;
-        out = commandList.join("\n").toUtf8();
+        foreach (const QByteArray &message, messages)
+            out += message + "\n";
 
-        response_->writeHead(Tufao::HttpServerResponse::OK);
-        response_->headers().insert("Content-Type", "text/plain; charset=utf8");
-        response_->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate, post-check=0, pre-check=0");
-        response_->headers().insert("Pragma", "no-cache");
-        response_->end(out);
+        pushMessageAndEnd(response_, out);
     }
 }
 
@@ -132,5 +128,13 @@ void LongPollingHandler::handleResponseDestroyed()
     DGUARDMETHODTIMED;
 
     response_ = NULL;
+}
+
+void LongPollingHandler::pushMessageAndEnd(Tufao::HttpServerResponse *response, const QByteArray &msg)
+{
+    response->writeHead(Tufao::HttpServerResponse::OK);
+    response->headers().insert("Content-Type", "text/plain; charset=utf8");
+    ViridityConnection::addNoCachingResponseHeaders(response);
+    response->end(msg);
 }
 
