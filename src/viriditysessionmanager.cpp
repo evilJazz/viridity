@@ -439,7 +439,7 @@ void ViriditySessionManager::killExpiredSessions()
 }
 
 
-/* SingleGraphicsSceneDisplaySessionManager */
+/* SingleLogicSessionManager */
 
 SingleLogicSessionManager::SingleLogicSessionManager(QObject *parent) :
     ViriditySessionManager(parent),
@@ -471,7 +471,7 @@ ViriditySession *SingleLogicSessionManager::createSession(const QString &id)
     return session;
 }
 
-/* MultiGraphicsSceneDisplaySessionManager */
+/* MultiLogicSessionManager */
 
 MultiLogicSessionManager::MultiLogicSessionManager(QObject *parent) :
     ViriditySessionManager(parent)

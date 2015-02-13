@@ -1,6 +1,6 @@
 (function($)
 {
-    $.fn.viridity = function(viridityChannel, targetId, sceneId)
+    $.fn.viridity = function(viridityChannel, targetId, params)
     {
         var containerElement = this;
 
@@ -12,7 +12,7 @@
         var dr =
         {
             targetId: undefined,
-            sceneId: undefined,
+            params: [],
 
             useBlobBuilder: false,
 
@@ -483,9 +483,11 @@
             init: function()
             {
                 dr.targetId = v.registerCallback(dr._messageCallback, targetId);
-                dr.sceneId = sceneId;
+                dr.params = params;
 
-                v.sendMessage("newDisplay(" + dr.sceneId + ")", dr.targetId);
+                var joinedParams = typeof(params) === "array" ? params.join() : params;
+
+                v.sendMessage("newDisplay(" + joinedParams + ")", dr.targetId);
 
                 dr.fullLocation = window.location.href.replace(/\/$/, "");
                 if (debugVerbosity > 0)

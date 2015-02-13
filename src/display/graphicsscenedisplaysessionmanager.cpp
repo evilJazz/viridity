@@ -294,12 +294,16 @@ GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInst
 {
     QGraphicsScene *scene = getScene(id, params);
 
-    GraphicsSceneWebControlCommandInterpreter *ci = new GraphicsSceneWebControlCommandInterpreter(scene);
-    ci->setTargetGraphicsScene(scene);
+    if (scene)
+    {
+        GraphicsSceneWebControlCommandInterpreter *ci = new GraphicsSceneWebControlCommandInterpreter(scene);
+        ci->setTargetGraphicsScene(scene);
 
-    GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, scene, ci);
-
-    return display;
+        GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, scene, ci);
+        return display;
+    }
+    else
+        return NULL;
 }
 
 void MultiGraphicsSceneDisplaySessionManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
