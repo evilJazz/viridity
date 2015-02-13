@@ -141,7 +141,8 @@ bool WebSocket::startServerHandshake(const HttpServerRequest *request,
 {
     QAbstractSocket *socket = request->socket();
     Headers headers = request->headers();
-    if (!headers.contains("Upgrade", "websocket")) {
+
+    if (headers.value("Upgrade").toLower() != "websocket") {
         WRITE_STRING(socket->write,
                      "HTTP/1.1 400 Bad Request\r\n"
                      "Connection: keep-alive\r\n"
@@ -172,7 +173,7 @@ bool WebSocket::startServerHandshake(const HttpServerRequest *request,
     WRITE_STRING(socket->write,
                  "HTTP/1.1 101 Switching Protocols\r\n"
                  "Connection: Upgrade\r\n"
-                 "Upgrade: websocket\r\n");
+                 "Upgrade: WebSocket\r\n");
 
     for (Headers::const_iterator i = extraHeaders.begin()
          ;i != extraHeaders.end();++i) {
