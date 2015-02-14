@@ -12,8 +12,8 @@ class MainThreadGateway : public QObject
 {
     Q_OBJECT
 public:
-    MainThreadGateway(QObject *parent = 0) : QObject(parent) {}
-    virtual ~MainThreadGateway() {}
+    MainThreadGateway(QObject *parent = 0) : QObject(parent) { DGUARDMETHODTIMED; }
+    virtual ~MainThreadGateway() { DGUARDMETHODTIMED; }
 
     Q_INVOKABLE GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params)
     {
@@ -76,7 +76,7 @@ GraphicsSceneDisplaySessionManager::~GraphicsSceneDisplaySessionManager()
 
     killAllDisplays();
 
-    delete mainThreadGateway_;
+    QMetaObject::invokeMethod(mainThreadGateway_, "deleteLater");
 }
 
 void GraphicsSceneDisplaySessionManager::handleSessionDestroyed()
