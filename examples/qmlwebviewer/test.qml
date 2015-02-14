@@ -22,7 +22,7 @@ FocusScope {
         }
     }
 
-    Component.onDestruction: console.log("Instance of test.qml destroyed!")
+    Component.onDestruction: Debug.print("Instance of test.qml destroyed!")
 
     Rectangle {
         anchors.fill: parent

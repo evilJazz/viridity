@@ -65,7 +65,7 @@ private:
     };
 
     QHash<GraphicsSceneDisplay *, DisplayResource> displayResources_;
-    QTimer cleanupTimer_;
+    QTimer *cleanupTimer_;
 
     static QList<GraphicsSceneDisplaySessionManager *> activeSessionManagers_;
 

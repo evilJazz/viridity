@@ -16,5 +16,5 @@ Image {
         }
     }
 
-    Component.onDestruction: console.log("Instance of preview1.qml destroyed!")
+    Component.onDestruction: Debug.print("Instance of preview1.qml destroyed!")
 }

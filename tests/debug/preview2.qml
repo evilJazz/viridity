@@ -44,5 +44,5 @@ Item {
         color: "red"
     }
 
-    Component.onDestruction: console.log("Instance of preview2.qml destroyed!")
+    Component.onDestruction: Debug.print("Instance of preview2.qml destroyed!")
 }

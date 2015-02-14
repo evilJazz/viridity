@@ -44,8 +44,9 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViridityS
     displayMutex_(QMutex::Recursive)
 {
     DGUARDMETHODTIMED;
-    connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
-    cleanupTimer_.start(10000);
+    cleanupTimer_ = new QTimer(this);
+    connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
+    cleanupTimer_->start(10000);
 
     activeSessionManagers_.append(this);
 

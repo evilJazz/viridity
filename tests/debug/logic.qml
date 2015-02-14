@@ -64,5 +64,5 @@ QtObjectWithChildren {
 
     property string sessionId
 
-    Component.onDestruction: console.log("Logic of session " + sessionId + " destroyed!")
+    Component.onDestruction: Debug.print("Logic of session " + sessionId + " destroyed!")
 }

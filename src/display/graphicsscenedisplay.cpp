@@ -208,7 +208,7 @@ Patch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 
     patch->data.close();
 
-    DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
+    DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %lld kB (%lld byte)",
             rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.constData(),
             image.byteCount() / 1024, image.byteCount(),
             patch->data.size() / 1024, patch->data.size()
