@@ -87,7 +87,7 @@ public:
     virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
     virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
 
-    virtual QList<QByteArray> takePendingMessages() {}
+    virtual QList<QByteArray> takePendingMessages();
 
     static QString takeTargetFromMessage(QByteArray &message);
     static void splitMessage(const QByteArray &message, QString &command, QStringList &params);

@@ -19,6 +19,11 @@ QString createUniqueID()
 
 /* ViridityMessageHandler */
 
+QList<QByteArray> ViridityMessageHandler::takePendingMessages()
+{
+    return QList<QByteArray>();
+}
+
 QString ViridityMessageHandler::takeTargetFromMessage(QByteArray &message)
 {
     QByteArray bm = message.left(message.indexOf("("));
@@ -53,8 +58,10 @@ ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const Q
     QObject(), // No parent since we move this object into different thread later on...
     sessionManager_(sessionManager),
     id_(id),
+    dispatchMutex_(QMutex::Recursive),
     updateCheckInterval_(10),
-    dispatchMutex_(QMutex::Recursive)
+    logic_(NULL),
+    useCount_(0)
 {
     DGUARDMETHODTIMED;
     updateCheckTimer_ = new QTimer(this);

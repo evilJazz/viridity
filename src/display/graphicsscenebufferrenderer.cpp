@@ -23,10 +23,10 @@ GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
     GraphicsSceneObserver(parent),
     minimizeDamageRegion_(true),
     updatesAvailable_(false),
+    bufferAndRegionMutex_(QMutex::Recursive),
     workBuffer_(&buffer1_),
     otherBuffer_(&buffer2_),
-    comparer_(NULL),
-    bufferAndRegionMutex_(QMutex::Recursive)
+    comparer_(NULL)
 {
     DGUARDMETHODTIMED;
 

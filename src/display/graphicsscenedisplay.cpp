@@ -27,8 +27,8 @@
 GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
     QObject(),
     scene_(scene),
-    id_(id),
     commandInterpreter_(commandInterpreter),
+    id_(id),
     urlMode_(true),
     updateCheckInterval_(10),
     updateAvailable_(true),

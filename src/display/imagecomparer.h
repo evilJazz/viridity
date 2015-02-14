@@ -44,7 +44,7 @@ template<typename T> inline bool contentMatches(QImage *buffer1, QImage *buffer2
 
     int y;
     int height = rect1.height();
-    int x;
+    //int x;
     int width = rect1.width();
     register T *pBuf1, *pBuf2;
 

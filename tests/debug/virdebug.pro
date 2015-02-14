@@ -21,7 +21,7 @@ CONFIG(release, debug|release) {
 }
 
 include(../../3rdparty/kcl/kcl.pri)
-include(../../3rdparty/tufao/tufao.pri)
+include(../../3rdparty/tufao/tufao-min.pri)
 include(../../viridity.pri)
 
 RESOURCES += \
