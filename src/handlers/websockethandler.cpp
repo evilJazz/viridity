@@ -41,7 +41,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         {
             QString msg;
 
-            if (session->useCount == 0)
+            if (session->useCount() == 0)
             {
                 session_ = server()->sessionManager()->acquireSession(id);
 

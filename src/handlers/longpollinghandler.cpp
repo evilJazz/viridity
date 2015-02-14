@@ -50,7 +50,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
             {
                 QByteArray msg;
 
-                if (session->useCount == 0)
+                if (session->useCount() == 0)
                 {
                     session = server()->sessionManager()->acquireSession(id);
                     msg = "reattached(" + session->id().toLatin1() + ")";

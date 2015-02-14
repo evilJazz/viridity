@@ -38,6 +38,11 @@ public:
     ViriditySessionManager *sessionManager() { return sessionManager_; }
     const QString id() const { return id_; }
 
+    int useCount() const { return useCount_; }
+
+    void setLogic(QObject *logic) { logic_ = logic; }
+    QObject *logic() const { return logic_; }
+
     static QString parseIdFromUrl(const QByteArray &url);
 
     // ViridityRequestHandler
@@ -46,12 +51,6 @@ public:
 
 signals:
     void newPendingMessagesAvailable();
-
-public:
-    QObject *logic;
-
-    QElapsedTimer lastUsed;
-    int useCount;
 
 private slots:
     void updateCheckTimerTimeout();
@@ -75,6 +74,10 @@ protected:
     QTimer *updateCheckTimer_;
     int updateCheckInterval_;
     void triggerUpdateCheckTimer();
+
+    QObject *logic_;
+    QElapsedTimer lastUsed_;
+    int useCount_;
 };
 
 class ViridityMessageHandler
@@ -127,7 +130,7 @@ protected:
 
 protected slots:
     virtual void registerHandlers(ViriditySession *session);
-    virtual ViriditySession *createSession(const QString &id) = 0; // Always executed in thread of session manager
+    virtual ViriditySession *createSession(const QString &id); // Always executed in thread of session manager
 
 private slots:
     void killExpiredSessions();
@@ -138,31 +141,6 @@ private:
     QMutex sessionMutex_;
     QHash<QString, ViriditySession *> sessions_;
     QTimer cleanupTimer_;
-};
-
-class SingleLogicSessionManager : public ViriditySessionManager
-{
-    Q_OBJECT
-public:
-    SingleLogicSessionManager(QObject *parent = 0);
-    virtual ~SingleLogicSessionManager();
-
-protected slots:
-    virtual ViriditySession *createSession(const QString &id);
-
-private:
-    ViriditySession *protoSession_;
-};
-
-class MultiLogicSessionManager : public ViriditySessionManager
-{
-    Q_OBJECT
-public:
-    MultiLogicSessionManager(QObject *parent = 0);
-    virtual ~MultiLogicSessionManager() {}
-
-protected slots:
-    virtual ViriditySession *createSession(const QString &id);
 };
 
 #endif // VIRIDITYSESSIONMANAGER_H

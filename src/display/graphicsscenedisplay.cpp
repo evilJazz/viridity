@@ -19,7 +19,7 @@
 #endif
 
 #ifdef USE_IMPROVED_JPEG
-#include "private/jpeghandler.h"
+#include "private/jpegwriter.h"
 #endif
 
 /* GraphicsSceneDisplay */

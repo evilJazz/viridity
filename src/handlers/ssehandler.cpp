@@ -42,7 +42,7 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
 
     if (session)
     {
-        if (session->useCount == 0)
+        if (session->useCount() == 0)
         {
             session_ = server()->sessionManager()->acquireSession(id);
             QString msg = "data: reattached(" + session_->id() + ")\n\n";

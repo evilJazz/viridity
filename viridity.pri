@@ -80,10 +80,10 @@ viridity_use_improved_jpeg {
     DEFINES += USE_IMPROVED_JPEG
 
     HEADERS += \
-        $$VIRIDITY_SRC_PATH/display/private/jpeghandler.h
+        $$VIRIDITY_SRC_PATH/display/private/jpegwriter.h
 
     SOURCES += \
-        $$VIRIDITY_SRC_PATH/display/private/jpeghandler.cpp
+        $$VIRIDITY_SRC_PATH/display/private/jpegwriter.cpp
 
     LIBS += -ljpeg
 }

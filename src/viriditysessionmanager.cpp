@@ -260,8 +260,8 @@ ViriditySession *ViriditySessionManager::getNewSession()
     {
         sessions_.insert(session->id(), session);
 
-        session->lastUsed.restart();
-        session->useCount = 1;
+        session->lastUsed_.restart();
+        session->useCount_ = 1;
 
         emit newSessionCreated(session);
 
@@ -305,8 +305,8 @@ ViriditySession *ViriditySessionManager::acquireSession(const QString &id)
 
     if (session)
     {
-        ++session->useCount;
-        session->lastUsed.restart();
+        ++session->useCount_;
+        session->lastUsed_.restart();
     }
 
     return session;
@@ -318,9 +318,22 @@ void ViriditySessionManager::releaseSession(ViriditySession *session)
 
     if (session)
     {
-        --session->useCount;
-        session->lastUsed.restart();
+        --session->useCount_;
+        session->lastUsed_.restart();
     }
+}
+
+ViriditySession *ViriditySessionManager::createSession(const QString &id)
+{
+    DGUARDMETHODTIMED;
+    ViriditySession *session = createNewSessionInstance(id);
+    setLogic(session);
+
+    connect(session, SIGNAL(destroyed()), session->logic(), SLOT(deleteLater()));
+
+    registerHandlers(session);
+
+    return session;
 }
 
 QStringList ViriditySessionManager::sessionIds(QObject *logic)
@@ -331,8 +344,8 @@ QStringList ViriditySessionManager::sessionIds(QObject *logic)
 
     foreach (ViriditySession *session, sessions_.values())
     {
-        if (!logic || session->logic == logic)
-            result << session->id_;
+        if (!logic || session->logic() == logic)
+            result << session->id();
     }
 
     return result;
@@ -378,7 +391,7 @@ bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArr
     int dispatched = 0;
 
     foreach (ViriditySession *session, sessions_.values())
-        if (session->logic == logic)
+        if (session->logic() == logic)
         {
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToClient",
@@ -434,60 +447,6 @@ void ViriditySessionManager::killExpiredSessions()
     QMutexLocker l(&sessionMutex_);
 
     foreach (ViriditySession *session, sessions_.values())
-        if (session->useCount == 0 && session->lastUsed.elapsed() > 600000)
+        if (session->useCount() == 0 && session->lastUsed_.elapsed() > 600000)
             removeSession(session);
-}
-
-
-/* SingleLogicSessionManager */
-
-SingleLogicSessionManager::SingleLogicSessionManager(QObject *parent) :
-    ViriditySessionManager(parent),
-    protoSession_(NULL)
-{
-}
-
-SingleLogicSessionManager::~SingleLogicSessionManager()
-{
-    if (protoSession_)
-        protoSession_->deleteLater();
-}
-
-ViriditySession *SingleLogicSessionManager::createSession(const QString &id)
-{
-    DGUARDMETHODTIMED;
-
-    if (!protoSession_)
-    {
-        protoSession_ = createNewSessionInstance(id);
-        setLogic(protoSession_);
-        registerHandlers(protoSession_);
-    }
-
-    ViriditySession *session = createNewSessionInstance(id);
-    session->logic = protoSession_->logic;
-    registerHandlers(session);
-
-    return session;
-}
-
-/* MultiLogicSessionManager */
-
-MultiLogicSessionManager::MultiLogicSessionManager(QObject *parent) :
-    ViriditySessionManager(parent)
-{
-
-}
-
-ViriditySession *MultiLogicSessionManager::createSession(const QString &id)
-{
-    DGUARDMETHODTIMED;
-    ViriditySession *session = createNewSessionInstance(id);
-    setLogic(session);
-
-    connect(session, SIGNAL(destroyed()), session->logic, SLOT(deleteLater()));
-
-    registerHandlers(session);
-
-    return session;
 }

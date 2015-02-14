@@ -79,7 +79,7 @@ QVariant ViridityDataBridge::sendData(const QString &command, const QString &des
 
     // Broadcast to all sessions that implement the same logic if no specific destination session was set!
     if (destinationSessionId.isEmpty())
-        dispatched = session_->sessionManager()->dispatchMessageToClientMatchingLogic(message.toUtf8(), session_->logic, targetId_);
+        dispatched = session_->sessionManager()->dispatchMessageToClientMatchingLogic(message.toUtf8(), session_->logic(), targetId_);
     else
         dispatched = session_->sessionManager()->dispatchMessageToClient(message.toUtf8(), destinationSessionId, targetId_);
 
