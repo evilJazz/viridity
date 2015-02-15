@@ -55,6 +55,7 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplayrecorder.h \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplayplayer.h \
         $$VIRIDITY_SRC_PATH/display/private/qtestspontaneevent.h \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.h \
@@ -72,6 +73,7 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.cpp  \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplayrecorder.cpp \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplayplayer.cpp \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.cpp \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/private/moveanalyzerdebugview.cpp \

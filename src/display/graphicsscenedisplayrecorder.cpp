@@ -9,7 +9,6 @@ GraphicsSceneDisplayRecorder::GraphicsSceneDisplayRecorder(GraphicsSceneDisplay 
 
 GraphicsSceneDisplayRecorder::~GraphicsSceneDisplayRecorder()
 {
-
 }
 
 void GraphicsSceneDisplayRecorder::setFullFrameFilename(const QString &filename)
@@ -33,11 +32,12 @@ void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<
     {
         fullFrameFile_.open(QIODevice::WriteOnly | QIODevice::Truncate);
         fullFrameData_.setDevice(&fullFrameFile_);
+        fullFrameData_ << QByteArray("full");
     }
 
     if (fullFrameFile_.isWritable())
     {
-        fullFrameData_ << frameTimeStamp;
+        fullFrameData_ << (qint64)frameTimeStamp;
         fullFrameData_ << display_->renderer().buffer();
     }
 
@@ -46,11 +46,12 @@ void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<
     {
         diffFrameFile_.open(QIODevice::WriteOnly | QIODevice::Truncate);
         diffFrameData_.setDevice(&diffFrameFile_);
+        diffFrameData_ << QByteArray("diff");
     }
 
     if (diffFrameFile_.isWritable())
     {
-        diffFrameData_ << frameTimeStamp;
+        diffFrameData_ << (qint64)frameTimeStamp;
         diffFrameData_ << messages;
         diffFrameData_ << display_->patches().count();
 
