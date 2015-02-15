@@ -1,0 +1,66 @@
+#include "graphicsscenedisplayrecorder.h"
+
+GraphicsSceneDisplayRecorder::GraphicsSceneDisplayRecorder(GraphicsSceneDisplay *display) :
+    QObject(display),
+    display_(display)
+{
+    connect(display_, SIGNAL(newFrameMessagesGenerated(QList<QByteArray>)), this, SLOT(displayNewFrameMessagesGenerated(QList<QByteArray>)), Qt::DirectConnection);
+}
+
+GraphicsSceneDisplayRecorder::~GraphicsSceneDisplayRecorder()
+{
+
+}
+
+void GraphicsSceneDisplayRecorder::setFullFrameFilename(const QString &filename)
+{
+    fullFrameFile_.setFileName(filename);
+}
+
+void GraphicsSceneDisplayRecorder::setDiffFrameFilename(const QString &filename)
+{
+    diffFrameFile_.setFileName(filename);
+}
+
+void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<QByteArray> &messages)
+{
+    GraphicsSceneDisplayLocker l(display_);
+
+    qint64 frameTimeStamp = QDateTime::currentMSecsSinceEpoch();
+
+    // Save full frame
+    if (!fullFrameFile_.fileName().isEmpty() && !fullFrameFile_.isWritable())
+    {
+        fullFrameFile_.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        fullFrameData_.setDevice(&fullFrameFile_);
+    }
+
+    if (fullFrameFile_.isWritable())
+    {
+        fullFrameData_ << frameTimeStamp;
+        fullFrameData_ << display_->renderer().buffer();
+    }
+
+    // Save differential frame
+    if (!diffFrameFile_.fileName().isEmpty() && !diffFrameFile_.isWritable())
+    {
+        diffFrameFile_.open(QIODevice::WriteOnly | QIODevice::Truncate);
+        diffFrameData_.setDevice(&diffFrameFile_);
+    }
+
+    if (diffFrameFile_.isWritable())
+    {
+        diffFrameData_ << frameTimeStamp;
+        diffFrameData_ << messages;
+        diffFrameData_ << display_->patches().count();
+
+        QHashIterator<QString, GraphicsSceneFramePatch *> i(display_->patches());
+        while (i.hasNext())
+        {
+            i.next();
+            diffFrameData_ << i.key();
+            diffFrameData_ << i.value()->data.data();
+        }
+    }
+}
+

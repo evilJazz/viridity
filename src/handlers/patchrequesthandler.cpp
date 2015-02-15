@@ -48,7 +48,7 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
                 {
                     sm->releaseDisplay(display);
 
-                    Patch *patch = display->takePatch(patchId);
+                    GraphicsSceneFramePatch *patch = display->takePatch(patchId);
 
                     if (patch)
                     {

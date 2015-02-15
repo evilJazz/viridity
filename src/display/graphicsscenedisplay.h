@@ -17,9 +17,9 @@
 #include "graphicsscenebufferrenderer.h"
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-/* Patch */
+/* GraphicsSceneFramePatch */
 
-class Patch
+class GraphicsSceneFramePatch
 {
 public:
     QString id;
@@ -30,6 +30,16 @@ public:
     bool packedAlpha;
 
     QByteArray toBase64() const { return data.data().toBase64(); }
+};
+
+class GraphicsSceneDisplay;
+
+class GraphicsSceneDisplayLocker
+{
+public:
+    GraphicsSceneDisplayLocker(GraphicsSceneDisplay *display);
+private:
+    QMutexLocker m_;
 };
 
 class GraphicsSceneDisplay : public QObject, public ViridityMessageHandler
@@ -44,12 +54,16 @@ public:
     QGraphicsScene *scene() const { return scene_; }
 
     bool isUpdateAvailable() const;
-    Patch *takePatch(const QString &patchId);
+    GraphicsSceneFramePatch *takePatch(const QString &patchId);
+
+    const QHash<QString, GraphicsSceneFramePatch *> &patches() const { return patches_; } // use GraphicsSceneDisplayLocker to access or suffer!
+    const GraphicsSceneBufferRenderer &renderer() const { return *renderer_; }
 
     void requestFullUpdate();
 
 signals:
     void updateAvailable();
+    void newFrameMessagesGenerated(const QList<QByteArray> &messages);
 
 protected:
     // ViridityMessageHandler
@@ -79,11 +93,12 @@ private:
     GraphicsSceneBufferRenderer *renderer_;
     bool clientReady_;
 
-    QHash<QString, Patch *> patches_;
+    friend class GraphicsSceneDisplayLocker;
+    QHash<QString, GraphicsSceneFramePatch *> patches_;
     mutable QMutex patchesMutex_;
 
     friend class GraphicsSceneDisplayThreadedCreatePatch;
-    Patch *createPatch(const QRect &rect);
+    GraphicsSceneFramePatch *createPatch(const QRect &rect);
     void clearPatches();
 
     void triggerUpdateCheckTimer();

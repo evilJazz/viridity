@@ -22,6 +22,14 @@
 #include "private/jpegwriter.h"
 #endif
 
+/* GraphicsSceneDisplayLocker */
+
+GraphicsSceneDisplayLocker::GraphicsSceneDisplayLocker(GraphicsSceneDisplay *display) :
+    m_(&display->patchesMutex_)
+{
+
+}
+
 /* GraphicsSceneDisplay */
 
 GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
@@ -86,7 +94,7 @@ void GraphicsSceneDisplay::triggerUpdateCheckTimer()
         updateCheckTimer_->start(updateCheckInterval_);
 }
 
-Patch *GraphicsSceneDisplay::takePatch(const QString &patchId)
+GraphicsSceneFramePatch *GraphicsSceneDisplay::takePatch(const QString &patchId)
 {
     QMutexLocker l(&patchesMutex_);
 
@@ -124,9 +132,9 @@ void GraphicsSceneDisplay::sceneDamagedRegionsAvailable()
     triggerUpdateCheckTimer();
 }
 
-Patch *GraphicsSceneDisplay::createPatch(const QRect &rect)
+GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 {
-    Patch *patch = new Patch;
+    GraphicsSceneFramePatch *patch = new GraphicsSceneFramePatch;
 
     patch->rect = rect;
 
@@ -313,9 +321,9 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         {
             const QRect &rect = op.srcRect;
 
-            Patch *patch;
+            GraphicsSceneFramePatch *patch;
             if (op.data)
-                patch = static_cast<Patch *>(op.data);
+                patch = static_cast<GraphicsSceneFramePatch *>(op.data);
             else
                 patch = createPatch(rect);
 
@@ -380,6 +388,8 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 
     if (ops.count() > 0)
         messageList += QString().sprintf("%s>end(%d):", id_.toLatin1().constData(), frame_).toUtf8();
+
+    emit newFrameMessagesGenerated(messageList);
 
     return messageList;
 }
@@ -452,3 +462,4 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
 
     return result;
 }
+

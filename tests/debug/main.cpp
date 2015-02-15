@@ -14,6 +14,8 @@
 #include "handlers/filerequesthandler.h"
 #include "handlers/fileuploadhandler.h"
 
+#include "graphicsscenedisplayrecorder.h"
+
 class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
 {
 public:
@@ -23,6 +25,20 @@ public:
     QDeclarativeEngine *engine;
 
 protected slots:
+    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params)
+    {
+        GraphicsSceneDisplay *display = MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(id, params);
+
+        if (display)
+        {
+            GraphicsSceneDisplayRecorder *recorder = new GraphicsSceneDisplayRecorder(display);
+            //recorder->setFullFrameFilename("/home/darkstar/Desktop/full_dump_" + id + ".fgsd");
+            //recorder->setDiffFrameFilename("/home/darkstar/Desktop/diff_dump_" + id + ".dgsd");
+        }
+
+        return display;
+    }
+
     virtual QGraphicsScene *getScene(const QString &id, const QStringList &params)
     {
         // RUNS IN MAIN THREAD!
