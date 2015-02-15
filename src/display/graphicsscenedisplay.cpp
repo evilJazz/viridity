@@ -37,7 +37,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     scene_(scene),
     commandInterpreter_(commandInterpreter),
     id_(id),
-    urlMode_(true),
+    urlMode_(false),
     updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),

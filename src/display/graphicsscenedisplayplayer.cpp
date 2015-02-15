@@ -4,36 +4,28 @@
 
 #include "KCL/imageutils.h"
 
-GraphicsSceneDisplayPlayer::GraphicsSceneDisplayPlayer(QWidget *parent) :
-    QGraphicsView(parent),
+/* GraphicsSceneDisplayDumpIterator */
+
+GraphicsSceneDisplayDumpIterator::GraphicsSceneDisplayDumpIterator(QObject *parent) :
+    QObject(parent),
     type_(Invalid),
     startTimeStamp_(-1)
 {
-    setScene(&scene_);
-    scene_.addItem(&pixmapItem_);
-
-    connect(&advanceTimer_, SIGNAL(timeout()), this, SLOT(advanceToNextFrame()));
-    advanceTimer_.setSingleShot(true);
 }
 
-GraphicsSceneDisplayPlayer::~GraphicsSceneDisplayPlayer()
+GraphicsSceneDisplayDumpIterator::~GraphicsSceneDisplayDumpIterator()
 {
 }
 
-void GraphicsSceneDisplayPlayer::setFilename(const QString &filename)
+void GraphicsSceneDisplayDumpIterator::setFilename(const QString &filename)
 {
-    stop();
     inputFile_.setFileName(filename);
-    type_ = Invalid;
-    startTimeStamp_ = -1;
-}
-
-void GraphicsSceneDisplayPlayer::play()
-{
-    advanceTimer_.stop();
 
     if (!inputFile_.fileName().isEmpty() && !inputFile_.isReadable())
     {
+        type_ = Invalid;
+        startTimeStamp_ = -1;
+
         inputFile_.open(QIODevice::ReadOnly);
         inputData_.setDevice(&inputFile_);
 
@@ -56,27 +48,16 @@ void GraphicsSceneDisplayPlayer::play()
             }
         }
     }
-
-    if (type_ != Invalid)
-    {
-        advanceToNextFrame();
-    }
 }
 
-void GraphicsSceneDisplayPlayer::stop()
+int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
 {
-    advanceTimer_.stop();
-}
+    if (type_ == Invalid)
+        return -1;
 
-void GraphicsSceneDisplayPlayer::advanceToNextFrame()
-{
     if (type_ == Full)
     {
-        QImage imageData;
-        inputData_ >> imageData;
-
-        QPixmap pixmap = QPixmap::fromImage(imageData);
-        pixmapItem_.setPixmap(pixmap);
+        inputData_ >> workBuffer_;
     }
     else if (type_ == Diff)
     {
@@ -102,16 +83,25 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
         }
 
         // Interpret data...
-        QPixmap pixmap(bufferSize);
 
-        QPainter p(&pixmap);
+        QImage imageBefore = workBuffer_.copy();
+
+        if (bufferSize != workBuffer_.size())
+        {
+            QImage newImage(bufferSize, QImage::Format_ARGB32);
+            newImage.fill(0);
+
+            QPainter p(&newImage);
+            p.setBackground(QBrush(QColor(255, 255, 255, 0)));
+            p.setCompositionMode(QPainter::CompositionMode_Source);
+            p.drawImage(0, 0, workBuffer_);
+
+            workBuffer_ = newImage;
+        }
+
+        QPainter p(&workBuffer_);
         p.setBackground(QBrush(QColor(255, 255, 255, 0)));
         p.setCompositionMode(QPainter::CompositionMode_Source);
-        p.eraseRect(pixmap.rect());
-
-        p.drawPixmap(0, 0, pixmapItem_.pixmap());
-
-        QPixmap pixmapBefore = pixmap.copy();
 
         for (int i = 0; i < messages.count(); ++i)
         {
@@ -175,17 +165,15 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
             }
             else if (command == "moveImage")
             {
-                p.drawPixmap(params.at(5).toInt(), params.at(6).toInt(), pixmapBefore, params.at(1).toInt(), params.at(2).toInt(), params.at(3).toInt(), params.at(4).toInt());
+                p.drawImage(params.at(5).toInt(), params.at(6).toInt(), imageBefore, params.at(1).toInt(), params.at(2).toInt(), params.at(3).toInt(), params.at(4).toInt());
             }
         }
 
         p.end();
-
-        pixmapItem_.setPixmap(pixmap);
     }
 
     if (inputData_.atEnd())
-        return;
+        return 0;
 
     // Read timestamp of next frame...
     qint64 frameTimeStamp;
@@ -194,7 +182,53 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
     // Calculate diff and start timer...
     qint64 diffTime = frameTimeStamp - lastTimeStamp_;
     lastTimeStamp_ = frameTimeStamp;
-    advanceTimer_.setInterval(diffTime);
-    advanceTimer_.start();
+
+    return diffTime;
+}
+
+/* GraphicsSceneDisplayPlayer */
+
+GraphicsSceneDisplayPlayer::GraphicsSceneDisplayPlayer(QWidget *parent) :
+    QGraphicsView(parent)
+{
+    setScene(&scene_);
+    scene_.addItem(&pixmapItem_);
+
+    connect(&advanceTimer_, SIGNAL(timeout()), this, SLOT(advanceToNextFrame()));
+    advanceTimer_.setSingleShot(true);
+}
+
+GraphicsSceneDisplayPlayer::~GraphicsSceneDisplayPlayer()
+{
+}
+
+void GraphicsSceneDisplayPlayer::setFilename(const QString &filename)
+{
+    stop();
+    it_.setFilename(filename);
+}
+
+void GraphicsSceneDisplayPlayer::play()
+{
+    advanceTimer_.stop();
+    advanceToNextFrame();
+}
+
+void GraphicsSceneDisplayPlayer::stop()
+{
+    advanceTimer_.stop();
+}
+
+void GraphicsSceneDisplayPlayer::advanceToNextFrame()
+{
+    int diffTime = it_.advanceToNextFrame();
+
+    if (diffTime > 0)
+    {
+        pixmapItem_.setPixmap(QPixmap::fromImage(it_.outputFrame()));
+
+        advanceTimer_.setInterval(diffTime);
+        advanceTimer_.start();
+    }
 }
 

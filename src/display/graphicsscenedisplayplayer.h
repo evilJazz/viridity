@@ -7,29 +7,27 @@
 #include <QTimer>
 #include <QGraphicsPixmapItem>
 
-class GraphicsSceneDisplayPlayer : public QGraphicsView
+class GraphicsSceneDisplayDumpIterator : public QObject
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneDisplayPlayer(QWidget *parent = 0);
-    ~GraphicsSceneDisplayPlayer();
+    explicit GraphicsSceneDisplayDumpIterator(QObject *parent = 0);
+    virtual ~GraphicsSceneDisplayDumpIterator();
 
     void setFilename(const QString &filename);
     const QString &filename() const { return inputFile_.fileName(); }
 
-    void play();
-    void stop();
-
-private slots:
-    void advanceToNextFrame();
+    int advanceToNextFrame();
+    const QImage &outputFrame() const { return workBuffer_; }
 
 private:
     QFile inputFile_;
     QDataStream inputData_;
 
+    QImage workBuffer_;
+
     qint64 startTimeStamp_;
     qint64 lastTimeStamp_;
-    QTimer advanceTimer_;
 
     enum DumpType {
         Invalid,
@@ -38,7 +36,27 @@ private:
     };
 
     DumpType type_;
+};
 
+class GraphicsSceneDisplayPlayer : public QGraphicsView
+{
+    Q_OBJECT
+public:
+    explicit GraphicsSceneDisplayPlayer(QWidget *parent = 0);
+    virtual ~GraphicsSceneDisplayPlayer();
+
+    void setFilename(const QString &filename);
+    const QString &filename() const { return it_.filename(); }
+
+    void play();
+    void stop();
+
+private slots:
+    void advanceToNextFrame();
+
+private:
+    GraphicsSceneDisplayDumpIterator it_;
+    QTimer advanceTimer_;
     QGraphicsScene scene_;
     QGraphicsPixmapItem pixmapItem_;
 };
