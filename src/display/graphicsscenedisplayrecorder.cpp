@@ -39,6 +39,8 @@ void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<
     {
         fullFrameData_ << (qint64)frameTimeStamp;
         fullFrameData_ << display_->renderer().buffer();
+
+        fullFrameFile_.flush();
     }
 
     // Save differential frame
@@ -63,6 +65,8 @@ void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<
             diffFrameData_ << i.key();
             diffFrameData_ << i.value()->data.data();
         }
+
+        diffFrameFile_.flush();
     }
 }
 

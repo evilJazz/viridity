@@ -105,7 +105,13 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
         QPixmap pixmap(bufferSize);
 
         QPainter p(&pixmap);
+        p.setBackground(QBrush(QColor(255, 255, 255, 0)));
+        p.setCompositionMode(QPainter::CompositionMode_Source);
+        p.eraseRect(pixmap.rect());
+
         p.drawPixmap(0, 0, pixmapItem_.pixmap());
+
+        QPixmap pixmapBefore = pixmap.copy();
 
         for (int i = 0; i < messages.count(); ++i)
         {
@@ -151,7 +157,7 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
 
                         QImage alphaImage(width, height, QImage::Format_ARGB32);
                         QPainter ap(&alphaImage);
-                        ap.drawImage(0, 0, image, artefactMargin, artefactMargin * 2 + height);
+                        ap.drawImage(0, 0, image, artefactMargin, artefactMargin * 3 + height);
                         ap.end();
 
                         ImageUtils::intensityToAlpha(alphaImage, colorImage);
@@ -167,9 +173,9 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
                 QBrush b(QColor(params.at(5).toInt(), params.at(6).toInt(), params.at(7).toInt(), params.at(8).toInt()));
                 p.fillRect(params.at(1).toInt(), params.at(2).toInt(), params.at(3).toInt(), params.at(4).toInt(), b);
             }
-            else if (command == "moveRect")
+            else if (command == "moveImage")
             {
-
+                p.drawPixmap(params.at(5).toInt(), params.at(6).toInt(), pixmapBefore, params.at(1).toInt(), params.at(2).toInt(), params.at(3).toInt(), params.at(4).toInt());
             }
         }
 
