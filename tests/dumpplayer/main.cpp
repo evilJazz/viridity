@@ -6,7 +6,7 @@ int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
     GraphicsSceneDisplayPlayer player;
-    player.setFilename("/home/darkstar/Desktop/full_dump_display1.fgsd");
+    player.setFilename("/home/darkstar/Desktop/diff_dump_display1.dgsd");
     player.play();
     player.show();
 

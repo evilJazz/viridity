@@ -52,6 +52,7 @@ void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<
     if (diffFrameFile_.isWritable())
     {
         diffFrameData_ << (qint64)frameTimeStamp;
+        diffFrameData_ << display_->renderer().buffer().size();
         diffFrameData_ << messages;
         diffFrameData_ << display_->patches().count();
 
