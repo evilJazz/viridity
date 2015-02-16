@@ -76,10 +76,14 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
     foreach (const QRect &rect, rects)
         p.eraseRect(rect);
 
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
     SynchronizedSceneRenderer syncedSceneRenderer(scene_);
     syncedSceneRenderer.render(&p, rects);
 #else
     p.eraseRect(workBuffer_->rect());
+
+    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
     SynchronizedSceneRenderer syncedSceneRenderer(scene_);
     syncedSceneRenderer.render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
@@ -123,9 +127,8 @@ void GraphicsSceneBufferRenderer::fullUpdate()
 {
     // TODO: This method is inefficient. Optimize!!
     QMutexLocker m(&bufferAndRegionMutex_);
-    otherBuffer_->fill(0);
+    otherBuffer_->fill(0xFFFFFFFF);
     workBuffer_->fill(0);
-    workBuffer_->invertPixels(QImage::InvertRgba);
     damageRegion_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
     emitUpdatesAvailable();
 }

@@ -202,6 +202,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     patch->mimeType = "image/png";
     //*/
 
+//*
     image = createPackedAlphaPatch(image);
 
 #ifdef USE_IMPROVED_JPEG
@@ -213,6 +214,13 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     patch->mimeType = "image/jpeg";
 
     patch->packedAlpha = true;
+//*/
+
+/*
+    image.save(&patch->data, "JP2");
+    patch->mimeType = "image/jp2";
+    patch->packedAlpha = false;
+//*/
 
     patch->data.close();
 

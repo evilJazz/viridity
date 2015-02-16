@@ -347,8 +347,8 @@ QVector<QRect> ImageComparer::findDifferences()
 {
     TiledRegion region(tileWidth_, tileWidth_);
 
-    int width = imageBefore_->width() / tileWidth_;
-    int height = imageBefore_->height() / tileWidth_;
+    int width = imageBefore_->width() / tileWidth_ + (imageBefore_->width() % tileWidth_ ? 1 : 0);
+    int height = imageBefore_->height() / tileWidth_ + (imageBefore_->height() % tileWidth_ ? 1 : 0);
 
     for (int y = 0; y < height; ++y)
     {

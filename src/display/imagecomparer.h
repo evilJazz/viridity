@@ -39,7 +39,7 @@ template<typename T> inline bool contentMatches(QImage *buffer1, QImage *buffer2
     QRect rect1 = QRect(point, rect.size()).intersected(buffer1->rect());
     QRect rect2 = rect.intersected(buffer2->rect());
 
-    if (rect1.size() != rect.size() || rect2.size() != rect.size())
+    if (rect1.size() != rect2.size())
         return false;
 
     int y;
