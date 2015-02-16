@@ -222,11 +222,10 @@ void GraphicsSceneDisplayPlayer::stop()
 void GraphicsSceneDisplayPlayer::advanceToNextFrame()
 {
     int diffTime = it_.advanceToNextFrame();
+    pixmapItem_.setPixmap(QPixmap::fromImage(it_.outputFrame()));
 
     if (diffTime > 0)
     {
-        pixmapItem_.setPixmap(QPixmap::fromImage(it_.outputFrame()));
-
         advanceTimer_.setInterval(diffTime);
         advanceTimer_.start();
     }
