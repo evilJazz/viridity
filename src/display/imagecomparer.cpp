@@ -435,7 +435,7 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea,
 #endif
 
 #ifdef USE_MULTITHREADING
-    result = QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this, additionalSearchAreas), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
+    result += QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this, additionalSearchAreas), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
 #else
     foreach (const QRect &rect, tiles)
     {
