@@ -54,9 +54,11 @@ AreaFingerPrint::~AreaFingerPrint()
 void AreaFingerPrint::clear()
 {
     if (data_)
-        delete data_;
+    {
+        delete [] data_;
+        data_ = NULL;
+    }
 
-    data_ = 0;
     size_ = 0;
 }
 
@@ -229,10 +231,13 @@ void AreaFingerPrints::clear()
     if (fingerPrints_)
     {
         for (int i = 0; i < width_; ++i)
+        {
             delete fingerPrints_[i];
+            fingerPrints_[i] = NULL;
+        }
 
-        delete fingerPrints_;
-        fingerPrints_ = 0;
+        delete [] fingerPrints_;
+        fingerPrints_ = NULL;
     }
 
     width_ = 0;
