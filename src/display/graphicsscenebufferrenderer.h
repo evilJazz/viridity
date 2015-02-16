@@ -39,6 +39,8 @@ public:
 
     int tileSize() const { return comparer_ ? comparer_->tileSize() : 0; }
 
+    void pushFullFrame(const QImage& image); // Only works if we have a NULL scene.
+
 public slots:
     void fullUpdate();
     void setSize(int width, int height);
@@ -65,11 +67,15 @@ protected:
     TiledRegion damageRegion_;
     ImageComparer *comparer_;
 
+    QImage pushedFullFrame_;
+
     void setSizeFromScene();
 
     void initComparer();
     void swapWorkBuffer();
     void emitUpdatesAvailable();
+
+    QVector<QRect> paintUpdatesToBuffer(QPainter &p);
 };
 
 #endif // GRAPHICSSCENEBUFFERRENDERER_H

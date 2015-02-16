@@ -56,6 +56,53 @@ void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
     minimizeDamageRegion_ = value;
 }
 
+QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
+{
+    DTIMERINIT(paintTimer);
+    // Properly set up to make eraseRect work the way we expect it to work,
+    // ie. replace with the defined transparent brush instead of merging/blending
+    p.setBackground(QBrush(QColor(255, 255, 255, 0)));
+    p.setCompositionMode(QPainter::CompositionMode_Source);
+
+    QVector<QRect> rects;
+
+    if (scene_)
+    {
+#ifdef USE_SCENE_DAMAGEREGION
+        rects = damageRegion_.rects();
+        foreach (const QRect &rect, rects)
+            p.eraseRect(rect);
+
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+        SynchronizedSceneRenderer syncedSceneRenderer(scene_);
+        syncedSceneRenderer.render(&p, rects);
+#else
+        p.eraseRect(workBuffer_->rect());
+
+        p.setCompositionMode(QPainter::CompositionMode_SourceOver);
+
+        SynchronizedSceneRenderer syncedSceneRenderer(scene_);
+        syncedSceneRenderer.render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
+
+        rects = comparer_->findDifferences();
+#endif
+    }
+    else
+    {
+        if (!pushedFullFrame_.isNull())
+        {
+            p.eraseRect(workBuffer_->rect());
+            p.drawImage(0, 0, pushedFullFrame_);
+            rects = comparer_->findDifferences();
+        }
+    }
+
+    DTIMERPRINT(paintTimer, "Damage region paint");
+
+    return rects;
+}
+
 UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
 {
     DGUARDMETHODTIMED;
@@ -63,34 +110,8 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
 
     swapWorkBuffer();
 
-    DTIMERINIT(paintTimer);
     QPainter p(workBuffer_);
-
-    // Properly set up to make eraseRect work the way we expect it to work,
-    // ie. replace with the defined transparent brush instead of merging/blending
-    p.setBackground(QBrush(QColor(255, 255, 255, 0)));
-    p.setCompositionMode(QPainter::CompositionMode_Source);
-
-#ifdef USE_SCENE_DAMAGEREGION
-    QVector<QRect> rects = damageRegion_.rects();
-    foreach (const QRect &rect, rects)
-        p.eraseRect(rect);
-
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    SynchronizedSceneRenderer syncedSceneRenderer(scene_);
-    syncedSceneRenderer.render(&p, rects);
-#else
-    p.eraseRect(workBuffer_->rect());
-
-    p.setCompositionMode(QPainter::CompositionMode_SourceOver);
-
-    SynchronizedSceneRenderer syncedSceneRenderer(scene_);
-    syncedSceneRenderer.render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
-
-    QVector<QRect> rects = comparer_->findDifferences();
-#endif
-    DTIMERPRINT(paintTimer, "Damage region paint");
+    QVector<QRect> rects = paintUpdatesToBuffer(p);
 
     UpdateOperationList ops;
 
@@ -121,6 +142,15 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
     updatesAvailable_ = false;
 
     return ops;
+}
+
+void GraphicsSceneBufferRenderer::pushFullFrame(const QImage &image)
+{
+    if (!scene_)
+    {
+        pushedFullFrame_ = image;
+        emitUpdatesAvailable();
+    }
 }
 
 void GraphicsSceneBufferRenderer::fullUpdate()
@@ -160,10 +190,12 @@ void GraphicsSceneBufferRenderer::setSize(int width, int height)
 
 void GraphicsSceneBufferRenderer::setSizeFromScene()
 {
-    int width = scene_->width();
-    int height = scene_->height();
-
-    setSize(width, height);
+    if (scene_)
+    {
+        int width = scene_->width();
+        int height = scene_->height();
+        setSize(width, height);
+    }
 }
 
 void GraphicsSceneBufferRenderer::sceneAttached()
