@@ -56,7 +56,7 @@ void GraphicsSceneObserver::setEnabled(bool value)
 
         enabled_ = value;
 
-        if (enabled_)
+        if (enabled_ && scene_)
         {
             sceneAttached();
 

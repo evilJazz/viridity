@@ -57,7 +57,7 @@ public:
     GraphicsSceneFramePatch *takePatch(const QString &patchId);
 
     const QHash<QString, GraphicsSceneFramePatch *> &patches() const { return patches_; } // use GraphicsSceneDisplayLocker to access or suffer!
-    const GraphicsSceneBufferRenderer &renderer() const { return *renderer_; }
+    GraphicsSceneBufferRenderer &renderer() const { return *renderer_; }
 
     void requestFullUpdate();
 

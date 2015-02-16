@@ -76,8 +76,13 @@ GraphicsSceneDisplay::~GraphicsSceneDisplay()
 
 bool GraphicsSceneDisplay::isUpdateAvailable() const
 {
-    QMutexLocker l(&patchesMutex_);
-    return clientReady_ && patches_.count() == 0 && updateAvailable_;
+    if (scene_)
+    {
+        QMutexLocker l(&patchesMutex_);
+        return clientReady_ && patches_.count() == 0 && updateAvailable_;
+    }
+    else
+        return true;
 }
 
 void GraphicsSceneDisplay::clearPatches()
