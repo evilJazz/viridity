@@ -207,7 +207,50 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     patch->mimeType = "image/png";
     //*/
 
-//*
+    //*
+    QBuffer rawBuffer;
+    rawBuffer.open(QIODevice::ReadWrite);
+    image.save(&rawBuffer, "BMP");
+    rawBuffer.close();
+
+    // Use zlib to estimate compression of deflate in PNG without pre-compression filter...
+    // This is way faster than just using PNG directly...
+    QByteArray compressedRaw = qCompress(rawBuffer.data(), 1);
+
+    //qDebug("rawBuffer: %d, compressedRaw: %d, packed alpha JPEG: %d", rawBuffer.data().size(), compressedRaw.size(), jpegBuffer.size());
+
+    //if (true || compressedRaw.size() < 1024 || compressedRaw.size() < jpegBuffer.size())
+    if (compressedRaw.size() < 1024 || compressedRaw.size() < rawBuffer.size() * 0.5)
+    {
+        // Saving PNG is very expensive!
+        QBuffer pngBuffer;
+        pngBuffer.open(QIODevice::ReadWrite);
+        image.save(&pngBuffer, "PNG");
+        pngBuffer.close();
+
+        patch->data.setData(pngBuffer.data());
+        patch->mimeType = "image/png";
+        patch->packedAlpha = false;
+    }
+    else
+    {
+        QImage packedAlphaImage = createPackedAlphaPatch(image);
+        QBuffer jpegBuffer;
+        jpegBuffer.open(QIODevice::ReadWrite);
+    #ifdef USE_IMPROVED_JPEG
+        writeJPEG(packedAlphaImage, &jpegBuffer, 94, true, false);
+    #else
+        packedAlphaImage.save(&jpegBuffer, "JPEG", 94);
+    #endif
+        jpegBuffer.close();
+
+        patch->data.setData(jpegBuffer.data());
+        patch->mimeType = "image/jpeg";
+        patch->packedAlpha = true;
+    }
+    //*/
+
+/*
     image = createPackedAlphaPatch(image);
 
 #ifdef USE_IMPROVED_JPEG
