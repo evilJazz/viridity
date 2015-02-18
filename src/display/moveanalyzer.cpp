@@ -90,7 +90,7 @@ void AreaFingerPrint::updateFromImage(QImage *image, const QRect &area, int star
 
 void AreaFingerPrint::internalUpdateFromImage(QImage *image, const QRect &rect, int startIndex)
 {
-    quint32 *pBuf;
+    const quint32 *pBuf;
 
     int limY = qMin(rect.height(), size_ - startIndex);
     int width = rect.width();
@@ -99,7 +99,7 @@ void AreaFingerPrint::internalUpdateFromImage(QImage *image, const QRect &rect, 
 
     for (int y = 0; y < limY; ++y)
     {
-        pBuf = (quint32 *)image->scanLine(rect.top() + y) + rect.left();
+        pBuf = (const quint32 *)image->constScanLine(rect.top() + y) + rect.left();
 
         for (int x = width; x > 0; --x)
         {
@@ -438,12 +438,12 @@ QImage convertToGrayscale(const QImage &image)
     int height = image.height();
     int x;
     int width = image.width();
-    register QRgb *input;
+    register const QRgb *input;
     register uchar *output;
 
     for (y = 0; y < height; ++y)
     {
-        input = (QRgb *)image.scanLine(y);
+        input = (QRgb *)image.constScanLine(y);
         output = result.scanLine(y);
 
         for (x = 0; x < width; ++x)

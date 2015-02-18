@@ -14,8 +14,10 @@ TEMPLATE = app
 SOURCES += main.cpp
 
 include(../../3rdparty/kcl/kcl.pri)
-include(../../3rdparty/tufao/tufao.pri)
+include(../../3rdparty/tufao/tufao-min.pri)
 include(../../viridity.pri)
+
+DEFINES += USE_MOVE_ANALYZER USE_MOVE_ANALYZER_FINEGRAINED
 
 RESOURCES += \
     ../testdata/test.qrc

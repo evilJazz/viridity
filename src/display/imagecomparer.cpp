@@ -67,8 +67,8 @@ QRect fastFindChangedRect32(QImage *buffer1, QImage *buffer2, const QRect &searc
 
     for (int y = roi.top(); y < roiBottom; ++y)
     {
-        pBuf1 = (QRgb *)buffer1->scanLine(y) + roi.left();
-        pBuf2 = (QRgb *)buffer2->scanLine(y) + roi.left();
+        pBuf1 = (QRgb *)buffer1->constScanLine(y) + roi.left();
+        pBuf2 = (QRgb *)buffer2->constScanLine(y) + roi.left();
 
         for (int x = roi.left(); x < roiRight; ++x)
         {
@@ -106,7 +106,7 @@ QColor getSolidRectColor(QImage *buffer, const QRect &area)
 
     while (isSolidColor && y < roiBottom)
     {
-        pBuf = (QRgb *)buffer->scanLine(y) + roi.left();
+        pBuf = (QRgb *)buffer->constScanLine(y) + roi.left();
         ++y;
 
         for (int x = roi.left(); x < roiRight; ++x)

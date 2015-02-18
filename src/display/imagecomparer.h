@@ -46,7 +46,7 @@ template<typename T> inline bool contentMatches(QImage *buffer1, QImage *buffer2
     int height = rect1.height();
     //int x;
     int width = rect1.width();
-    register T *pBuf1, *pBuf2;
+    register const T *pBuf1, *pBuf2;
 
     //pBuf1 = (T *)buffer1->scanLine(rect1.top()) + rect1.left();
     //pBuf2 = (T *)buffer2->scanLine(rect2.top()) + rect2.left();
@@ -56,8 +56,8 @@ template<typename T> inline bool contentMatches(QImage *buffer1, QImage *buffer2
 
     for (y = 0; y < height; ++y)
     {
-        pBuf1 = (T *)buffer1->scanLine(rect1.top() + y) + rect1.left();
-        pBuf2 = (T *)buffer2->scanLine(rect2.top() + y) + rect2.left();
+        pBuf1 = (T *)buffer1->constScanLine(rect1.top() + y) + rect1.left();
+        pBuf2 = (T *)buffer2->constScanLine(rect2.top() + y) + rect2.left();
 
         //*
         if (memcmp(pBuf1, pBuf2, width * sizeof(T)) != 0)
