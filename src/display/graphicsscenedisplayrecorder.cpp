@@ -2,6 +2,7 @@
 
 GraphicsSceneDisplayRecorder::GraphicsSceneDisplayRecorder(GraphicsSceneDisplay *display) :
     QObject(display),
+    frameTimeStamp_(0),
     display_(display)
 {
     connect(display_, SIGNAL(newFrameMessagesGenerated(QList<QByteArray>)), this, SLOT(displayNewFrameMessagesGenerated(QList<QByteArray>)), Qt::DirectConnection);
@@ -21,11 +22,17 @@ void GraphicsSceneDisplayRecorder::setDiffFrameFilename(const QString &filename)
     diffFrameFile_.setFileName(filename);
 }
 
+void GraphicsSceneDisplayRecorder::setNextFrameTimeStamp(qint64 ts)
+{
+    frameTimeStamp_ = ts;
+}
+
 void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<QByteArray> &messages)
 {
     GraphicsSceneDisplayLocker l(display_);
 
-    qint64 frameTimeStamp = QDateTime::currentMSecsSinceEpoch();
+    qint64 frameTimeStamp = frameTimeStamp_ > 0 ? frameTimeStamp_ : QDateTime::currentMSecsSinceEpoch();
+    frameTimeStamp_ = 0;
 
     // Save full frame
     if (!fullFrameFile_.fileName().isEmpty() && !fullFrameFile_.isWritable())

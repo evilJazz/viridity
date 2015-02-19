@@ -20,11 +20,15 @@ public:
     void setDiffFrameFilename(const QString &filename);
     const QString &diffFrameFilename() const { return diffFrameFile_.fileName(); }
 
+    void setNextFrameTimeStamp(qint64 ts);
+
 private slots:
     void displayNewFrameMessagesGenerated(const QList<QByteArray> &messages);
 
 private:
     GraphicsSceneDisplay *display_;
+
+    qint64 frameTimeStamp_;
 
     QFile fullFrameFile_;
     QFile diffFrameFile_;

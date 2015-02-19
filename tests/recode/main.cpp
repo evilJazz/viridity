@@ -13,8 +13,8 @@ int main(int argc, char *argv[])
         GraphicsSceneDisplay d("display", NULL, NULL);
 
         // Record again...
-        GraphicsSceneDisplayRecorder *recorder = new GraphicsSceneDisplayRecorder(&d);
-        recorder->setDiffFrameFilename(a.arguments()[2]);
+        GraphicsSceneDisplayRecorder recorder(&d);
+        recorder.setDiffFrameFilename(a.arguments()[2]);
 
         GraphicsSceneDisplayDumpIterator it;
         it.setFilename(a.arguments()[1]);
@@ -23,6 +23,7 @@ int main(int argc, char *argv[])
         {
             d.renderer().setSize(it.outputFrame().width(), it.outputFrame().height());
             d.renderer().pushFullFrame(it.outputFrame());
+            recorder.setNextFrameTimeStamp(it.currentFrameTimeStamp());
             static_cast<ViridityMessageHandler *>(&d)->takePendingMessages();
         }
 

@@ -19,6 +19,7 @@ public:
 
     int advanceToNextFrame();
     const QImage &outputFrame() const { return workBuffer_; }
+    qint64 currentFrameTimeStamp() const { return currentTimeStamp_; }
 
 private:
     QFile inputFile_;
@@ -27,6 +28,7 @@ private:
     QImage workBuffer_;
 
     qint64 startTimeStamp_;
+    qint64 currentTimeStamp_;
     qint64 lastTimeStamp_;
 
     enum DumpType {

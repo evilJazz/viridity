@@ -9,7 +9,9 @@
 GraphicsSceneDisplayDumpIterator::GraphicsSceneDisplayDumpIterator(QObject *parent) :
     QObject(parent),
     type_(Invalid),
-    startTimeStamp_(-1)
+    startTimeStamp_(-1),
+    currentTimeStamp_(0),
+    lastTimeStamp_(0)
 {
 }
 
@@ -44,6 +46,7 @@ void GraphicsSceneDisplayDumpIterator::setFilename(const QString &filename)
             if (type_ != Invalid)
             {
                 inputData_ >> startTimeStamp_;
+                currentTimeStamp_ = startTimeStamp_;
                 lastTimeStamp_ = startTimeStamp_;
             }
         }
@@ -54,6 +57,8 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
 {
     if (type_ == Invalid)
         return -1;
+
+    currentTimeStamp_ = lastTimeStamp_;
 
     if (type_ == Full)
     {
