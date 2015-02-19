@@ -40,7 +40,7 @@
 
     <script type="text/javascript">
         $(document).ready(function() {
-            var channel = new Viridity({ connectionMethod: ConnectionMethod.LongPolling, sessionId: $.cookie("vsessionId") });
+            var channel = new Viridity({ connectionMethod: ConnectionMethod.WebSockets, sessionId: $.cookie("vsessionId") });
 
             var initSession = function(sessionId)
             {

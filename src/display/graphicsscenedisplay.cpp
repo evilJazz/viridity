@@ -12,6 +12,8 @@
 #include <QMutexLocker>
 #include <QUrl>
 
+#include <QtMath>
+
 #define USE_MULTITHREADING
 
 #ifdef USE_MULTITHREADING
@@ -38,6 +40,8 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     commandInterpreter_(commandInterpreter),
     id_(id),
     urlMode_(false),
+    patchEncodingFormat_(EncodingFormat_Auto),
+    jpegQuality_(94),
     updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),
@@ -144,7 +148,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     patch->rect = rect;
 
     // Account for encoding artifacts...
-    patch->artefactMargin = 8; // block size of JPEG
+    patch->artefactMargin = patchEncodingFormat_ & EncodingFormat_JPEG ? 8 : 0; // block size of JPEG
 
     QRect rectEnlarged = rect.adjusted(
         -patch->artefactMargin,
@@ -162,65 +166,9 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     p.drawImage(0, 0, renderer_->buffer(), rectEnlarged.x(), rectEnlarged.y());
     p.end();
 
-    /*
-    QBuffer pngBuffer;
-    pngBuffer.open(QIODevice::ReadWrite);
-    image.save(&pngBuffer, "PNG");
-
-    QBuffer jpgBuffer;
-    jpgBuffer.open(QIODevice::ReadWrite);
-    image.save(&jpgBuffer, "JPEG", 50);
-
-    if (pngBuffer.size() < jpgBuffer.size())
-    {
-        patch->data.setData(pngBuffer.data());
-        patch->mimeType = "image/png";
-    }
-    else
-    {
-        patch->data.setData(jpgBuffer.data());
-        patch->mimeType = "image/jpg";
-    }
-    //*/
-
-    /*
-    patch->data.open(QIODevice::ReadWrite);
-
-    if (false && image.width() * image.height() > 9 * 9 * renderer_->tileSize() * renderer_->tileSize())
-    {
-        image.save(&patch->data, "JPEG", 50);
-        patch->mimeType = "image/jpeg";
-    }
-    else
-    {
-        image.save(&patch->data, "PNG");
-        patch->mimeType = "image/png";
-    }
-    //*/
-
-    //    image.save(&patch->data, "JPEG", 50);
-//        patch->mimeType = "image/jpeg";
-
-    /*
-    image = image.convertToFormat(QImage::Format_Indexed8);
-    image.save(&patch->data, "PNG");
-    patch->mimeType = "image/png";
-    //*/
-
-    //*
-    QBuffer rawBuffer;
-    rawBuffer.open(QIODevice::ReadWrite);
-    image.save(&rawBuffer, "BMP");
-    rawBuffer.close();
-
-    // Use zlib to estimate compression of deflate in PNG without pre-compression filter...
-    // This is way faster than just using PNG directly...
-    QByteArray compressedRaw = qCompress(rawBuffer.data(), 1);
-
-    //qDebug("rawBuffer: %d, compressedRaw: %d, packed alpha JPEG: %d", rawBuffer.data().size(), compressedRaw.size(), jpegBuffer.size());
-
-    //if (true || compressedRaw.size() < 1024 || compressedRaw.size() < jpegBuffer.size())
-    if (compressedRaw.size() < 1024 || compressedRaw.size() < rawBuffer.size() * 0.5)
+    int estimatedPNGSize;
+    if (patchEncodingFormat_ & EncodingFormat_PNG &&
+        (patchEncodingFormat_ == EncodingFormat_PNG || estimatePNGCompression(image, &estimatedPNGSize) < 0.6 || estimatedPNGSize < 1024))
     {
         // Saving PNG is very expensive!
         QBuffer pngBuffer;
@@ -232,15 +180,15 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->mimeType = "image/png";
         patch->packedAlpha = false;
     }
-    else
+    else if (patchEncodingFormat_ == EncodingFormat_JPEG || patchEncodingFormat_ & EncodingFormat_JPEG)
     {
         QImage packedAlphaImage = createPackedAlphaPatch(image);
         QBuffer jpegBuffer;
         jpegBuffer.open(QIODevice::ReadWrite);
     #ifdef USE_IMPROVED_JPEG
-        writeJPEG(packedAlphaImage, &jpegBuffer, 94, true, false);
+        writeJPEG(packedAlphaImage, &jpegBuffer, jpegQuality_, true, false);
     #else
-        packedAlphaImage.save(&jpegBuffer, "JPEG", 94);
+        packedAlphaImage.save(&jpegBuffer, "JPEG", jpegQuality_);
     #endif
         jpegBuffer.close();
 
@@ -248,27 +196,17 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->mimeType = "image/jpeg";
         patch->packedAlpha = true;
     }
-    //*/
+    else // if (patchEncodingFormat_ == EncodingFormat_Raw)
+    {
+        QBuffer bmpBuffer;
+        bmpBuffer.open(QIODevice::ReadWrite);
+        image.save(&bmpBuffer, "BMP");
+        bmpBuffer.close();
 
-/*
-    image = createPackedAlphaPatch(image);
-
-#ifdef USE_IMPROVED_JPEG
-    patch->data.open(QIODevice::ReadWrite);
-    writeJPEG(image, &patch->data, 90, true, false);
-#else
-    image.save(&patch->data, "JPEG", 90);
-#endif
-    patch->mimeType = "image/jpeg";
-
-    patch->packedAlpha = true;
-//*/
-
-/*
-    image.save(&patch->data, "JP2");
-    patch->mimeType = "image/jp2";
-    patch->packedAlpha = false;
-//*/
+        patch->data.setData(bmpBuffer.data());
+        patch->mimeType = "image/bmp";
+        patch->packedAlpha = false;
+    }
 
     patch->data.close();
 
@@ -281,18 +219,44 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     return patch;
 }
 
-QImage GraphicsSceneDisplay::createPackedAlphaPatch(const QImage &input)
+qreal GraphicsSceneDisplay::estimatePNGCompression(const QImage &image, int *estimatedSize)
 {
-    QImage result(input.width(), input.height() * 2, QImage::Format_RGB888);
+    QBuffer buffer;
+    buffer.open(QIODevice::ReadWrite);
+
+    qreal decimator = qMax(1., (qreal)qMax(image.byteCount(), 1) / (32 * 1024));
+    qreal sqrtdec = qSqrt(decimator);
+    QSizeF newSize = image.size() / sqrtdec;
+
+    QImage scaledImage = image.scaled(newSize.toSize(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
+    scaledImage.save(&buffer, "BMP");
+
+    buffer.close();
+
+    QByteArray compressedRaw = qCompress(buffer.data(), 1);
+
+    if (estimatedSize)
+        *estimatedSize = compressedRaw.size() * decimator * 0.8;
+
+    qreal ratio = (qreal)compressedRaw.size() / buffer.size();
+
+    //qDebug("compressedRaw: %d, raw: %d, ratio: %.2f", compressedRaw.size(), buffer.size(), ratio);
+
+    return ratio;
+}
+
+QImage GraphicsSceneDisplay::createPackedAlphaPatch(const QImage &image)
+{
+    QImage result(image.width(), image.height() * 2, QImage::Format_RGB888);
     result.fill(0);
 
-    QImage inputWithoutAlpha = input.convertToFormat(QImage::Format_RGB888);
-    QImage alpha = input.alphaChannel();
+    QImage inputWithoutAlpha = image.convertToFormat(QImage::Format_RGB888);
+    QImage alpha = image.alphaChannel();
 
     QPainter p;
     p.begin(&result);
     p.drawImage(0, 0, inputWithoutAlpha);
-    p.drawImage(0, input.height(), alpha);
+    p.drawImage(0, image.height(), alpha);
     p.end();
 
     return result;

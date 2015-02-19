@@ -32,9 +32,9 @@ protected slots:
 
         if (display)
         {
-            GraphicsSceneDisplayRecorder *recorder = new GraphicsSceneDisplayRecorder(display);
-            recorder->setFullFrameFilename("/home/darkstar/Desktop/full_dump_" + id + ".fgsd");
-            recorder->setDiffFrameFilename("/home/darkstar/Desktop/diff_dump_" + id + ".dgsd");
+            //GraphicsSceneDisplayRecorder *recorder = new GraphicsSceneDisplayRecorder(display);
+            //recorder->setFullFrameFilename("/home/darkstar/Desktop/full_dump_" + id + ".fgsd");
+            //recorder->setDiffFrameFilename("/home/darkstar/Desktop/diff_dump_" + id + ".dgsd");
         }
 
         return display;

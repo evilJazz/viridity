@@ -61,6 +61,9 @@ public:
 
     void requestFullUpdate();
 
+    static qreal estimatePNGCompression(const QImage &image, int *estimatedSize = NULL);
+    static QImage createPackedAlphaPatch(const QImage &image);
+
 signals:
     void updateAvailable();
     void newFrameMessagesGenerated(const QList<QByteArray> &messages);
@@ -82,6 +85,18 @@ private:
 
     QString id_;
     bool urlMode_;
+
+    enum EncodingFormat
+    {
+        EncodingFormat_Raw = 1,
+        EncodingFormat_PNG = 2,
+        EncodingFormat_JPEG = 4,
+        EncodingFormat_Auto = EncodingFormat_PNG | EncodingFormat_JPEG
+    };
+
+    EncodingFormat patchEncodingFormat_;
+    int jpegQuality_;
+
     int updateCheckInterval_;
 
     bool updateAvailable_;
@@ -102,7 +117,6 @@ private:
     void clearPatches();
 
     void triggerUpdateCheckTimer();
-    QImage createPackedAlphaPatch(const QImage &input);
 };
 
 #endif // GRAPHICSSCENEDISPLAY_H

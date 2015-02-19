@@ -2,10 +2,18 @@
 #include <qtest.h>
 #include <QtDebug>
 
+#include <QBuffer>
+#include <QByteArray>
+
 #include <QPainter>
 
 #include "imagecomparer.h"
 #include "moveanalyzer.h"
+#include "graphicsscenedisplay.h"
+
+#ifdef USE_IMPROVED_JPEG
+#include "private/jpegwriter.h"
+#endif
 
 class ImageComparerTest : public QObject
 {
@@ -17,6 +25,9 @@ private slots:
 
         lena_.load(":/testimages/lena.png");
         lena_ = lena_.convertToFormat(QImage::Format_ARGB32);
+
+        wikitext_.load(":/testimages/wikitext.png");
+        wikitext_ = wikitext_.convertToFormat(QImage::Format_ARGB32);
 
         imageBefore_ = QImage(1920, 1200, QImage::Format_ARGB32);
 
@@ -166,10 +177,197 @@ private slots:
         }
     }
 
+    void benchmarkSaveToBMP()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "BMP");
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToBMPqCompress1()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "BMP");
+            buffer.close();
+
+            QByteArray compressedRaw = qCompress(buffer.data(), 1);
+        }
+    }
+
+    void benchmarkSaveToBMPqCompress9()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "BMP");
+            buffer.close();
+
+            QByteArray compressedRaw = qCompress(buffer.data(), 9);
+        }
+    }
+
+    void benchmarkEstimatePNGCompressionLena()
+    {
+        QBENCHMARK
+        {
+            GraphicsSceneDisplay::estimatePNGCompression(lena_);
+        }
+    }
+
+    void benchmarkEstimatePNGCompressionWikiText()
+    {
+        QBENCHMARK
+        {
+            GraphicsSceneDisplay::estimatePNGCompression(wikitext_);
+        }
+    }
+
+    void benchmarkSaveToPNGLena()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "PNG");
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToPNGWikiText()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            wikitext_.save(&buffer, "PNG");
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToGIF()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "GIF");
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToJPEG90()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "JPEG", 90);
+            buffer.close();
+        }
+    }
+
+    void benchmarkCompressToJPEG94()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "JPEG", 94);
+            buffer.close();
+        }
+    }
+
+#ifdef USE_IMPROVED_JPEG
+    void benchmarkSaveToJPEG90Optimized()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            writeJPEG(lena_, &buffer, 90, true, false);
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToJPEG94Optimized()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            writeJPEG(lena_, &buffer, 94, true, false);
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToJPEG90Progressive()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            writeJPEG(lena_, &buffer, 90, false, true);
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToJPEG94Progressive()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            writeJPEG(lena_, &buffer, 94, false, true);
+            buffer.close();
+        }
+    }
+#endif
+
+    void benchmarkSaveToWEBP90()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "WEBP", 90);
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToWEBP94()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "WEBP", 94);
+            buffer.close();
+        }
+    }
+
+    void benchmarkSaveToTIFF()
+    {
+        QBENCHMARK
+        {
+            QBuffer buffer;
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "TIFF");
+            buffer.close();
+        }
+    }
 private:
     int testWidth_;
 
     QImage lena_;
+    QImage wikitext_;
 
     QImage imageBefore_;
     QImage imageAfter_;
