@@ -8,6 +8,7 @@
 
 #include "KCL/debug.h"
 
+#include "viriditydeclarative.h"
 #include "viriditydatabridge.h"
 #include "graphicsscenedisplaysessionmanager.h"
 #include "declarativescenesizehandler.h"
@@ -88,8 +89,7 @@ protected:
 
         engine->rootContext()->setContextProperty("currentSession", session);
 
-        qmlRegisterType<ViridityDataBridge>("Viridity", 1, 0, "NativeViridityDataBridge");
-        qmlRegisterUncreatableType<ViriditySession>("Viridity", 1, 0, "ViriditySession", "Can't create a session out of thin air.");
+        ViridityDeclarative::registerTypes();
 
         QDeclarativeComponent component(engine, QUrl("qrc:/qml/logic.qml"));
 

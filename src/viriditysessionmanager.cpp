@@ -451,9 +451,13 @@ bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, 
 
 void ViriditySessionManager::killExpiredSessions()
 {
-    QMutexLocker l(&sessionMutex_);
+    if (sessionMutex_.tryLock())
+    {
+        sessionMutex_.unlock();
+        QMutexLocker l(&sessionMutex_);
 
-    foreach (ViriditySession *session, sessions_.values())
-        if (session->useCount() == 0 && session->lastUsed_.elapsed() > 600000)
-            removeSession(session);
+        foreach (ViriditySession *session, sessions_.values())
+            if (session->useCount() == 0 && session->lastUsed_.elapsed() > 600000)
+                removeSession(session);
+    }
 }

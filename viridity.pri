@@ -22,7 +22,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.h \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.h \
-    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.h
+    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.h \
+    $$PWD/src/viriditydeclarative.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
@@ -35,7 +36,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.cpp \
-    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp
+    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp \
+    $$PWD/src/viriditydeclarative.cpp
 
 # Display related
 CONFIG += viridity_module_display viridity_use_improved_jpeg
