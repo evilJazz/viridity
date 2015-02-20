@@ -2,6 +2,7 @@
 
 //#undef DEBUG
 #include "KCL/debug.h"
+#include "KCL/imageutils.h"
 
 #include <QByteArray>
 #include <QStringList>
@@ -145,10 +146,12 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 {
     GraphicsSceneFramePatch *patch = new GraphicsSceneFramePatch;
 
+    bool lossyEncodingPossible = patchEncodingFormat_ & EncodingFormat_JPEG;
+
     patch->rect = rect;
 
     // Account for encoding artifacts...
-    patch->artefactMargin = patchEncodingFormat_ & EncodingFormat_JPEG ? 8 : 0; // block size of JPEG
+    patch->artefactMargin = lossyEncodingPossible ? 8 : 0; // block size of JPEG
 
     QRect rectEnlarged = rect.adjusted(
         -patch->artefactMargin,
@@ -157,9 +160,18 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->artefactMargin
     );
 
-    //QImage image(rect.size(), QImage::Format_RGB888);
-    QImage image(rectEnlarged.size(), QImage::Format_ARGB32);
-    image.fill(0);
+    bool hasAlphaValues = ImageUtils::hasAlphaValues(renderer_->buffer(), rectEnlarged);
+    QImage image;
+
+    if (hasAlphaValues)
+    {
+        image = QImage(rectEnlarged.size(), QImage::Format_ARGB32);
+        image.fill(0);
+    }
+    else
+    {
+        image = QImage(rectEnlarged.size(), QImage::Format_RGB888);
+    }
 
     QPainter p;
     p.begin(&image);
@@ -168,8 +180,14 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 
     int estimatedPNGSize;
     if (patchEncodingFormat_ & EncodingFormat_PNG &&
-        (patchEncodingFormat_ == EncodingFormat_PNG || estimatePNGCompression(image, &estimatedPNGSize) < 0.6 || estimatedPNGSize < 1024))
+        (patchEncodingFormat_ == EncodingFormat_PNG || estimatePNGCompression(image, &estimatedPNGSize) < 0.4 || estimatedPNGSize < 1024))
     {
+        if (patch->artefactMargin > 0)
+        {
+            image = image.copy(QRect(patch->artefactMargin, patch->artefactMargin, rect.width(), rect.height()));
+            patch->artefactMargin = 0;
+        }
+
         // Saving PNG is very expensive!
         QBuffer pngBuffer;
         pngBuffer.open(QIODevice::ReadWrite);
@@ -182,22 +200,30 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     }
     else if (patchEncodingFormat_ == EncodingFormat_JPEG || patchEncodingFormat_ & EncodingFormat_JPEG)
     {
-        QImage packedAlphaImage = createPackedAlphaPatch(image);
+        if (hasAlphaValues)
+            image = createPackedAlphaPatch(image);
+
         QBuffer jpegBuffer;
         jpegBuffer.open(QIODevice::ReadWrite);
     #ifdef USE_IMPROVED_JPEG
-        writeJPEG(packedAlphaImage, &jpegBuffer, jpegQuality_, true, false);
+        writeJPEG(image, &jpegBuffer, jpegQuality_, true, false);
     #else
-        packedAlphaImage.save(&jpegBuffer, "JPEG", jpegQuality_);
+        image.save(&jpegBuffer, "JPEG", jpegQuality_);
     #endif
         jpegBuffer.close();
 
         patch->data.setData(jpegBuffer.data());
         patch->mimeType = "image/jpeg";
-        patch->packedAlpha = true;
+        patch->packedAlpha = hasAlphaValues;
     }
     else // if (patchEncodingFormat_ == EncodingFormat_Raw)
     {
+        if (patch->artefactMargin > 0)
+        {
+            image = image.copy(QRect(patch->artefactMargin, patch->artefactMargin, rect.width(), rect.height()));
+            patch->artefactMargin = 0;
+        }
+
         QBuffer bmpBuffer;
         bmpBuffer.open(QIODevice::ReadWrite);
         image.save(&bmpBuffer, "BMP");

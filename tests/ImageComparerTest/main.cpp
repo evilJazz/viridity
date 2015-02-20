@@ -11,6 +11,8 @@
 #include "moveanalyzer.h"
 #include "graphicsscenedisplay.h"
 
+#include "KCL/imageutils.h"
+
 #ifdef USE_IMPROVED_JPEG
 #include "private/jpegwriter.h"
 #endif
@@ -260,6 +262,51 @@ private slots:
             buffer.open(QIODevice::ReadWrite);
             lena_.save(&buffer, "GIF");
             buffer.close();
+        }
+    }
+
+    void benchmarkConvertTo8bitLena()
+    {
+        QBENCHMARK
+        {
+            QImage image = lena_.convertToFormat(QImage::Format_Indexed8, Qt::NoOpaqueDetection | Qt::OrderedDither | Qt::ColorOnly);
+            qDebug("colors used: %d", image.colorCount());
+        }
+    }
+
+    void benchmarkConvertTo8bitWikiText()
+    {
+        QBENCHMARK
+        {
+            QImage image = wikitext_.convertToFormat(QImage::Format_Indexed8, Qt::NoOpaqueDetection | Qt::ThresholdDither | Qt::ColorOnly);
+
+            QVector<QRgb> colors = image.colorTable();
+
+
+            //qDebug("colors used: %d", image.colorCount());
+        }
+    }
+
+    void benchmarkHasAlphaValuesLena()
+    {
+        QBENCHMARK
+        {
+            bool result = ImageUtils::hasAlphaValues(lena_);
+
+            //qDebug("hasAlphaValues: %s", result ? "true" : "false");
+        }
+    }
+
+    void benchmarkHasAlphaValuesWikiText()
+    {
+        QBENCHMARK
+        {
+            bool result = ImageUtils::hasAlphaValues(wikitext_);
+
+            if (!result)
+                QImage image = wikitext_.convertToFormat(QImage::Format_RGB888);
+
+            //qDebug("hasAlphaValues: %s", result ? "true" : "false");
         }
     }
 
