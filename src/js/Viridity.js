@@ -93,13 +93,16 @@ var Viridity = function(options)
         inputEvents: [],
         inputEventsStarted: false,
 
+        reconnectTimer: null,
+
         nextFreeTargetId: 0,
         targetCallbacks: {},
 
         callbacks: {
             sessionStart: [],
             sessionReattached: [],
-            sessionInUse: []
+            sessionInUse: [],
+            sessionDisconnected: []
         },
 
         on: function(eventName, callback)
@@ -120,6 +123,9 @@ var Viridity = function(options)
 
         _triggerCallback: function(eventName, params)
         {
+            if (debugVerbosity > 1)
+                console.log("Now triggering event: " + eventName);
+
             var callbacks = v.callbacks[eventName];
 
             for (var i = 0; i < callbacks.length; ++i)
@@ -155,7 +161,7 @@ var Viridity = function(options)
                         console.log("While sending input events \"" + data + "\":\n" + status + " - " + exception + "\n");
 
                         if (status != "timeout")
-                            v.reconnect();
+                            v._handleDisconnect();
                         else
                             setTimeout(function() { v._longPollingSendInputEvents() }, v.pause);
                     }
@@ -211,7 +217,7 @@ var Viridity = function(options)
                     console.log("error receiving display data:\n" + status + " - " + exception + "\n");
 
                     if (status != "timeout")
-                        v.reconnect();
+                        v._handleDisconnect();
                     else
                         setTimeout(function() { v._longPollingReceiveOutputMessages() }, v.pause);
                 }
@@ -295,6 +301,12 @@ var Viridity = function(options)
                 v.sessionId = inputParams[0];
                 v._triggerCallback("sessionInUse", v.sessionId);
             }
+
+            if (v.reconnectTimer !== null)
+            {
+                clearInterval(v.reconnectTimer);
+                v.reconnectTimer = null;
+            }
         },
 
         sendMessage: function(msg, targetId)
@@ -359,9 +371,39 @@ var Viridity = function(options)
                 return false;
         },
 
-        reconnect: function()
+        _handleDisconnect: function()
         {
-            location.reload(); // For now.
+            if (v.reconnectTimer === null)
+            {
+                v.inputEventsStarted = false;
+                v._triggerCallback("sessionDisconnected", v.sessionId);
+                v.reconnectTimer = setInterval(v.connect, 5000);
+            }
+        },
+
+        connect: function()
+        {
+            if (v.connectionMethod === ConnectionMethod.LongPolling)
+            {
+                v._longPollingReceiveOutputMessages();
+            }
+            else if (v.connectionMethod === ConnectionMethod.ServerSentEvents)
+            {
+                v.eventSource = new EventSource(v.fullLocation + "/" + v.sessionId + "/v/ev");
+                v.eventSource.onmessage = v._serverSentEventsMessageReceived;
+                v.eventSource.onerror = v._handleDisconnect;
+            }
+            else if (v.connectionMethod === ConnectionMethod.WebSockets)
+            {
+                var ws = (v.fullLocation.indexOf("https:") > -1 ? "wss:" : "ws:");
+
+                v.socket = new WebSocket(ws + "//" + v.location + "/" + v.sessionId + "/v/ws");
+
+                v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
+                v.socket.onopen = v._sendQueuedMessages;
+                v.socket.onerror = v._handleDisconnect;
+                v.socket.onclose = v._handleDisconnect;
+            }
         },
 
         init: function(connectionMethod, sessionId, originUri)
@@ -399,27 +441,7 @@ var Viridity = function(options)
             console.log("v.location: " + v.location);
             console.log("v.fullLocation: " + v.fullLocation);
 
-            if (v.connectionMethod === ConnectionMethod.LongPolling)
-            {
-                v._longPollingReceiveOutputMessages();
-            }
-            else if (v.connectionMethod === ConnectionMethod.ServerSentEvents)
-            {
-                v.eventSource = new EventSource(v.fullLocation + "/" + v.sessionId + "/v/ev");
-                v.eventSource.onmessage = v._serverSentEventsMessageReceived;
-                v.eventSource.onerror = v.reconnect;
-            }
-            else if (v.connectionMethod === ConnectionMethod.WebSockets)
-            {
-                var ws = (v.fullLocation.indexOf("https:") > -1 ? "wss:" : "ws:");
-
-                v.socket = new WebSocket(ws + "//" + v.location + "/" + v.sessionId + "/v/ws");
-
-                v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
-                v.socket.onopen = v._sendQueuedMessages;
-                v.socket.onerror = v.reconnect;
-                v.socket.onclose = v.reconnect;
-            }
+            v.connect();
         }
     }
 
