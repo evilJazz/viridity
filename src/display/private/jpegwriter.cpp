@@ -47,6 +47,8 @@
 #include <qbuffer.h>
 #include <qmath.h>
 
+#include <QStringList>
+
 #include <stdio.h>      // jpeglib needs this to be pre-included
 #include <setjmp.h>
 

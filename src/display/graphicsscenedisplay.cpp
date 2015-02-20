@@ -12,7 +12,7 @@
 #include <QMutexLocker>
 #include <QUrl>
 
-#include <QtMath>
+#include "qmath.h"
 
 #define USE_MULTITHREADING
 

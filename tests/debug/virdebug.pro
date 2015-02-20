@@ -11,6 +11,10 @@ CONFIG(debug, debug|release) {
     DEFINES += DEBUG
     QMAKE_CFLAGS += -O0
     QMAKE_CXXFLAGS += -O0
+
+    QMAKE_CXXFLAGS += -fsanitize=address -fno-omit-frame-pointer
+    QMAKE_CFLAGS += -fsanitize=address -fno-omit-frame-pointer
+    QMAKE_LFLAGS += -fsanitize=address
 }
 
 CONFIG(release, debug|release) {
@@ -19,10 +23,6 @@ CONFIG(release, debug|release) {
     QMAKE_CFLAGS -= -g
     QMAKE_CXXFLAGS -= -g
 }
-
-QMAKE_CXXFLAGS+="-fsanitize=address -fno-omit-frame-pointer"
-QMAKE_CFLAGS+="-fsanitize=address -fno-omit-frame-pointer"
-QMAKE_LFLAGS+="-fsanitize=address"
 
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao-min.pri)
