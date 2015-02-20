@@ -8,14 +8,24 @@ DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *sessio
     id_(id),
     rootItem_(rootItem)
 {
+    DGUARDMETHODTIMED;
     if (session_)
+    {
         session_->registerMessageHandler(this);
+        connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
+    }
 }
 
 DeclarativeSceneSizeHandler::~DeclarativeSceneSizeHandler()
 {
+    DGUARDMETHODTIMED;
     if (session_)
         session_->unregisterMessageHandler(this);
+}
+
+void DeclarativeSceneSizeHandler::handleSessionDestroyed()
+{
+    session_ = NULL;
 }
 
 bool DeclarativeSceneSizeHandler::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)

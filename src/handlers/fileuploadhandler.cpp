@@ -282,7 +282,14 @@ private slots:
 
         emit parent_->newFilesUploaded(result);
 
-        // TODO: Delete tempfiles...
+        /*
+        foreach (const Part &part, parts_)
+        {
+            if (QFile::exists(part.tempFileName))
+                QFile::remove(part.tempFileName);
+        }
+        */
+
         parts_.clear();
     }
 

@@ -94,6 +94,7 @@ var Viridity = function(options)
         inputEventsStarted: false,
 
         reconnectTimer: null,
+        reconnectInterval: 5000,
 
         nextFreeTargetId: 0,
         targetCallbacks: {},
@@ -377,7 +378,7 @@ var Viridity = function(options)
             {
                 v.inputEventsStarted = false;
                 v._triggerCallback("sessionDisconnected", v.sessionId);
-                v.reconnectTimer = setInterval(v.connect, 5000);
+                v.reconnectTimer = setInterval(v.connect, v.reconnectInterval);
             }
         },
 

@@ -22,6 +22,9 @@ protected:
 
     Q_INVOKABLE bool localHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
+private slots:
+    void handleSessionDestroyed();
+
 private:
     ViriditySession *session_;
     QString id_;

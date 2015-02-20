@@ -282,6 +282,7 @@ void ViriditySessionManager::removeSession(ViriditySession *session)
 {
     QMutexLocker l(&sessionMutex_);
     sessions_.remove(session->id());
+    emit sessionRemoved(session);
     QMetaObject::invokeMethod(session, "deleteLater");
 }
 
