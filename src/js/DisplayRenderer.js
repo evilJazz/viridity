@@ -480,6 +480,12 @@
                 }
             },
 
+            updateSize: function()
+            {
+                var container = $(containerElement);
+                dr.resize(container.width(), container.height());
+            },
+
             init: function()
             {
                 dr.targetId = v.registerCallback(dr._messageCallback, targetId);
@@ -516,20 +522,15 @@
                 // Set up timed resize callback to resize canvas, ie. when the style size was changed
                 // exogenously or indirectly.
                 // Note: jQuery plugins that are using MutationObserver or other means do not work reliable.
-                var container = $(containerElement);
-                var resizeCallback = function()
-                {
-                    dr.resize(container.width(), container.height());
-                };
-                setInterval(resizeCallback, 2000);
+                setInterval(dr.updateSize, 2000);
 
                 // Set resize callback to allow triggering of a resize from jQuery...
-                $(containerElement).resize(resizeCallback);
+                $(containerElement).resize(dr.updateSize);
 
-                $(window).resize(function() { setTimeout(resizeCallback, 50); });
+                $(window).resize(function() { setTimeout(dr.updateSize, 50); });
 
                 // Finally set size...
-                resizeCallback();
+                dr.updateSize();
 
                 //dr.createDebugOverlay();
 
