@@ -5,8 +5,8 @@
 //#undef DEBUG
 #include "KCL/debug.h"
 
-//#define USE_MOVE_ANALYZER
-//#define USE_MOVE_ANALYZER_FINEGRAINED
+#define USE_MOVE_ANALYZER
+#define USE_MOVE_ANALYZER_FINEGRAINED
 #define USE_FILL_ANALYZER
 #define USE_MULTITHREADING
 
@@ -23,35 +23,6 @@ inline uint qHash(const QColor& c)
 {
     return qHash((int)c.rgba());
 }
-
-/*
-QRect findChangedRect(QImage *buffer1, QImage *buffer2, const QRect &searchArea)
-{
-    DGUARDMETHODTIMED;
-    QRect roi = searchArea.intersected(buffer1->rect()).intersected(buffer2->rect());
-
-    QRect result(roi.bottomRight(), roi.topLeft());
-
-    for (int y = roi.top(); y < roi.bottom() + 2; ++y)
-    {
-        for (int x = roi.left(); x < roi.right() + 2; ++x)
-        {
-            if (buffer1->pixel(x, y) != buffer2->pixel(x, y))
-            {
-                result.setLeft(qMin(result.left(), x));
-                result.setTop(qMin(result.top(), y));
-                result.setRight(qMax(result.right(), x));
-                result.setBottom(qMax(result.bottom(), y));
-            }
-        }
-    }
-
-    if (!result.isValid())
-        return QRect();
-    else
-        return result;
-}
-*/
 
 QRect fastFindChangedRect32(QImage *buffer1, QImage *buffer2, const QRect &searchArea)
 {
@@ -161,42 +132,6 @@ QList<QRect> splitRectIntoTiles(const QRect &rect, int tileWidth, int tileHeight
 
     return tiles;
 }
-
-/*
-QList<QRect> findUpdateRects(QImage *buffer1, QImage *buffer2, const QRect &searchArea)
-{
-    QList<QRect> tiles = splitRectIntoTiles(searchArea, 100, 100);
-
-    QList<QRect> result;
-
-    foreach (const QRect &rect, tiles)
-    {
-        QRect minRect = fastFindChangedRect32(buffer1, buffer2, rect);
-
-        if (!minRect.isEmpty())
-        {
-            if (minRect != rect)
-            {
-                DPRINTF("Minimized rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
-                        rect.left(), rect.top(), rect.width(), rect.height(),
-                        minRect.left(), minRect.top(), minRect.width(), minRect.height()
-                        );
-            }
-
-            result += minRect;
-        }
-        else
-        {
-            DPRINTF("Removed rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
-                    rect.left(), rect.top(), rect.width(), rect.height(),
-                    minRect.left(), minRect.top(), minRect.width(), minRect.height()
-                    );
-        }
-    }
-
-    return result;
-}
-*/
 
 UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps)
 {
@@ -324,7 +259,7 @@ ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
     moveAnalyzer_(NULL),
-    tileWidth_(64)
+    tileWidth_(32)
 {
 #ifdef USE_MOVE_ANALYZER
 #ifdef USE_MOVE_ANALYZER_FINEGRAINED

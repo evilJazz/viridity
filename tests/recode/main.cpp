@@ -1,8 +1,6 @@
 #include <QCoreApplication>
 
-#include "graphicsscenedisplay.h"
-#include "graphicsscenedisplayplayer.h"
-#include "graphicsscenedisplayrecorder.h"
+#include "private/graphicsscenedisplaytests.h"
 
 int main(int argc, char *argv[])
 {
@@ -10,23 +8,7 @@ int main(int argc, char *argv[])
 
     if (a.arguments().count() > 2 && QFile::exists(a.arguments()[1]))
     {
-        GraphicsSceneDisplay d("display", NULL, NULL);
-
-        // Record again...
-        GraphicsSceneDisplayRecorder recorder(&d);
-        recorder.setDiffFrameFilename(a.arguments()[2]);
-
-        GraphicsSceneDisplayDumpIterator it;
-        it.setFilename(a.arguments()[1]);
-
-        while (it.advanceToNextFrame() > 0)
-        {
-            d.renderer().setSize(it.outputFrame().width(), it.outputFrame().height());
-            d.renderer().pushFullFrame(it.outputFrame());
-            recorder.setNextFrameTimeStamp(it.currentFrameTimeStamp());
-            static_cast<ViridityMessageHandler *>(&d)->takePendingMessages();
-        }
-
+        GraphicsSceneDisplayTests::recodeRecording(a.arguments()[1], a.arguments()[2]);
         return 0;
     }
     else

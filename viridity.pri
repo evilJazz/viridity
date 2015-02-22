@@ -23,7 +23,7 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.h \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.h \
     $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.h \
-    $$PWD/src/viriditydeclarative.h
+    $$VIRIDITY_SRC_PATH/viriditydeclarative.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
@@ -37,7 +37,7 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp \
-    $$PWD/src/viriditydeclarative.cpp
+    $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp
 
 # Display related
 CONFIG += viridity_module_display viridity_use_improved_jpeg
@@ -62,7 +62,8 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.h \
         $$VIRIDITY_SRC_PATH/display/private/moveanalyzerdebugview.h \
-        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h
+        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h \
+        $$VIRIDITY_SRC_PATH/display/private/graphicsscenedisplaytests.h
 
     SOURCES += \
         $$VIRIDITY_SRC_PATH/display/tiledregion.cpp \
@@ -79,7 +80,8 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.cpp \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/private/moveanalyzerdebugview.cpp \
-        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp
+        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp \
+        $$VIRIDITY_SRC_PATH/display/private/graphicsscenedisplaytests.cpp
 }
 
 viridity_use_improved_jpeg {

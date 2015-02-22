@@ -7,7 +7,7 @@
 #define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))
 
 #define USE_MULTITHREADING
-#define USE_GRAYSCALE_OPT
+//#define USE_GRAYSCALE_OPT
 
 #define USE_NSN // Almost 7x faster than naive memcmp
 //#define USE_NSN_MEMCMP
@@ -18,6 +18,8 @@
 #include "private/moveanalyzerdebugview.h"
 #undef USE_MULTITHREADING
 #endif
+
+#include <QThread>
 
 #ifdef USE_MULTITHREADING
 #include <QtConcurrentFilter>
@@ -520,6 +522,7 @@ void MoveAnalyzer::swap()
     imageAfter_ = temp;
 
 #ifdef USE_GRAYSCALE_OPT
+    ensureImagesUpdated();
     imageBeforeGray_ = imageAfterGray_;
     imageAfterGray_ = QImage();
 #endif
@@ -709,32 +712,67 @@ QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const 
         return QRect();
 }
 
+/*
 QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect)
 {
     //DGUARDMETHODTIMED;
     QRect roi = searchArea.intersected(imageBefore_->rect()).intersected(imageAfter_->rect());
 
-    int roiBottom = roi.top() + roi.height() - templateRect.height() + 1;
-    int roiRight = roi.left() + roi.width() - templateRect.width() + 1;
+    int templateWidth = templateRect.width();
+    int templateHeight = templateRect.height();
 
-    QPoint srcPoint;
+    int roiBottom = roi.top() + roi.height() - templateHeight + 1;
+    int roiRight = roi.left() + roi.width() - templateWidth + 1;
 
     for (int y = roi.top(); y < roiBottom; ++y)
     {
-        srcPoint.setY(y);
-
         for (int x = roi.left(); x < roiRight; ++x)
         {
-            srcPoint.setX(x);
-
             if (
 #ifdef USE_GRAYSCALE_OPT
-                contentMatches<uchar>(&imageBeforeGray_, &imageAfterGray_, srcPoint, templateRect) &&
+                contentMatches<uchar>(&imageBeforeGray_, &imageAfterGray_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight) &&
 #endif
-                contentMatches<QRgb>(imageBefore_, imageAfter_, srcPoint, templateRect))
-                return QRect(srcPoint, templateRect.size());
+                contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
+                return QRect(x, y, templateWidth, templateHeight);
         }
     }
 
     return QRect();
 }
+//*/
+
+//*
+QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect)
+{
+    //DGUARDMETHODTIMED;
+    QRect roi = searchArea.intersected(imageBefore_->rect()).intersected(imageAfter_->rect());
+
+    int templateWidth = templateRect.width();
+    int templateHeight = templateRect.height();
+
+    int roiBottom = roi.height() - templateHeight + 1;
+    int roiRight = roi.width() - templateWidth + 1;
+
+    const int bytes = templateWidth * sizeof(QRgb);
+    const int stride = imageBefore_->bytesPerLine() / sizeof(QRgb);
+
+    register const QRgb *pBuf1, *pBufStart1, *pBufStart2;
+    pBufStart1 = (QRgb *)imageBefore_->constScanLine(roi.top()) + roi.left();
+    pBufStart2 = (QRgb *)imageAfter_->constScanLine(templateRect.y()) + templateRect.x();
+
+    for (int y = 0; y < roiBottom; ++y)
+    {
+        pBuf1 = pBufStart1 + y * stride;
+
+        for (int x = 0; x < roiRight; ++x)
+        {
+            if (contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+                return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
+
+            ++pBuf1;
+        }
+    }
+
+    return QRect();
+}
+//*/
