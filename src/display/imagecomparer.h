@@ -39,7 +39,8 @@ template<typename T> inline bool contentMatches(const T *pBuf1, const T *pBuf2, 
 {
     for (int y = 0; y < height; ++y)
     {
-        if (memcmp(pBuf1, pBuf2, bytes) != 0)
+        if (*pBuf1 != *pBuf2 ||
+            memcmp(pBuf1, pBuf2, bytes) != 0)
             return false;
 
         pBuf1 += stride;
