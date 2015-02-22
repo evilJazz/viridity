@@ -12,6 +12,8 @@
 #define USE_NSN // Almost 7x faster than naive memcmp
 //#define USE_NSN_MEMCMP
 
+//#define USE_AREAFINGERPRINTS
+
 //#define SHOW_MOVEANALYZER_DEBUGVIEW
 
 #ifdef SHOW_MOVEANALYZER_DEBUGVIEW
@@ -479,7 +481,9 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
     movedRectSearchEnabled_(true)
 {
     //hashArea_ = imageBefore_->rect();
+#ifdef USE_AREAFINGERPRINTS
     searchAreaFingerPrints_.initFromImage(imageBefore_, hashArea_, templateWidth);
+#endif
 
 #ifdef SHOW_MOVEANALYZER_DEBUGVIEW
     debugView_ = new MoveAnalyzerDebugView();
@@ -544,8 +548,11 @@ void MoveAnalyzer::ensureImagesUpdated()
 
 void MoveAnalyzer::updateArea(const QRect &rect)
 {
+#ifdef USE_AREAFINGERPRINTS
     searchAreaFingerPrints_.updateFromImage(imageBefore_, rect);
     //searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, imageBefore_->rect());
+#endif
+
     emit changed();
 }
 
@@ -691,10 +698,13 @@ QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &template
     //DGUARDMETHODTIMED;
     //return findMovedRectExhaustive(searchArea, templateRect);
 
-    if (templateRect.width() % searchAreaFingerPrints_.templateWidth() != 0)
-        return findMovedRectExhaustive(searchArea, templateRect);
+#ifdef USE_AREAFINGERPRINTS
+    if (templateRect.width() % searchAreaFingerPrints_.templateWidth() == 0)
+		return findMovedRectAreaFingerPrint(searchArea, templateRect);        
     else
-        return findMovedRectAreaFingerPrint(searchArea, templateRect);
+#endif
+        return findMovedRectExhaustive(searchArea, templateRect);
+
 }
 
 QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect)
@@ -766,7 +776,11 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
 
         for (int x = 0; x < roiRight; ++x)
         {
-            if (contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+            if (*pBuf1 == *pBufStart2 &&
+                *(pBuf1 + 1) == *(pBufStart2 + 1) &&
+                *(pBuf1 + 2) == *(pBufStart2 + 2) &&
+                *(pBuf1 + 3) == *(pBufStart2 + 3) &&
+                contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
                 return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
 
             ++pBuf1;
