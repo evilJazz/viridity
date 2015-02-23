@@ -247,26 +247,20 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 
 qreal GraphicsSceneDisplay::estimatePNGCompression(const QImage &image, int *estimatedSize)
 {
-    QBuffer buffer;
-    buffer.open(QIODevice::ReadWrite);
-
-    qreal decimator = qMax(1., (qreal)qMax(image.byteCount(), 1) / (32 * 1024));
+    qreal decimator = qMax(1., (qreal)qMax(image.byteCount(), 1) / (16 * 1024));
     qreal sqrtdec = qSqrt(decimator);
     QSizeF newSize = image.size() / sqrtdec;
 
     QImage scaledImage = image.scaled(newSize.toSize(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
-    scaledImage.save(&buffer, "BMP");
 
-    buffer.close();
-
-    QByteArray compressedRaw = qCompress(buffer.data(), 1);
+    QByteArray compressedRaw = qCompress(scaledImage.constBits(), scaledImage.byteCount(), 1);
 
     if (estimatedSize)
         *estimatedSize = compressedRaw.size() * decimator * 0.8;
 
-    qreal ratio = (qreal)compressedRaw.size() / buffer.size();
+    qreal ratio = (qreal)compressedRaw.size() / scaledImage.byteCount();
 
-    //qDebug("compressedRaw: %d, raw: %d, ratio: %.2f", compressedRaw.size(), buffer.size(), ratio);
+    //qDebug("compressedRaw: %d, raw: %d, ratio: %.2f", compressedRaw.size(), scaledImage.byteCount(), ratio);
 
     return ratio;
 }

@@ -1,5 +1,8 @@
 #include <QCoreApplication>
 
+#include <QFile>
+#include <QStringList>
+
 #include "private/graphicsscenedisplaytests.h"
 
 int main(int argc, char *argv[])
