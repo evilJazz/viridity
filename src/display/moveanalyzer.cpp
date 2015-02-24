@@ -518,7 +518,7 @@ void MoveAnalyzer::swap()
 
     damagedAreas_.clear();
 
-    while (lastSuccessfulMoveVectors_.count() > 20)
+    while (lastSuccessfulMoveVectors_.count() > 100)
         lastSuccessfulMoveVectors_.removeLast();
 
     QImage *temp = imageBefore_;

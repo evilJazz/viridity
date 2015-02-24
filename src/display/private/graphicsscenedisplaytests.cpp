@@ -43,8 +43,6 @@ QList<QImage> GraphicsSceneDisplayTests::getDecodedFrames(const QString &inputDu
 {
     QList<QImage> frames;
 
-    GraphicsSceneDisplay d("display", NULL, NULL);
-
     GraphicsSceneDisplayDumpIterator it;
     it.setFilename(inputDumpFileName);
 

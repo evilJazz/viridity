@@ -84,9 +84,9 @@ QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
 
         SynchronizedSceneRenderer syncedSceneRenderer(scene_);
         syncedSceneRenderer.render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
+#endif
 
         rects = comparer_->findDifferences();
-#endif
     }
     else
     {
