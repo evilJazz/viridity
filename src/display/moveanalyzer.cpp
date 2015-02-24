@@ -541,6 +541,8 @@ void MoveAnalyzer::swap()
 void MoveAnalyzer::ensureImagesUpdated()
 {
 #ifdef USE_GRAYSCALE_OPT
+    QMutexLocker l(&mutex_);
+
     if (imageAfterGray_.isNull())
         imageAfterGray_ = convertToGrayscale(*imageAfter_);
 #endif
@@ -763,12 +765,21 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
     int roiBottom = roi.height() - templateHeight + 1;
     int roiRight = roi.width() - templateWidth + 1;
 
+#ifdef USE_GRAYSCALE_OPT
+    const int bytes = templateWidth * sizeof(uchar);
+    const int stride = imageBeforeGray_.bytesPerLine() / sizeof(uchar);
+
+    register const uchar *pBuf1, *pBufStart1, *pBufStart2;
+    pBufStart1 = (uchar *)imageBeforeGray_.constScanLine(roi.top()) + roi.left();
+    pBufStart2 = (uchar *)imageAfterGray_.constScanLine(templateRect.y()) + templateRect.x();
+#else
     const int bytes = templateWidth * sizeof(QRgb);
     const int stride = imageBefore_->bytesPerLine() / sizeof(QRgb);
 
     register const QRgb *pBuf1, *pBufStart1, *pBufStart2;
     pBufStart1 = (QRgb *)imageBefore_->constScanLine(roi.top()) + roi.left();
     pBufStart2 = (QRgb *)imageAfter_->constScanLine(templateRect.y()) + templateRect.x();
+#endif
 
     for (int y = 0; y < roiBottom; ++y)
     {
@@ -776,12 +787,20 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
 
         for (int x = 0; x < roiRight; ++x)
         {
+#ifndef USE_GRAYSCALE_OPT
             if (*pBuf1 == *pBufStart2 &&
                 *(pBuf1 + 1) == *(pBufStart2 + 1) &&
                 *(pBuf1 + 2) == *(pBufStart2 + 2) &&
                 *(pBuf1 + 3) == *(pBufStart2 + 3) &&
                 contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+            {
+#else
+            if (contentMatches<uchar>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+            {
+                if (contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
+#endif
                 return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
+            }
 
             ++pBuf1;
         }
