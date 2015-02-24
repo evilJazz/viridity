@@ -40,7 +40,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     scene_(scene),
     commandInterpreter_(commandInterpreter),
     id_(id),
-    urlMode_(false),
+    urlMode_(true),
     patchEncodingFormat_(EncodingFormat_Auto),
     jpegQuality_(94),
     updateCheckInterval_(10),

@@ -114,6 +114,7 @@ private:
 
     friend class GraphicsSceneDisplayThreadedCreatePatch;
     GraphicsSceneFramePatch *createPatch(const QRect &rect);
+    friend class GraphicsSceneDisplayTests;
     void clearPatches();
 
     void triggerUpdateCheckTimer();

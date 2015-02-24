@@ -21,6 +21,7 @@ void GraphicsSceneDisplayTests::recodeRecording(const QString &inputDumpFileName
         d.renderer().pushFullFrame(it.outputFrame());
         recorder.setNextFrameTimeStamp(it.currentFrameTimeStamp());
         static_cast<ViridityMessageHandler *>(&d)->takePendingMessages();
+        d.clearPatches();
     }
 }
 
@@ -36,6 +37,7 @@ void GraphicsSceneDisplayTests::nullRecodeRecording(const QString &inputDumpFile
         d.renderer().setSize(it.outputFrame().width(), it.outputFrame().height());
         d.renderer().pushFullFrame(it.outputFrame());
         static_cast<ViridityMessageHandler *>(&d)->takePendingMessages();
+        d.clearPatches();
     }
 }
 
@@ -69,5 +71,6 @@ void GraphicsSceneDisplayTests::nullEncodeFrames(const QList<QImage> frames)
         d.renderer().setSize(frame.width(), frame.height());
         d.renderer().pushFullFrame(frame);
         static_cast<ViridityMessageHandler *>(&d)->takePendingMessages();
+        d.clearPatches();
     }
 }
