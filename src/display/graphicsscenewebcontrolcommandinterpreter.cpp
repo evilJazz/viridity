@@ -8,6 +8,9 @@
 
 #include <QDeclarativeItem>
 
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 #include "private/qtestspontaneevent.h"
 

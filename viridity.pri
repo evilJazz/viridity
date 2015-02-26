@@ -1,3 +1,6 @@
+# Enable if you want to debug Viridity...
+#DEFINES += VIRIDITY_DEBUG
+
 QT += core gui network concurrent
 
 VIRIDITY_SRC_PATH = $$PWD/src

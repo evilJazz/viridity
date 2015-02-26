@@ -9,7 +9,9 @@
 
 #include "viriditywebserver.h"
 
+#ifndef VIRIDITY_DEBUG
 #undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 SSEHandler::SSEHandler(ViridityWebServer *server, QObject *parent) :

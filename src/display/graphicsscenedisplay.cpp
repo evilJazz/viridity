@@ -1,6 +1,8 @@
 #include "graphicsscenedisplay.h"
 
-//#undef DEBUG
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 #include "KCL/imageutils.h"
 
@@ -370,8 +372,8 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
             QByteArray mimeType = patch->mimeType + (patch->packedAlpha ? ";pa" : "");
 
             bool embedData = !urlMode_;
-            //if (patch->data.size() < 10 * 1024)
-            //    embedData = true;
+            if (patch->data.size() < 2 * 1024)
+                embedData = true;
 
             if (embedData)
                 mimeType = mimeType + ";base64";

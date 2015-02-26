@@ -6,7 +6,7 @@
 
 #define USE_SCENE_DAMAGEREGION
 
-//#undef DEBUG
+#undef DEBUG
 //#define DIAGNOSTIC_OUTPUT
 #include "KCL/debug.h"
 

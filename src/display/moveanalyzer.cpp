@@ -1,7 +1,9 @@
 #include "moveanalyzer.h"
 #include "imagecomparer.h"
 
-//#define DIAGNOSTIC_OUTPUT
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 #define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))

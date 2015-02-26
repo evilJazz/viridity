@@ -7,7 +7,9 @@
 
 #include <QThread>
 
-//#undef DEBUG
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 QString createUniqueID()
@@ -458,7 +460,7 @@ void ViriditySessionManager::killExpiredSessions()
         QMutexLocker l(&sessionMutex_);
 
         foreach (ViriditySession *session, sessions_.values())
-            if (session->useCount() == 0 && session->lastUsed_.elapsed() > 600000)
+            if (session->useCount() == 0 && session->lastUsed_.elapsed() > 6000)
                 removeSession(session);
     }
 }

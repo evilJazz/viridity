@@ -6,6 +6,9 @@
 #include <QThread>
 #include <QMetaType>
 
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 class SynchronizedSceneChangedHandler : public QObject

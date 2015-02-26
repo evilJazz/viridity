@@ -10,7 +10,9 @@
 #include "viriditywebserver.h"
 #include "inputposthandler.h"
 
+#ifndef VIRIDITY_DEBUG
 #undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *parent) :

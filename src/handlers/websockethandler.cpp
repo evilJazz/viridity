@@ -2,7 +2,9 @@
 
 #include <QStringList>
 
-//#undef DEBUG
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 #include "viriditywebserver.h"

@@ -1,5 +1,8 @@
 #include "declarativescenesizehandler.h"
 
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, QDeclarativeItem *rootItem, QObject *parent) :

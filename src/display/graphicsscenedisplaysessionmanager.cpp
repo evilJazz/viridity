@@ -5,7 +5,9 @@
 #include <QUuid>
 #include <QCryptographicHash>
 
-//#undef DEBUG
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 class MainThreadGateway : public QObject

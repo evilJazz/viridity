@@ -2,7 +2,9 @@
 #include "moveanalyzer.h"
 #include "tiledregion.h"
 
-//#undef DEBUG
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 #define USE_MOVE_ANALYZER

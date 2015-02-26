@@ -1,6 +1,8 @@
 #include "viriditywebserver.h"
 
-//#undef DEBUG
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 #include "Tufao/WebSocket"
