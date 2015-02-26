@@ -131,6 +131,17 @@
                 debugDraw = value;
             },
 
+            _drawDisconnected: function ()
+            {
+                dr.frontCtx.fillStyle = "rgba(0, 0, 0, 0.3)";
+                dr.frontCtx.fillRect(0, 0, dr.frontCanvas.width, dr.frontCanvas.height);
+
+                dr.frontCtx.font = '11pt Helvetica';
+                dr.frontCtx.textAlign = 'center';
+                dr.frontCtx.fillStyle = 'white';
+                dr.frontCtx.fillText("Reconnecting...", dr.frontCanvas.width / 2, dr.frontCanvas.height / 2);
+            },
+
             _debugDraw: function()
             {
                 var alpha = 0.2;
@@ -651,6 +662,8 @@
 
                 // Finally set up keep alive...
                 setInterval(dr._sendKeepAlive, dr.keepAliveInterval);
+
+                v.on("sessionDisconnected", dr._drawDisconnected);
             }
         }
 
