@@ -7,6 +7,9 @@
 class ImageAux
 {
 public:
+    static qreal estimatePNGCompression(const QImage &image, int *estimatedSize = NULL);
+    static QImage createPackedAlphaPatch(const QImage &image);
+
     static QColor getSolidRectColor(QImage *buffer, const QRect &area);
     static QRect findChangedRect32(QImage *buffer1, QImage *buffer2, const QRect &searchArea);
 

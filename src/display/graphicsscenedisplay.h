@@ -61,9 +61,6 @@ public:
 
     void requestFullUpdate();
 
-    static qreal estimatePNGCompression(const QImage &image, int *estimatedSize = NULL);
-    static QImage createPackedAlphaPatch(const QImage &image);
-
 signals:
     void updateAvailable();
     void newFrameMessagesGenerated(const QList<QByteArray> &messages);
