@@ -122,7 +122,7 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
         foreach (const QRect &rect, rects)
             ops += comparer_->findUpdateOperations(rect, &rects);
 
-        ops = optimizeUpdateOperations(ops);
+        ops = ImageComparer::optimizeUpdateOperations(ops);
 
         DTIMERPRINT(optTimer, "Damage region optimization");
     }

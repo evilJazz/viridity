@@ -1,6 +1,6 @@
 #include <QApplication>
 
-#include "graphicsscenedisplayplayer.h"
+#include "display/tools/graphicsscenedisplayplayer.h"
 
 int main(int argc, char *argv[])
 {

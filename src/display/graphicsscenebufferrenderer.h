@@ -9,8 +9,8 @@
 #include <QMutex>
 
 #include "graphicssceneobserver.h"
-#include "imagecomparer.h"
 #include "tiledregion.h"
+#include "comparer/imagecomparer.h"
 
 class GraphicsSceneBufferRenderer;
 

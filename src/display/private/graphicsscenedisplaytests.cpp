@@ -1,8 +1,8 @@
 #include "graphicsscenedisplaytests.h"
 
 #include "graphicsscenedisplay.h"
-#include "graphicsscenedisplayplayer.h"
-#include "graphicsscenedisplayrecorder.h"
+#include "tools/graphicsscenedisplayplayer.h"
+#include "tools/graphicsscenedisplayrecorder.h"
 
 void GraphicsSceneDisplayTests::recodeRecording(const QString &inputDumpFileName, const QString &outputFileName)
 {

@@ -10,11 +10,16 @@
 #define USE_MOVE_ANALYZER
 //#define USE_MOVE_ANALYZER_FINEGRAINED
 #define USE_FILL_ANALYZER
-#define USE_MULTITHREADING
 
 #ifdef USE_MULTITHREADING
 #include <QtConcurrentMap>
 #endif
+
+typedef QHash<QPoint, UpdateOperationList> VectorHashUpdateOperationList;
+typedef QHashIterator<QPoint, UpdateOperationList> VectorHashUpdateOperationListIterator;
+
+typedef QHash<QColor, UpdateOperationList> ColorHashUpdateOperationList;
+typedef QHashIterator<QColor, UpdateOperationList> ColorHashUpdateOperationListIterator;
 
 inline uint qHash(const QPoint& p)
 {
@@ -197,7 +202,7 @@ UpdateOperationList optimizeFillOperations(const ColorHashUpdateOperationList &f
     return newOps;
 }
 
-UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops)
+UpdateOperationList ImageComparer::optimizeUpdateOperations(const UpdateOperationList &ops)
 {
     //DGUARDMETHODTIMED;
 
@@ -257,11 +262,11 @@ UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops)
 
 /* ImageComparer */
 
-ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter) :
+ImageComparer::ImageComparer(QImage *imageBefore, QImage *imageAfter, int tileWidth) :
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
     moveAnalyzer_(NULL),
-    tileWidth_(32)
+    tileWidth_(tileWidth)
 {
 #ifdef USE_MOVE_ANALYZER
 #ifdef USE_MOVE_ANALYZER_FINEGRAINED

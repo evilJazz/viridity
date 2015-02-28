@@ -15,7 +15,7 @@
 #include "handlers/filerequesthandler.h"
 #include "handlers/fileuploadhandler.h"
 
-#include "graphicsscenedisplayrecorder.h"
+#include "tools/graphicsscenedisplayrecorder.h"
 
 class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
 {

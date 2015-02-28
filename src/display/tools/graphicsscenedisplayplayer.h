@@ -15,13 +15,21 @@ public:
     virtual ~GraphicsSceneDisplayDumpIterator();
 
     void setFilename(const QString &filename);
-    const QString &filename() const { return inputFile_.fileName(); }
+    const QString filename() const { return inputFile_.fileName(); }
 
     int advanceToNextFrame();
     const QImage &outputFrame() const { return workBuffer_; }
     qint64 currentFrameTimeStamp() const { return currentTimeStamp_; }
 
 private:
+    enum DumpType {
+        Invalid,
+        Full,
+        Diff
+    };
+
+    DumpType type_;
+
     QFile inputFile_;
     QDataStream inputData_;
 
@@ -30,14 +38,6 @@ private:
     qint64 startTimeStamp_;
     qint64 currentTimeStamp_;
     qint64 lastTimeStamp_;
-
-    enum DumpType {
-        Invalid,
-        Full,
-        Diff
-    };
-
-    DumpType type_;
 };
 
 class GraphicsSceneDisplayPlayer : public QGraphicsView
@@ -48,7 +48,7 @@ public:
     virtual ~GraphicsSceneDisplayPlayer();
 
     void setFilename(const QString &filename);
-    const QString &filename() const { return it_.filename(); }
+    const QString filename() const { return it_.filename(); }
 
     void play();
     void stop();

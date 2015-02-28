@@ -26,12 +26,6 @@ struct UpdateOperation
 
 typedef QList<UpdateOperation> UpdateOperationList;
 
-typedef QHash<QPoint, UpdateOperationList> VectorHashUpdateOperationList;
-typedef QHashIterator<QPoint, UpdateOperationList> VectorHashUpdateOperationListIterator;
-
-typedef QHash<QColor, UpdateOperationList> ColorHashUpdateOperationList;
-typedef QHashIterator<QColor, UpdateOperationList> ColorHashUpdateOperationListIterator;
-
 QList<QRect> splitRectIntoTiles(const QRect &rect, int tileWidth, int tileHeight);
 
 
@@ -75,23 +69,22 @@ template<typename T> inline bool contentMatches(QImage *buffer1, QImage *buffer2
     return contentMatches<T>(buffer1, buffer2, rect1.left(), rect1.top(), rect2.left(), rect2.top(), rect1.width(), rect1.height());
 }
 
-UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps);
-UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops);
-
 class MoveAnalyzer;
 
 class VIRIDITY_EXPORT ImageComparer
 {
 public:
-    ImageComparer(QImage *imageBefore, QImage *imageAfter);
+    ImageComparer(QImage *imageBefore, QImage *imageAfter, int tileWidth = 32);
     virtual ~ImageComparer();
+
+    int tileSize() const { return tileWidth_; }
 
     QVector<QRect> findDifferences();
 
     UpdateOperationList findUpdateOperations(const QRect &searchArea, QVector<QRect> *additionalSearchAreas = NULL);
     void swap();
 
-    int tileSize() const { return tileWidth_; }
+    static UpdateOperationList optimizeUpdateOperations(const UpdateOperationList &ops);
 
 protected:
     friend struct MapProcessRect;

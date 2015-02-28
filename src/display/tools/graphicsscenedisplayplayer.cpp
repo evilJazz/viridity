@@ -146,11 +146,13 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
                         int artefactMargin = params.at(5).toInt();
 
                         QImage colorImage(width, height, QImage::Format_ARGB32);
+                        colorImage.fill(0);
                         QPainter cp(&colorImage);
                         cp.drawImage(0, 0, image, artefactMargin, artefactMargin);
                         cp.end();
 
                         QImage alphaImage(width, height, QImage::Format_ARGB32);
+                        alphaImage.fill(0);
                         QPainter ap(&alphaImage);
                         ap.drawImage(0, 0, image, artefactMargin, artefactMargin * 3 + height);
                         ap.end();

@@ -15,10 +15,10 @@ public:
     ~GraphicsSceneDisplayRecorder();
 
     void setFullFrameFilename(const QString &filename);
-    const QString &fullFrameFilename() const { return fullFrameFile_.fileName(); }
+    const QString fullFrameFilename() const { return fullFrameFile_.fileName(); }
 
     void setDiffFrameFilename(const QString &filename);
-    const QString &diffFrameFilename() const { return diffFrameFile_.fileName(); }
+    const QString diffFrameFilename() const { return diffFrameFile_.fileName(); }
 
     void setNextFrameTimeStamp(qint64 ts);
 

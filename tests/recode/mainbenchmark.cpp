@@ -24,9 +24,12 @@ class RecoderTest : public QObject
 private slots:
     void initTestCase()
     {
-        inputFileName_ = "/home/darkstar/Desktop/full_dump_display1.fgsd";
+        //inputFileName_ = "/home/darkstar/Desktop/full_dump_display1.fgsd";
+        inputFileName_ = "/home/darkstar/Desktop/diff_dump_display1.dgsd";
 
         testFrames_ = GraphicsSceneDisplayTests::getDecodedFrames(inputFileName_);
+
+        qDebug("testFrames count: %d", testFrames_.count());
     }
 
     void benchmarkRecode()

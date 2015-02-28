@@ -26,6 +26,8 @@ CONFIG(release, debug|release) {
 
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao-min.pri)
+
+CONFIG += viridity_module_display_tools
 include(../../viridity.pri)
 
 RESOURCES += \

@@ -2,8 +2,8 @@
 
 GraphicsSceneDisplayRecorder::GraphicsSceneDisplayRecorder(GraphicsSceneDisplay *display) :
     QObject(display),
-    frameTimeStamp_(0),
-    display_(display)
+    display_(display),
+    frameTimeStamp_(0)
 {
     connect(display_, SIGNAL(newFrameMessagesGenerated(QList<QByteArray>)), this, SLOT(displayNewFrameMessagesGenerated(QList<QByteArray>)), Qt::DirectConnection);
 }
