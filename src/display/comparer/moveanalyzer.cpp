@@ -12,7 +12,7 @@
 #include "KCL/debug.h"
 
 #define USE_MULTITHREADING
-#define USE_GRAYSCALE_OPT
+//#define USE_GRAYSCALE_OPT
 
 #ifdef USE_AREAFINGERPRINTS
 #include "areafingerprint.h"
@@ -314,7 +314,7 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
                 *(pBuf1 + 1) == *(pBufStart2 + 1) &&
                 *(pBuf1 + 2) == *(pBufStart2 + 2) &&
                 *(pBuf1 + 3) == *(pBufStart2 + 3) &&
-                contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+                ImageAux::contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
             {
 #else
             if (ImageAux::contentMatches<uchar>(pBuf1, pBufStart2, stride, bytes, templateHeight))
