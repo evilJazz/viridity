@@ -1,15 +1,18 @@
 #include "moveanalyzer.h"
+
+#include "imageaux.h"
 #include "imagecomparer.h"
+#include "tiles.h"
+
+#include "KCL/imageutils.h"
 
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
 #endif
 #include "KCL/debug.h"
 
-#define roundDownToMultipleOf(x, s) ((x) & ~((s)-1))
-
 #define USE_MULTITHREADING
-//#define USE_GRAYSCALE_OPT
+#define USE_GRAYSCALE_OPT
 
 #ifdef USE_AREAFINGERPRINTS
 #include "areafingerprint.h"
@@ -19,45 +22,6 @@
 
 #ifdef USE_MULTITHREADING
 #include <QtConcurrentFilter>
-#endif
-
-#ifdef USE_GRAYSCALE_OPT
-QImage convertToGrayscale(const QImage &image)
-{
-    QImage result(image.width(), image.height(), QImage::Format_Indexed8);
-
-    QVector<QRgb> grayTable(256);
-
-    for (int i = 0; i < 256; ++i)
-        grayTable[i] = qRgb(i, i, i);
-
-    result.setColorTable(grayTable);
-
-    int y;
-    int height = image.height();
-    int x;
-    int width = image.width();
-    register const QRgb *input;
-    register uchar *output;
-
-    for (y = 0; y < height; ++y)
-    {
-        input = (QRgb *)image.constScanLine(y);
-        output = result.scanLine(y);
-
-        for (x = 0; x < width; ++x)
-        {
-            *output = qGray(*input);
-
-            ++output;
-            ++input;
-        }
-    }
-
-    //result.save("/home/darkstar/Desktop/test.png", "PNG");
-
-    return result;
-}
 #endif
 
 /* MoveAnalyzer */
@@ -74,14 +38,18 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true)
 {
-    //hashArea_ = imageBefore_->rect();
 #ifdef USE_AREAFINGERPRINTS
-    searchAreaFingerPrints_.initFromImage(imageBefore_, hashArea_, templateWidth);
+    searchAreaFingerPrints_ = new AreaFingerPrints();
+    searchAreaFingerPrints_->initFromImage(imageBefore_, hashArea_, templateWidth);
 #endif
 }
 
 MoveAnalyzer::~MoveAnalyzer()
 {
+#ifdef USE_AREAFINGERPRINTS
+    delete searchAreaFingerPrints_;
+    searchAreaFingerPrints_ = NULL;
+#endif
 }
 
 void MoveAnalyzer::setSearchRadius(int newRadius)
@@ -128,15 +96,14 @@ void MoveAnalyzer::ensureImagesUpdated()
     QMutexLocker l(&mutex_);
 
     if (imageAfterGray_.isNull())
-        imageAfterGray_ = convertToGrayscale(*imageAfter_);
+        ImageUtils::convertToGrayscale(*imageAfter_, imageAfterGray_);
 #endif
 }
 
 void MoveAnalyzer::updateArea(const QRect &rect)
 {
 #ifdef USE_AREAFINGERPRINTS
-    searchAreaFingerPrints_.updateFromImage(imageBefore_, rect);
-    //searchAreaFingerPrints_.updateFromImageSlow(imageBefore_, imageBefore_->rect());
+    searchAreaFingerPrints_->updateFromImage(imageBefore_, rect);
 #endif
 
     emit changed();
@@ -248,7 +215,7 @@ MoveOperationList MoveAnalyzer::findMoveOperations(const QRect &searchArea, QReg
 
     startNewSearch();
 
-    QList<QRect> tiles = splitRectIntoTiles(searchArea, templateWidth_, templateWidth_);
+    QList<QRect> tiles = TileOperations::splitRectIntoTiles(searchArea, templateWidth_, templateWidth_);
 
     foreach (const QRect &rect, tiles)
     {
@@ -276,18 +243,15 @@ struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPosi
 
     virtual bool positionMatches(const QPoint &pos)
     {
-        return contentMatches<QRgb>(moveAnalyzer->imageBefore_, moveAnalyzer->imageAfter_, pos, templateRect);
+        return ImageAux::contentMatches<QRgb>(moveAnalyzer->imageBefore_, moveAnalyzer->imageAfter_, pos, templateRect);
     }
 };
 #endif
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
 {
-    //DGUARDMETHODTIMED;
-    //return findMovedRectExhaustive(searchArea, templateRect);
-
 #ifdef USE_AREAFINGERPRINTS
-    if (templateRect.width() % searchAreaFingerPrints_.templateWidth() == 0)
+    if (templateRect.width() % searchAreaFingerPrints_->templateWidth() == 0)
 		return findMovedRectAreaFingerPrint(searchArea, templateRect);        
     else
 #endif
@@ -305,43 +269,13 @@ QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const 
     matcher.moveAnalyzer = this;
     matcher.templateRect = templateRect;
 
-    if (searchAreaFingerPrints_.findPosition(templateFingerPrint, searchArea, result, &matcher))
+    if (searchAreaFingerPrints_->findPosition(templateFingerPrint, searchArea, result, &matcher))
         return QRect(hashArea_.topLeft() + result, templateRect.size());
     else
         return QRect();
 }
 #endif
 
-/*
-QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect)
-{
-    //DGUARDMETHODTIMED;
-    QRect roi = searchArea.intersected(imageBefore_->rect()).intersected(imageAfter_->rect());
-
-    int templateWidth = templateRect.width();
-    int templateHeight = templateRect.height();
-
-    int roiBottom = roi.top() + roi.height() - templateHeight + 1;
-    int roiRight = roi.left() + roi.width() - templateWidth + 1;
-
-    for (int y = roi.top(); y < roiBottom; ++y)
-    {
-        for (int x = roi.left(); x < roiRight; ++x)
-        {
-            if (
-#ifdef USE_GRAYSCALE_OPT
-                contentMatches<uchar>(&imageBeforeGray_, &imageAfterGray_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight) &&
-#endif
-                contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
-                return QRect(x, y, templateWidth, templateHeight);
-        }
-    }
-
-    return QRect();
-}
-//*/
-
-//*
 QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect)
 {
     //DGUARDMETHODTIMED;
@@ -383,9 +317,9 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
                 contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
             {
 #else
-            if (contentMatches<uchar>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+            if (ImageAux::contentMatches<uchar>(pBuf1, pBufStart2, stride, bytes, templateHeight))
             {
-                if (contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
+                if (ImageAux::contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
 #endif
                 return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
             }
@@ -396,4 +330,3 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
 
     return QRect();
 }
-//*/

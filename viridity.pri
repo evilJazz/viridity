@@ -50,24 +50,27 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display
 
     HEADERS += \
-        $$VIRIDITY_SRC_PATH/display/tiledregion.h \
-        $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.h \
+        $$VIRIDITY_SRC_PATH/display/comparer/imageaux.h \
         $$VIRIDITY_SRC_PATH/display/comparer/imagecomparer.h \
+        $$VIRIDITY_SRC_PATH/display/comparer/imagecompareroptools.h \
+        $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.h \
+        $$VIRIDITY_SRC_PATH/display/comparer/tiles.h \
         $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.h \
         $$VIRIDITY_SRC_PATH/display/graphicssceneobserver.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
-        $$VIRIDITY_SRC_PATH/display/private/qtestspontaneevent.h \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \
         $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.h \
         $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h
 
     SOURCES += \
-        $$VIRIDITY_SRC_PATH/display/tiledregion.cpp \
-        $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.cpp \
+        $$VIRIDITY_SRC_PATH/display/comparer/imageaux.cpp \
         $$VIRIDITY_SRC_PATH/display/comparer/imagecomparer.cpp \
+        $$VIRIDITY_SRC_PATH/display/comparer/imagecompareroptools.cpp \
+        $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.cpp \
+        $$VIRIDITY_SRC_PATH/display/comparer/tiles.cpp \
         $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicssceneobserver.cpp \

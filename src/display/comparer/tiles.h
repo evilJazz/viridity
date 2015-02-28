@@ -1,9 +1,16 @@
-#ifndef TILEDREGION_H
-#define TILEDREGION_H
+#ifndef TILES_H
+#define TILES_H
 
 #include <QRegion>
 #include <QVector>
 #include <QRect>
+
+class TileOperations
+{
+public:
+    static QVector<QRect> verticallyUniteRects(QVector<QRect> rects);
+    static QList<QRect> splitRectIntoTiles(const QRect &rect, int tileWidth, int tileHeight);
+};
 
 class TiledRegion
 {
@@ -16,12 +23,10 @@ public:
 
     TiledRegion &operator+=(const QRect &r);
 
-    static QVector<QRect> verticallyUniteRects(QVector<QRect> rects);
-
 private:
     QRegion region_;
     int tileWidth_;
     int tileHeight_;
 };
 
-#endif // TILEDREGION_H
+#endif // TILES_H

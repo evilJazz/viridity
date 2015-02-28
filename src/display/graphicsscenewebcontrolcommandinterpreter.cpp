@@ -12,8 +12,16 @@
 #undef DEBUG
 #endif
 #include "KCL/debug.h"
-#include "private/qtestspontaneevent.h"
 
+// Hacker class to get access to private QEvent::spont member. Not nice, but better than pointer hackery.
+class QCoreApplicationPrivate
+{
+public:
+    static void setEventSpontaneous(QEvent *event)
+    {
+        event->spont = true;
+    }
+};
 
 /* GraphicsSceneWebControlCommandInterpreter */
 
@@ -37,19 +45,9 @@ void GraphicsSceneWebControlCommandInterpreter::setTargetGraphicsScene(QGraphics
 void GraphicsSceneWebControlCommandInterpreter::postEvent(QEvent *event, bool spontaneous)
 {
     if (spontaneous)
-        QSpontaneKeyEvent::setSpontaneous(event);
+        QCoreApplicationPrivate::setEventSpontaneous(event);
 
     QApplication::postEvent(scene_, event);
-
-    /*
-    if (!QApplication::sendEvent(scene_, &event))
-    {
-        DPRINTF("Event not accepted...");
-        return false;
-    }
-
-    return true;
-    */
 }
 
 void GraphicsSceneWebControlCommandInterpreter::postEvent(QEvent::Type eventType, bool spontaneous)

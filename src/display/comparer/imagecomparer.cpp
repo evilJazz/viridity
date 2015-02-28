@@ -1,6 +1,8 @@
 #include "imagecomparer.h"
+
+#include "imageaux.h"
 #include "moveanalyzer.h"
-#include "tiledregion.h"
+#include "tiles.h"
 
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
@@ -14,251 +16,6 @@
 #ifdef USE_MULTITHREADING
 #include <QtConcurrentMap>
 #endif
-
-typedef QHash<QPoint, UpdateOperationList> VectorHashUpdateOperationList;
-typedef QHashIterator<QPoint, UpdateOperationList> VectorHashUpdateOperationListIterator;
-
-typedef QHash<QColor, UpdateOperationList> ColorHashUpdateOperationList;
-typedef QHashIterator<QColor, UpdateOperationList> ColorHashUpdateOperationListIterator;
-
-inline uint qHash(const QPoint& p)
-{
-    return qHash(QString().sprintf("%dx%d", p.x(), p.y()));
-}
-
-inline uint qHash(const QColor& c)
-{
-    return qHash((int)c.rgba());
-}
-
-QRect fastFindChangedRect32(QImage *buffer1, QImage *buffer2, const QRect &searchArea)
-{
-    //DGUARDMETHODTIMED;
-    QRect roi = searchArea.intersected(buffer1->rect()).intersected(buffer2->rect());
-
-    QRect result(roi.bottomRight(), roi.topLeft());
-
-    QRgb *pBuf1, *pBuf2;
-
-    int roiBottom = roi.top() + roi.height();
-    int roiRight = roi.left() + roi.width();
-
-    for (int y = roi.top(); y < roiBottom; ++y)
-    {
-        pBuf1 = (QRgb *)buffer1->constScanLine(y) + roi.left();
-        pBuf2 = (QRgb *)buffer2->constScanLine(y) + roi.left();
-
-        for (int x = roi.left(); x < roiRight; ++x)
-        {
-            if (*pBuf1 != *pBuf2)
-            {
-                result.setLeft(qMin(result.left(), x));
-                result.setTop(qMin(result.top(), y));
-                result.setRight(qMax(result.right(), x));
-                result.setBottom(qMax(result.bottom(), y));
-            }
-
-            ++pBuf1;
-            ++pBuf2;
-        }
-    }
-
-    if (!result.isValid())
-        return QRect();
-    else
-        return result;
-}
-
-QColor getSolidRectColor(QImage *buffer, const QRect &area)
-{
-    QRect roi = area.intersected(buffer->rect());
-
-    int roiBottom = roi.top() + roi.height();
-    int roiRight = roi.left() + roi.width();
-
-    QRgb solidColor = buffer->pixel(roi.topLeft());
-    bool isSolidColor = true;
-    int y = roi.top();
-
-    QRgb *pBuf;
-
-    while (isSolidColor && y < roiBottom)
-    {
-        pBuf = (QRgb *)buffer->constScanLine(y) + roi.left();
-        ++y;
-
-        for (int x = roi.left(); x < roiRight; ++x)
-        {
-            if (*pBuf != solidColor)
-            {
-                isSolidColor = false;
-                break;
-            }
-
-            ++pBuf;
-        }
-    }
-
-    if (isSolidColor)
-        return QColor::fromRgba(solidColor);
-    else
-        return QColor();
-}
-
-QList<QRect> splitRectIntoTiles(const QRect &rect, int tileWidth, int tileHeight)
-{
-    //DGUARDMETHODTIMED;
-
-    QList<QRect> tiles;
-    int leftX = rect.width() % tileWidth;
-    int leftY = rect.height() % tileHeight;
-
-    int y = rect.top();
-    int x;
-
-    int bottomLimit = rect.bottom() + 1 - tileHeight + 1;
-    int rightLimit = rect.right() + 1 - tileWidth + 1;
-
-    for (y = rect.top(); y < bottomLimit; y += tileHeight)
-    {
-        for (x = rect.left(); x < rightLimit; x += tileWidth)
-            tiles += QRect(x, y, tileWidth, tileHeight);
-
-        if (leftX > 0)
-            tiles += QRect(x, y, leftX, tileHeight);
-    }
-
-    if (leftY > 0)
-    {
-        for (x = rect.left(); x < rightLimit; x += tileWidth)
-            tiles += QRect(x, y, tileWidth, leftY);
-
-        if (leftX > 0)
-            tiles += QRect(x, y, leftX, leftY);
-    }
-
-    return tiles;
-}
-
-UpdateOperationList optimizeVectorizedOperations(UpdateOperationType type, const VectorHashUpdateOperationList &moveOps)
-{
-    UpdateOperationList newOps;
-
-    VectorHashUpdateOperationListIterator i(moveOps);
-    while (i.hasNext())
-    {
-        i.next();
-        const QPoint &vector = i.key();
-        const UpdateOperationList &ops = i.value();
-
-        QRegion region;
-        foreach (const UpdateOperation &op, ops)
-            region += op.srcRect;
-
-        QVector<QRect> rects = TiledRegion::verticallyUniteRects(region.rects());
-
-        foreach (const QRect &rect, rects)
-        {
-            UpdateOperation op;
-            op.type = type;
-            op.srcRect = rect;
-            op.dstPoint = rect.topLeft() - vector;
-            newOps.append(op);
-        }
-    }
-
-    return newOps;
-}
-
-UpdateOperationList optimizeFillOperations(const ColorHashUpdateOperationList &fillOps)
-{
-    UpdateOperationList newOps;
-
-    ColorHashUpdateOperationListIterator i(fillOps);
-    while (i.hasNext())
-    {
-        i.next();
-
-        const QColor &color = i.key();
-        const UpdateOperationList &ops = i.value();
-
-        QRegion region;
-        foreach (const UpdateOperation &op, ops)
-            region += op.srcRect;
-
-        QVector<QRect> rects = TiledRegion::verticallyUniteRects(region.rects());
-
-        foreach (const QRect &rect, rects)
-        {
-            UpdateOperation op;
-            op.type = uotFill;
-            op.srcRect = rect;
-            op.dstPoint = rect.topLeft();
-            op.fillColor = color;
-            newOps.append(op);
-        }
-    }
-
-    return newOps;
-}
-
-UpdateOperationList ImageComparer::optimizeUpdateOperations(const UpdateOperationList &ops)
-{
-    //DGUARDMETHODTIMED;
-
-    VectorHashUpdateOperationList vectorHashedUpdateOps;
-    VectorHashUpdateOperationList vectorHashedMoveOps;
-    ColorHashUpdateOperationList colorHashedFillOps;
-
-    UpdateOperationList updateOps;
-    UpdateOperationList moveOps;
-    UpdateOperationList fillOps;
-
-    UpdateOperationList otherOps;
-
-    foreach (const UpdateOperation &op, ops)
-    {
-        if (op.type == uotUpdate)
-        {
-            QPoint moveVector(op.srcRect.topLeft() - op.dstPoint);
-            vectorHashedUpdateOps[moveVector].append(op);
-            updateOps.append(op);
-        }
-        else if (op.type == uotMove)
-        {
-            QPoint moveVector(op.srcRect.topLeft() - op.dstPoint);
-            vectorHashedMoveOps[moveVector].append(op);
-            moveOps.append(op);
-        }
-        else if (op.type == uotFill)
-        {
-            colorHashedFillOps[op.fillColor].append(op);
-            fillOps.append(op);
-        }
-        else
-            otherOps.append(op);
-    }
-
-    UpdateOperationList newUpdateOps = optimizeVectorizedOperations(uotUpdate, vectorHashedUpdateOps);
-    UpdateOperationList newMoveOps = optimizeVectorizedOperations(uotMove, vectorHashedMoveOps);
-    UpdateOperationList newFillOps = optimizeFillOperations(colorHashedFillOps);
-
-    UpdateOperationList newOps;
-
-    newOps += newUpdateOps.count() < updateOps.count() ? newUpdateOps : updateOps;
-    newOps += newFillOps.count() < fillOps.count() ? newFillOps : fillOps;
-    newOps += newMoveOps.count() < moveOps.count() ? newMoveOps : moveOps;
-    newOps += otherOps;
-
-    DPRINTF("ops: %d, newOps: %d (%d)  moveOps: %d, newMoveOps: %d (%d)  updateOps: %d, newUpdateOps: %d (%d)  fillOps: %d, newFillOps: %d (%d)",
-        ops.count(), newOps.count(), ops.count() - newOps.count(),
-        moveOps.count(), newMoveOps.count(), moveOps.count() - newMoveOps.count(),
-        updateOps.count(), newUpdateOps.count(), updateOps.count() - newUpdateOps.count(),
-        fillOps.count(), newFillOps.count(), fillOps.count() - newFillOps.count()
-    );
-
-    return newOps;
-}
 
 /* ImageComparer */
 
@@ -298,7 +55,7 @@ QVector<QRect> ImageComparer::findDifferences()
         {
             QRect rect = QRect(x * tileWidth_, y * tileWidth_, tileWidth_, tileWidth_);
 
-            if (!contentMatches<QRgb>(imageBefore_, imageAfter_, rect.topLeft(), rect))
+            if (!ImageAux::contentMatches<QRgb>(imageBefore_, imageAfter_, rect.topLeft(), rect))
                 region += rect;
         }
     }
@@ -344,7 +101,7 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea,
 
     UpdateOperationList result;
 
-    QRect minSearchRect = fastFindChangedRect32(imageBefore_, imageAfter_, searchArea);
+    QRect minSearchRect = ImageAux::findChangedRect32(imageBefore_, imageAfter_, searchArea);
     if (minSearchRect.isEmpty())
         return result;
 
@@ -373,7 +130,7 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea,
     moveAnalyzer_->startNewSearch();
 #endif
 
-    QList<QRect> tiles = splitRectIntoTiles(minSearchRect, tileWidth_, tileWidth_);
+    QList<QRect> tiles = TileOperations::splitRectIntoTiles(minSearchRect, tileWidth_, tileWidth_);
 #endif
 
 #ifdef USE_MULTITHREADING
@@ -404,7 +161,7 @@ void ImageComparer::swap()
 
 bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas)
 {
-    QRect minRect = fastFindChangedRect32(imageBefore_, imageAfter_, rect);
+    QRect minRect = ImageAux::findChangedRect32(imageBefore_, imageAfter_, rect);
     if (minRect.isEmpty())
         return false;
 
@@ -426,7 +183,7 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<
 #endif
 
 #ifdef USE_FILL_ANALYZER
-    QColor solidColor = getSolidRectColor(imageAfter_, minRect);
+    QColor solidColor = ImageAux::getSolidRectColor(imageAfter_, minRect);
     if (solidColor.isValid())
     {
         op.type = uotFill;
@@ -437,14 +194,6 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<
         return true;
     }
 #endif
-
-    /*
-        if (minRect != rect)
-            DPRINTF("Minimized rect:  %d, %d + %d x %d   ->   %d, %d + %d x %d",
-                rect.left(), rect.top(), rect.width(), rect.height(),
-                minRect.left(), minRect.top(), minRect.width(), minRect.height()
-            );
-    */
 
 #if defined(USE_MOVE_ANALYZER)
     DPRINTF("No move operation found for: %d, %d + %d x %d",
