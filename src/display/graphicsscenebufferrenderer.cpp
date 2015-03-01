@@ -56,6 +56,16 @@ void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
     minimizeDamageRegion_ = value;
 }
 
+const ComparerSettings &GraphicsSceneBufferRenderer::settings() const
+{
+    return comparer_->settings();
+}
+
+void GraphicsSceneBufferRenderer::setSettings(const ComparerSettings &settings)
+{
+    comparer_->setSettings(settings);
+}
+
 QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
 {
     DTIMERINIT(paintTimer);

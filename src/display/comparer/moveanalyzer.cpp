@@ -25,11 +25,10 @@
 
 /* MoveAnalyzer */
 
-MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth) :
+MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, int templateWidth) :
     QObject(0),
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
-    hashArea_(hashArea),
     templateWidth_(templateWidth),
     searchRadius_(100),
     mutex_(QMutex::Recursive),
@@ -39,7 +38,7 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect 
 {
 #ifdef USE_AREAFINGERPRINTS
     searchAreaFingerPrints_ = new AreaFingerPrints();
-    searchAreaFingerPrints_->initFromImage(imageBefore_, hashArea_, templateWidth);
+    searchAreaFingerPrints_->initFromImage(imageBefore_, imageBefore_->rect(), templateWidth);
 #endif
 }
 
@@ -269,7 +268,7 @@ QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const 
     matcher.templateRect = templateRect;
 
     if (searchAreaFingerPrints_->findPosition(templateFingerPrint, searchArea, result, &matcher))
-        return QRect(hashArea_.topLeft() + result, templateRect.size());
+        return QRect(result, templateRect.size());
     else
         return QRect();
 }

@@ -39,9 +39,6 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     scene_(scene),
     commandInterpreter_(commandInterpreter),
     id_(id),
-    urlMode_(true),
-    patchEncodingFormat_(EncodingFormat_Auto),
-    jpegQuality_(94),
     updateCheckInterval_(10),
     updateAvailable_(true),
     frame_(0),
@@ -76,6 +73,22 @@ GraphicsSceneDisplay::~GraphicsSceneDisplay()
     // Remember: children will get deleted after destroyed() signal was fired...
     delete renderer_;
     renderer_ = NULL;
+}
+
+void GraphicsSceneDisplay::setEncoderSettings(const EncoderSettings &encoderSettings)
+{
+    QMutexLocker l(&patchesMutex_);
+    encoderSettings_ = encoderSettings;
+}
+
+const ComparerSettings GraphicsSceneDisplay::comparerSettings() const
+{
+    return renderer_->settings();
+}
+
+void GraphicsSceneDisplay::setComparerSettings(const ComparerSettings &comparerSettings)
+{
+    renderer_->setSettings(comparerSettings);
 }
 
 bool GraphicsSceneDisplay::isUpdateAvailable() const
@@ -145,7 +158,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 {
     GraphicsSceneFramePatch *patch = new GraphicsSceneFramePatch;
 
-    bool lossyEncodingPossible = patchEncodingFormat_ & EncodingFormat_JPEG;
+    bool lossyEncodingPossible = encoderSettings_.patchEncodingFormat & EncoderSettings::EncodingFormat_JPEG;
 
     patch->rect = rect;
 
@@ -178,8 +191,8 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     p.end();
 
     int estimatedPNGSize;
-    if (patchEncodingFormat_ & EncodingFormat_PNG &&
-        (patchEncodingFormat_ == EncodingFormat_PNG || ImageAux::estimatePNGCompression(image, &estimatedPNGSize) < 0.4 || estimatedPNGSize < 1024))
+    if (encoderSettings_.patchEncodingFormat & EncoderSettings::EncodingFormat_PNG &&
+        (encoderSettings_.patchEncodingFormat == EncoderSettings::EncodingFormat_PNG || ImageAux::estimatePNGCompression(image, &estimatedPNGSize) < 0.4 || estimatedPNGSize < 1024))
     {
         if (patch->artefactMargin > 0)
         {
@@ -197,7 +210,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->mimeType = "image/png";
         patch->packedAlpha = false;
     }
-    else if (patchEncodingFormat_ == EncodingFormat_JPEG || patchEncodingFormat_ & EncodingFormat_JPEG)
+    else if (encoderSettings_.patchEncodingFormat == EncoderSettings::EncodingFormat_JPEG || encoderSettings_.patchEncodingFormat & EncoderSettings::EncodingFormat_JPEG)
     {
         if (hasAlphaValues)
             image = ImageAux::createPackedAlphaPatch(image);
@@ -205,9 +218,9 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         QBuffer jpegBuffer;
         jpegBuffer.open(QIODevice::ReadWrite);
     #ifdef USE_IMPROVED_JPEG
-        writeJPEG(image, &jpegBuffer, jpegQuality_, true, false);
+        writeJPEG(image, &jpegBuffer, encoderSettings_.jpegQuality, true, false);
     #else
-        image.save(&jpegBuffer, "JPEG", jpegQuality_);
+        image.save(&jpegBuffer, "JPEG", encoderSettings_.jpegQuality);
     #endif
         jpegBuffer.close();
 
@@ -215,7 +228,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->mimeType = "image/jpeg";
         patch->packedAlpha = hasAlphaValues;
     }
-    else // if (patchEncodingFormat_ == EncodingFormat_Raw)
+    else // if (encoderSettings_.patchEncodingFormat == EncoderSettings::EncodingFormat_Raw)
     {
         if (patch->artefactMargin > 0)
         {
@@ -331,11 +344,9 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 
             QByteArray mimeType = patch->mimeType + (patch->packedAlpha ? ";pa" : "");
 
-            bool embedData = !urlMode_;
-            if (patch->data.size() < 2 * 1024)
-                embedData = true;
+            bool inlineBase64 = patch->data.size() < encoderSettings_.inlineMaxBytes || encoderSettings_.inlineMaxBytes == -1;
 
-            if (embedData)
+            if (inlineBase64)
                 mimeType = mimeType + ";base64";
 
             QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%d,%s):",
@@ -345,7 +356,7 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
                 mimeType.constData()
             );
 
-            if (!embedData)
+            if (!inlineBase64)
             {
                 QMutexLocker l(&patchesMutex_);
                 patch->id = id_ + "_" + QString::number(frame_) + "_" + QString::number(i);

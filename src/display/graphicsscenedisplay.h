@@ -42,6 +42,27 @@ private:
     QMutexLocker m_;
 };
 
+struct EncoderSettings
+{
+    EncoderSettings() :
+        patchEncodingFormat(EncodingFormat_PNG),
+        jpegQuality(94),
+        inlineMaxBytes(0)
+    {}
+
+    enum EncodingFormat
+    {
+        EncodingFormat_Raw = 1,
+        EncodingFormat_PNG = 2,
+        EncodingFormat_JPEG = 4,
+        EncodingFormat_Auto = EncodingFormat_PNG | EncodingFormat_JPEG
+    };
+
+    EncodingFormat patchEncodingFormat;
+    int jpegQuality;
+    int inlineMaxBytes;
+};
+
 class GraphicsSceneDisplay : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
@@ -51,13 +72,16 @@ public:
 
     QString id() const { return id_; }
 
+    const EncoderSettings &encoderSettings() const { return encoderSettings_; }
+    void setEncoderSettings(const EncoderSettings &encoderSettings);
+
+    const ComparerSettings comparerSettings() const;
+    void setComparerSettings(const ComparerSettings &comparerSettings);
+
     QGraphicsScene *scene() const { return scene_; }
 
     bool isUpdateAvailable() const;
     GraphicsSceneFramePatch *takePatch(const QString &patchId);
-
-    const QHash<QString, GraphicsSceneFramePatch *> &patches() const { return patches_; } // use GraphicsSceneDisplayLocker to access or suffer!
-    GraphicsSceneBufferRenderer &renderer() const { return *renderer_; }
 
     void requestFullUpdate();
 
@@ -81,18 +105,7 @@ private:
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter_;
 
     QString id_;
-    bool urlMode_;
-
-    enum EncodingFormat
-    {
-        EncodingFormat_Raw = 1,
-        EncodingFormat_PNG = 2,
-        EncodingFormat_JPEG = 4,
-        EncodingFormat_Auto = EncodingFormat_PNG | EncodingFormat_JPEG
-    };
-
-    EncodingFormat patchEncodingFormat_;
-    int jpegQuality_;
+    EncoderSettings encoderSettings_;
 
     int updateCheckInterval_;
 
@@ -111,7 +124,11 @@ private:
 
     friend class GraphicsSceneDisplayThreadedCreatePatch;
     GraphicsSceneFramePatch *createPatch(const QRect &rect);
+
     friend class GraphicsSceneDisplayTests;
+    friend class GraphicsSceneDisplayRecorder;
+    const QHash<QString, GraphicsSceneFramePatch *> &patches() const { return patches_; } // use GraphicsSceneDisplayLocker to access or suffer!
+    GraphicsSceneBufferRenderer &renderer() const { return *renderer_; }
     void clearPatches();
 
     void triggerUpdateCheckTimer();

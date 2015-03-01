@@ -30,11 +30,17 @@ protected slots:
     {
         GraphicsSceneDisplay *display = MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(id, params);
 
+        EncoderSettings es;
+        es.patchEncodingFormat = EncoderSettings::EncodingFormat_PNG;
+        es.inlineMaxBytes = false;
+
+        display->setEncoderSettings(es);
+
         if (display)
         {
-            //GraphicsSceneDisplayRecorder *recorder = new GraphicsSceneDisplayRecorder(display);
+            GraphicsSceneDisplayRecorder *recorder = new GraphicsSceneDisplayRecorder(display);
             //recorder->setFullFrameFilename("/home/darkstar/Desktop/full_dump_" + id + ".fgsd");
-            //recorder->setDiffFrameFilename("/home/darkstar/Desktop/diff_dump_" + id + ".dgsd");
+            recorder->setDiffFrameFilename("/home/darkstar/Desktop/diff_dump_" + id + ".dgsd");
         }
 
         return display;

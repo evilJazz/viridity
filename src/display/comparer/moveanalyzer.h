@@ -41,7 +41,7 @@ class VIRIDITY_EXPORT MoveAnalyzer : public QObject
 {
     Q_OBJECT
 public:
-    MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, const QRect &hashArea, int templateWidth);
+    MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, int templateWidth);
     virtual ~MoveAnalyzer();
 
     int searchRadius() const { return searchRadius_; }
@@ -78,7 +78,6 @@ private:
     QImage imageBeforeGray_;
     QImage imageAfterGray_;
 
-    QRect hashArea_;
     int templateWidth_;
     int searchRadius_;
 #ifdef USE_AREAFINGERPRINTS

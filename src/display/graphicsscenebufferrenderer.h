@@ -32,12 +32,13 @@ public:
     void setMinimizeDamageRegion(bool value);
     bool minimizeDamageRegion() { return minimizeDamageRegion_; }
 
+    const ComparerSettings &settings() const;
+    void setSettings(const ComparerSettings &settings);
+
     UpdateOperationList updateBuffer();
 
     const QImage &buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
-
-    int tileSize() const { return comparer_ ? comparer_->tileSize() : 0; }
 
     void pushFullFrame(const QImage& image); // Only works if we have a NULL scene.
 

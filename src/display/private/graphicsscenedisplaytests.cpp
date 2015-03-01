@@ -4,9 +4,15 @@
 #include "tools/graphicsscenedisplayplayer.h"
 #include "tools/graphicsscenedisplayrecorder.h"
 
-void GraphicsSceneDisplayTests::recodeRecording(const QString &inputDumpFileName, const QString &outputFileName)
+void GraphicsSceneDisplayTests::recodeRecording(const QString &inputDumpFileName, const QString &outputFileName, EncoderSettings *encoderSettings, ComparerSettings *comparerSettings)
 {
     GraphicsSceneDisplay d("display", NULL, NULL);
+
+    if (encoderSettings)
+        d.setEncoderSettings(*encoderSettings);
+
+    if (comparerSettings)
+        d.setComparerSettings(*comparerSettings);
 
     // Record again...
     GraphicsSceneDisplayRecorder recorder(&d);
@@ -25,9 +31,15 @@ void GraphicsSceneDisplayTests::recodeRecording(const QString &inputDumpFileName
     }
 }
 
-void GraphicsSceneDisplayTests::nullRecodeRecording(const QString &inputDumpFileName)
+void GraphicsSceneDisplayTests::nullRecodeRecording(const QString &inputDumpFileName, EncoderSettings *encoderSettings, ComparerSettings *comparerSettings)
 {
     GraphicsSceneDisplay d("display", NULL, NULL);
+
+    if (encoderSettings)
+        d.setEncoderSettings(*encoderSettings);
+
+    if (comparerSettings)
+        d.setComparerSettings(*comparerSettings);
 
     GraphicsSceneDisplayDumpIterator it;
     it.setFilename(inputDumpFileName);
@@ -62,9 +74,15 @@ QList<QImage> GraphicsSceneDisplayTests::getDecodedFrames(const QString &inputDu
     return frames;
 }
 
-void GraphicsSceneDisplayTests::nullEncodeFrames(const QList<QImage> frames)
+void GraphicsSceneDisplayTests::nullEncodeFrames(const QList<QImage> frames, EncoderSettings *encoderSettings, ComparerSettings *comparerSettings)
 {
     GraphicsSceneDisplay d("display", NULL, NULL);
+
+    if (encoderSettings)
+        d.setEncoderSettings(*encoderSettings);
+
+    if (comparerSettings)
+        d.setComparerSettings(*comparerSettings);
 
     foreach (const QImage &frame, frames)
     {
