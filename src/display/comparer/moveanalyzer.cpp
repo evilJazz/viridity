@@ -11,7 +11,6 @@
 #endif
 #include "KCL/debug.h"
 
-#define USE_MULTITHREADING
 //#define USE_GRAYSCALE_OPT
 
 #ifdef USE_AREAFINGERPRINTS

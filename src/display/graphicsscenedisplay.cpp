@@ -17,8 +17,6 @@
 #include <QMutexLocker>
 #include <QUrl>
 
-#define USE_MULTITHREADING
-
 #ifdef USE_MULTITHREADING
 #include <QtConcurrentFilter>
 #endif

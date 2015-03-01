@@ -3,6 +3,8 @@
 
 QT += core gui network concurrent
 
+DEFINES += USE_MULTITHREADING
+
 VIRIDITY_SRC_PATH = $$PWD/src
 VIRIDITY_RES_PATH = $$PWD/resources
 VIRIDITY_INCLUDE_PATH = $$PWD/include
