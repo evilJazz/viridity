@@ -7,9 +7,8 @@
 
 #include <QPainter>
 
-#include "imagecomparer.h"
-#include "moveanalyzer.h"
 #include "graphicsscenedisplay.h"
+#include "comparer/imagecomparer.h"
 #include "private/graphicsscenedisplaytests.h"
 
 #include "KCL/imageutils.h"
@@ -24,10 +23,15 @@ class RecoderTest : public QObject
 private slots:
     void initTestCase()
     {
-        //inputFileName_ = "/home/darkstar/Desktop/full_dump_display1.fgsd";
-        inputFileName_ = "/home/darkstar/Desktop/diff_dump_display1.dgsd";
+        inputFileName_ = "/home/darkstar/Desktop/full_dump_display1.fgsd";
+        //inputFileName_ = "/home/darkstar/Desktop/diff_dump_display1.dgsd";
 
         testFrames_ = GraphicsSceneDisplayTests::getDecodedFrames(inputFileName_);
+
+        comparerSettings_.useMultithreading = true;
+
+        encoderSettings_.useMultithreading = true;
+        encoderSettings_.patchEncodingFormat = EncoderSettings::EncodingFormat_PNG;
 
         qDebug("testFrames count: %d", testFrames_.count());
     }
@@ -36,13 +40,16 @@ private slots:
     {
         QBENCHMARK
         {
-            GraphicsSceneDisplayTests::nullEncodeFrames(testFrames_);
+            GraphicsSceneDisplayTests::nullEncodeFrames(testFrames_, &encoderSettings_, &comparerSettings_);
         }
     }
 private:
     QString inputFileName_;
 
     QList<QImage> testFrames_;
+
+    EncoderSettings encoderSettings_;
+    ComparerSettings comparerSettings_;
 };
 
 QTEST_MAIN(RecoderTest)
