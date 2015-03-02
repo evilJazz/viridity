@@ -27,7 +27,9 @@ var DataBridge = function(viridityChannel, id)
                 {
                     if (c.pendingResponseCallbacks.hasOwnProperty(responseId))
                     {
-                        c.pendingResponseCallbacks[responseId](JSON.parse(input));
+                        if (typeof(c.pendingResponseCallbacks[responseId]) == "function")
+                            c.pendingResponseCallbacks[responseId](JSON.parse(input));
+
                         delete c.pendingResponseCallbacks[responseId];
                         processed = true;
                     }
@@ -46,7 +48,10 @@ var DataBridge = function(viridityChannel, id)
         sendData: function(data, callback)
         {
             ++c.responseId;
-            c.pendingResponseCallbacks[c.responseId] = callback;
+
+            if (typeof(callback) == "function")
+                c.pendingResponseCallbacks[c.responseId] = callback;
+
             var message = "data(" + c.responseId + "," + JSON.stringify(data) + ")";
             v.sendMessage(message, c.targetId);
         }

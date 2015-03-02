@@ -10,7 +10,7 @@ QtObjectWithChildren {
         session: currentSession
         targetId: "data1"
 
-        function onNewCommandReceived(input)
+        function onDataReceived(input)
         {
             testTimer1.start();
             console.log("input1: " + input);
@@ -23,7 +23,7 @@ QtObjectWithChildren {
         session: currentSession
         targetId: "data2"
 
-        function onNewCommandReceived(input)
+        function onDataReceived(input)
         {
             testTimer2.start();
             console.log("input 2: " + input);

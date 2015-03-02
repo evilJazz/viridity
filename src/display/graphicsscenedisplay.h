@@ -45,9 +45,9 @@ private:
 struct EncoderSettings
 {
     EncoderSettings() :
-        patchEncodingFormat(EncodingFormat_PNG),
+        patchEncodingFormat(EncodingFormat_Auto),
         jpegQuality(94),
-        inlineMaxBytes(0)
+        inlineMaxBytes(2048)
     {}
 
     enum EncodingFormat
