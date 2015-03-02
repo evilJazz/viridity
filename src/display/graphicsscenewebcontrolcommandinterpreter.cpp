@@ -175,6 +175,20 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
         postEvent(we, true);
         return true;
     }
+    else if (command == "contextMenu")
+    {
+        QGraphicsSceneContextMenuEvent *cme = new QGraphicsSceneContextMenuEvent(QEvent::GraphicsSceneContextMenu);
+
+        cme->setWidget(NULL);
+        cme->setScenePos(scenePos);
+        cme->setScreenPos(screenPos);
+        cme->setModifiers(modifiers);
+        cme->setReason(QGraphicsSceneContextMenuEvent::Mouse);
+
+        cme->setAccepted(false);
+        postEvent(cme, true);
+        return true;
+    }
     else
     {
         QEvent::Type type(QEvent::GraphicsSceneMouseMove);
@@ -344,7 +358,8 @@ bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArra
     return message.startsWith("mouseEnter") ||
            message.startsWith("mouseExit") ||
            message.startsWith("mouse") ||
-           message.startsWith("key");
+           message.startsWith("key") ||
+           message.startsWith("contextMenu");
 }
 
 bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -358,7 +373,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &
         return handleMouseEnter(command, params);
     else if (message.startsWith("mouseExit"))
         return handleMouseExit(command, params);
-    else if (message.startsWith("mouse") && params.count() >= 2)
+    else if ((message.startsWith("mouse") || message.startsWith("contextMenu")) && params.count() >= 2)
         return handleMouseEvent(command, params);
     else if (message.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);

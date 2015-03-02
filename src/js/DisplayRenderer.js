@@ -644,7 +644,7 @@
                 $(dr.frontCanvas).mouseout(function(event)   { sendMouseEvent("mouseExit", event); });
                 $(dr.frontCanvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event); });
                 $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event); });
-                $(dr.frontCanvas).bind("contextmenu", function (event) { return false; });
+                $(dr.frontCanvas).bind("contextmenu", function (event) { sendMouseEvent("contextMenu", event); });
 
                 var setUpWheelSupport = function()
                 {
