@@ -19,10 +19,6 @@
 
 #include <QThread>
 
-#ifdef USE_MULTITHREADING
-#include <QtConcurrentFilter>
-#endif
-
 /* MoveAnalyzer */
 
 MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, int templateWidth) :

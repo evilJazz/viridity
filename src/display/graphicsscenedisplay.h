@@ -45,10 +45,13 @@ private:
 struct EncoderSettings
 {
     EncoderSettings() :
+        useMultithreading(true),
         patchEncodingFormat(EncodingFormat_Auto),
         jpegQuality(94),
         inlineMaxBytes(2048)
     {}
+
+    bool useMultithreading;
 
     enum EncodingFormat
     {

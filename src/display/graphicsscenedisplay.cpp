@@ -17,9 +17,7 @@
 #include <QMutexLocker>
 #include <QUrl>
 
-#ifdef USE_MULTITHREADING
 #include <QtConcurrentFilter>
-#endif
 
 #ifdef USE_IMPROVED_JPEG
 #include "private/jpegwriter.h"
@@ -273,7 +271,6 @@ void GraphicsSceneDisplay::updateCheckTimerTimeout()
     }
 }
 
-#ifdef USE_MULTITHREADING
 struct GraphicsSceneDisplayThreadedCreatePatch
 {
     GraphicsSceneDisplayThreadedCreatePatch(GraphicsSceneDisplay *display) :
@@ -289,7 +286,6 @@ struct GraphicsSceneDisplayThreadedCreatePatch
 
     GraphicsSceneDisplay *display;
 };
-#endif
 
 QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 {
@@ -314,19 +310,20 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
         DPRINTF("New Frame Number: %d", frame_);
     }
 
-#ifdef USE_MULTITHREADING
-    QList<UpdateOperation *> updateOps;
-
-    for (int i = 0; i < ops.count(); ++i)
+    if (encoderSettings_.useMultithreading)
     {
-        UpdateOperation *op = &ops[i];
-        if (op->type == uotUpdate)
-            updateOps.append(op);
-    }
+        QList<UpdateOperation *> updateOps;
 
-    if (updateOps.count() > 0)
-        QtConcurrent::blockingFilter(updateOps, GraphicsSceneDisplayThreadedCreatePatch(this));
-#endif
+        for (int i = 0; i < ops.count(); ++i)
+        {
+            UpdateOperation *op = &ops[i];
+            if (op->type == uotUpdate)
+                updateOps.append(op);
+        }
+
+        if (updateOps.count() > 0)
+            QtConcurrent::blockingFilter(updateOps, GraphicsSceneDisplayThreadedCreatePatch(this));
+    }
 
     for (int i = 0; i < ops.count(); ++i)
     {
