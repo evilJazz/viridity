@@ -5,11 +5,12 @@
 #endif
 #include "KCL/debug.h"
 
-DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, QDeclarativeItem *rootItem, QObject *parent) :
+DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, QDeclarativeItem *rootItem, bool scaleItem, QObject *parent) :
     QObject(parent),
     session_(session),
     id_(id),
-    rootItem_(rootItem)
+    rootItem_(rootItem),
+    scaleItem_(scaleItem)
 {
     DGUARDMETHODTIMED;
     if (session_)
@@ -71,11 +72,22 @@ bool DeclarativeSceneSizeHandler::localHandleMessage(const QByteArray &message, 
 
         if (rootItem_)
         {
-            rootItem_->setWidth(width / ratio);
-            rootItem_->setHeight(height / ratio);
-            rootItem_->setTransformOrigin(QDeclarativeItem::TopLeft);
-            rootItem_->setScale(ratio);
+            if (scaleItem_)
+            {
+                rootItem_->setWidth(width / ratio);
+                rootItem_->setHeight(height / ratio);
+
+                rootItem_->setTransformOrigin(QDeclarativeItem::TopLeft);
+                rootItem_->setScale(ratio);
+            }
+            else
+            {
+                rootItem_->setWidth(width);
+                rootItem_->setHeight(height);
+            }
         }
+
+        emit resized(width, height, ratio);
 
         result = true;
     }
