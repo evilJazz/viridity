@@ -6,7 +6,7 @@ var DataBridge = function(viridityChannel, id)
     {
         targetId: undefined,
 
-        onNewCommandReceived: undefined,
+        onNewDataReceived: undefined,
 
         responseId: 0,
         pendingResponseCallbacks: {},

@@ -6,8 +6,9 @@
 
 #define USE_SCENE_DAMAGEREGION
 
+#ifndef VIRIDITY_DEBUG
 #undef DEBUG
-//#define DIAGNOSTIC_OUTPUT
+#endif
 #include "KCL/debug.h"
 
 /* GraphicsSceneBufferRendererLocker */
