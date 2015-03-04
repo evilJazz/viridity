@@ -28,6 +28,7 @@
 
             frontCanvas: 0,
             frontCtx: 0,
+            ratio: 1,
 
             location: "",
             fullLocation: "",
@@ -61,13 +62,13 @@
                 if (dr.frontCanvas.width !== dr.canvas.width)
                 {
                     dr.frontCanvas.width = dr.canvas.width;
-                    $(dr.frontCanvas).css("width", dr.canvas.width);
+                    $(dr.frontCanvas).css("width", (dr.canvas.width / dr.ratio) + "px");
                 }
 
                 if (dr.frontCanvas.height !== dr.canvas.height)
                 {
                     dr.frontCanvas.height = dr.canvas.height;
-                    $(dr.frontCanvas).css("height", dr.canvas.height);
+                    $(dr.frontCanvas).css("height", (dr.canvas.height / dr.ratio) + "px");
                 }
 
                 dr.frontCtx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
@@ -275,20 +276,27 @@
 
                 if (t.command === "fillRect")
                 {
-                    dr.ctx.clearRect(inputParams[1], inputParams[2], inputParams[3], inputParams[4]);
+                    var dstX = parseInt(inputParams[1]);
+                    var dstY = parseInt(inputParams[2]);
+                    var dstWidth = parseInt(inputParams[3]);
+                    var dstHeight = parseInt(inputParams[4]);
+
+                    dr.ctx.clearRect(dstX, dstY, dstWidth, dstHeight);
 
                     dr.ctx.fillStyle = "rgba(" + inputParams[5] + "," + inputParams[6] + "," + inputParams[7] + "," + (inputParams[8] / 255) + ")";
-                    dr.ctx.fillRect(
-                                inputParams[1], inputParams[2], inputParams[3], inputParams[4]
-                                );
+                    dr.ctx.fillRect(dstX, dstY, dstWidth, dstHeight);
                 }
                 else if (t.command === "moveImage")
                 {
-                    dr.ctx.drawImage(
-                                dr.frontCanvas,
-                                inputParams[1], inputParams[2], inputParams[3], inputParams[4],
-                                inputParams[5], inputParams[6], inputParams[3], inputParams[4]
-                                );
+                    var dstX = parseInt(inputParams[1]);
+                    var dstY = parseInt(inputParams[2]);
+                    var dstWidth = parseInt(inputParams[3]);
+                    var dstHeight = parseInt(inputParams[4]);
+
+                    var srcX = parseInt(inputParams[5]);
+                    var srcY = parseInt(inputParams[6]);
+
+                    dr.ctx.drawImage(dr.frontCanvas, dstX, dstY, dstWidth, dstHeight, srcX, srcY, dstWidth, dstHeight);
                 }
                 else if (t.command === "drawImage")
                 {
@@ -315,10 +323,13 @@
 
                         var dstX = parseInt(inputParams[1]);
                         var dstY = parseInt(inputParams[2]);
+                        var dstWidth = parseInt(inputParams[3]);
+                        var dstHeight = parseInt(inputParams[4]);
+
                         var imgWidth = parseInt(inputParams[3]);
                         var imgHeight = parseInt(inputParams[4]);
 
-                        dr.ctx.clearRect(dstX, dstY, imgWidth, imgHeight);
+                        dr.ctx.clearRect(dstX, dstY, dstWidth, dstHeight);
 
                         if (isPackedAlpha)
                         {
@@ -345,14 +356,14 @@
 
                             dr.ctx.drawImage(img,
                                 margin, margin, imgWidth, imgHeight,
-                                dstX, dstY, imgWidth, imgHeight
+                                dstX, dstY, dstWidth, dstHeight
                             );
 
                             dr.ctx.globalCompositeOperation = "xor";
 
                             dr.ctx.drawImage(alphaCanvas,
                                 0, 0, imgWidth, imgHeight,
-                                dstX, dstY, imgWidth, imgHeight
+                                dstX, dstY, dstWidth, dstHeight
                             );
 
                             dr.ctx.restore();
@@ -360,7 +371,7 @@
                         else
                             dr.ctx.drawImage(img,
                                 margin, margin, imgWidth, imgHeight,
-                                dstX, dstY, imgWidth, imgHeight
+                                dstX, dstY, dstWidth, dstHeight
                             );
 
                         if (dr.useBlobBuilder)
@@ -474,20 +485,23 @@
 
             resize: function(width, height)
             {
-                if (dr.canvas.width != width || dr.canvas.height != height)
+                var scaledWidth = width * dr.ratio;
+                var scaledHeight = height * dr.ratio;
+
+                if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight)
                 {
                     if (debugVerbosity > 0)
                         console.log(dr.sceneId + " -> width: " + width + " height: " + height);
 
                     // Only set back canvas size.
                     // Front canvas size will be updated as soon as the update frame arrives.
-                    dr.canvas.width = width;
-                    dr.canvas.height = height;
+                    dr.canvas.width = scaledWidth;
+                    dr.canvas.height = scaledHeight;
 
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
-                    v.sendMessage("resize(" + width + "," + height + ")", dr.targetId);
+                    v.sendMessage("resize(" + Math.round(width * dr.ratio) + "," + Math.round(height * dr.ratio) + "," + dr.ratio + ")", dr.targetId);
                 }
             },
 
@@ -518,6 +532,18 @@
 
                 dr.frontCanvas = document.createElement("canvas");
                 dr.frontCtx = dr.frontCanvas.getContext("2d");
+
+                var devicePixelRatio = window.devicePixelRatio || 1;
+                var backingStoreRatio = dr.frontCtx.webkitBackingStorePixelRatio ||
+                                        dr.frontCtx.mozBackingStorePixelRatio ||
+                                        dr.frontCtx.msBackingStorePixelRatio ||
+                                        dr.frontCtx.oBackingStorePixelRatio ||
+                                        dr.frontCtx.backingStorePixelRatio || 1;
+
+                dr.ratio = devicePixelRatio / backingStoreRatio;
+
+                if (debugVerbosity > 0)
+                    console.log("devicePixelRatio: " + devicePixelRatio + " backingStoreRatio: " + backingStoreRatio + " dr.ratio: " + dr.ratio);
 
                 $(containerElement).append(dr.frontCanvas).css("margin", 0).css("padding", 0);
 
@@ -554,8 +580,8 @@
                 function getCanvasPos(event)
                 {
                     var offset = $(dr.frontCanvas).offset();
-                    var posX = event.pageX - offset.left;
-                    var posY = event.pageY - offset.top;
+                    var posX = (event.pageX - offset.left) * dr.ratio;
+                    var posY = (event.pageY - offset.top) * dr.ratio;
                     return { x: posX, y: posY };
                 }
 

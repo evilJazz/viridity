@@ -447,10 +447,11 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
 
         ViridityMessageHandler::splitMessage(message, command, params);
 
-        if (params.count() == 2)
+        if (params.count() == 3)
         {
             int width = params[0].toInt();
             int height = params[1].toInt();
+            qreal ratio = params[2].toDouble();
 
             QMetaObject::invokeMethod(
                 renderer_, "setSize",

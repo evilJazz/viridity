@@ -61,17 +61,20 @@ bool DeclarativeSceneSizeHandler::localHandleMessage(const QByteArray &message, 
 
     ViridityMessageHandler::splitMessage(message, command, params);
 
-    if (message.startsWith("resize") && params.count() == 2)
+    if (message.startsWith("resize") && params.count() == 3)
     {
         int width = params[0].toInt();
         int height = params[1].toInt();
+        qreal ratio = params[2].toDouble();
 
-        DPRINTF("Received new size: %d x %d", width, height);
+        DPRINTF("Received new size: %d x %d, pixel ratio: %f", width, height, ratio);
 
         if (rootItem_)
         {
-            rootItem_->setWidth(width);
-            rootItem_->setHeight(height);
+            rootItem_->setWidth(width / ratio);
+            rootItem_->setHeight(height / ratio);
+            rootItem_->setTransformOrigin(QDeclarativeItem::TopLeft);
+            rootItem_->setScale(ratio);
         }
 
         result = true;

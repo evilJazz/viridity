@@ -126,6 +126,8 @@ private slots:
 
                             sanitizeFileName(currentPart_.name);
                             sanitizeFileName(currentPart_.fileName);
+
+                            currentPart_.originalFileName = currentPart_.fileName;
                         }
 
                         currentPart_.headerFields.insert(key, value);
@@ -134,7 +136,15 @@ private slots:
 
                 // Set temp filename...
                 ++fileId_;
+
                 currentPart_.tempFileName = FileSystemUtils::pathAppend(QDir::tempPath(), "temp_" + QString::number(fileId_) + "_" + currentPart_.fileName);
+
+                if (filenameToParts_.contains(currentPart_.fileName) || QFile::exists(currentPart_.tempFileName))
+                {
+                     currentPart_.fileName = QString::number(QDateTime::currentMSecsSinceEpoch()) + "_" + currentPart_.fileName;
+                     currentPart_.tempFileName = FileSystemUtils::pathAppend(QDir::tempPath(), "temp_" + QString::number(fileId_) + "_" + currentPart_.fileName);
+                }
+
                 targetFile_.setFileName(currentPart_.tempFileName);
 
                 // Write beginning to file...
@@ -209,6 +219,7 @@ private slots:
         {
             targetFile_.close();
             parts_.append(currentPart_);
+            filenameToParts_.insert(currentPart_.fileName, &parts_.last());
             analyzeBuffer_.clear();
         }
     }
@@ -272,6 +283,7 @@ private slots:
         {
             QVariantMap file;
 
+            file.insert("originalFileName", part.originalFileName);
             file.insert("fileName", part.fileName);
             file.insert("name", part.name);
             file.insert("tempFileName", part.tempFileName);
@@ -291,6 +303,7 @@ private slots:
         */
 
         parts_.clear();
+        filenameToParts_.clear();
     }
 
 private:
@@ -309,6 +322,7 @@ private:
     struct Part
     {
         QString name;
+        QString originalFileName;
         QString fileName;
         QString mimeType;
         QString tempFileName;
@@ -316,6 +330,7 @@ private:
     };
 
     QList<Part> parts_;
+    QHash<QString, Part *> filenameToParts_;
 
     QFile targetFile_;
     Part currentPart_;
