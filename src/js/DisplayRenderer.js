@@ -87,8 +87,6 @@
 
             createDebugOverlay: function()
             {
-                var container = $(containerElement);
-
                 var debugControls = $("<div/>")
                     .css("position", "absolute")
                     .css("left", 0)
@@ -106,7 +104,7 @@
 
                 debugControls.append("<label> Debug drawing </label>");
 
-                debugControls.appendTo(container);
+                debugControls.appendTo(containerElement);
             },
 
             debugClearCanvas: function()
@@ -508,8 +506,7 @@
 
             updateSize: function()
             {
-                var container = $(containerElement);
-                dr.resize(container.width(), container.height());
+                dr.resize(containerElement.width(), containerElement.height());
             },
 
             init: function()
@@ -546,16 +543,26 @@
                 if (debugVerbosity > 0)
                     console.log("devicePixelRatio: " + devicePixelRatio + " backingStoreRatio: " + backingStoreRatio + " dr.ratio: " + dr.ratio);
 
-                $(containerElement).append(dr.frontCanvas).css("margin", 0).css("padding", 0);
+                containerElement.append(dr.frontCanvas);
 
-                $(dr.frontCanvas).css("margin", 0).css("padding", 0).css("position", "absolute");
+                containerElement.css({
+                    "margin": 0,
+                    "padding": 0
+                });
+
+                $(dr.frontCanvas).css({
+                    "margin": 0,
+                    "padding": 0,
+                    "position": "absolute",
+                    "outline": "none"
+                });
 
                 // Set up default sizes...
-                if ($(containerElement).height() === 0)
-                    $(containerElement).height(300);
+                if (containerElement.height() === 0)
+                    containerElement.height(300);
 
-                if ($(containerElement).width() === 0)
-                    $(containerElement).width(300);
+                if (containerElement.width() === 0)
+                    containerElement.width(300);
 
                 // Set up timed resize callback to resize canvas, ie. when the style size was changed
                 // exogenously or indirectly.
@@ -563,7 +570,7 @@
                 setInterval(dr.updateSize, 2000);
 
                 // Set resize callback to allow triggering of a resize from jQuery...
-                $(containerElement).resize(dr.updateSize);
+                containerElement.resize(dr.updateSize);
 
                 $(window).resize(function() { setTimeout(dr.updateSize, 50); });
 
