@@ -288,15 +288,15 @@
                 }
                 else if (t.command === "moveImage")
                 {
-                    var dstX = parseInt(inputParams[1]);
-                    var dstY = parseInt(inputParams[2]);
-                    var dstWidth = parseInt(inputParams[3]);
-                    var dstHeight = parseInt(inputParams[4]);
+                    var srcX = parseInt(inputParams[1]);
+                    var srcY = parseInt(inputParams[2]);
+                    var srcWidth = parseInt(inputParams[3]);
+                    var srcHeight = parseInt(inputParams[4]);
 
-                    var srcX = parseInt(inputParams[5]);
-                    var srcY = parseInt(inputParams[6]);
+                    var dstX = parseInt(inputParams[5]);
+                    var dstY = parseInt(inputParams[6]);
 
-                    dr.ctx.drawImage(dr.frontCanvas, dstX, dstY, dstWidth, dstHeight, srcX, srcY, dstWidth, dstHeight);
+                    dr.ctx.drawImage(dr.frontCanvas, srcX, srcY, srcWidth, srcHeight, dstX, dstY, srcWidth, srcHeight);
                 }
                 else if (t.command === "drawImage")
                 {
@@ -323,11 +323,12 @@
 
                         var dstX = parseInt(inputParams[1]);
                         var dstY = parseInt(inputParams[2]);
-                        var dstWidth = parseInt(inputParams[3]);
-                        var dstHeight = parseInt(inputParams[4]);
 
                         var imgWidth = parseInt(inputParams[3]);
                         var imgHeight = parseInt(inputParams[4]);
+
+                        var dstWidth = imgWidth;
+                        var dstHeight = imgHeight;
 
                         dr.ctx.clearRect(dstX, dstY, dstWidth, dstHeight);
 
@@ -485,8 +486,8 @@
 
             resize: function(width, height)
             {
-                var scaledWidth = width * dr.ratio;
-                var scaledHeight = height * dr.ratio;
+                var scaledWidth = Math.round(width * dr.ratio);
+                var scaledHeight = Math.round(height * dr.ratio);
 
                 if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight)
                 {
@@ -501,7 +502,7 @@
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
-                    v.sendMessage("resize(" + Math.round(width * dr.ratio) + "," + Math.round(height * dr.ratio) + "," + dr.ratio + ")", dr.targetId);
+                    v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
             },
 
