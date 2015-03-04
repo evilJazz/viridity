@@ -141,10 +141,10 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
                         image.loadFromData(imageData);
                     }
 
+                    int artefactMargin = params.at(5).toInt();
+
                     if (mimeType.contains(";pa"))
                     {
-                        int artefactMargin = params.at(5).toInt();
-
                         QImage colorImage(width, height, QImage::Format_ARGB32);
                         colorImage.fill(0);
                         QPainter cp(&colorImage);
@@ -160,9 +160,10 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
                         ImageUtils::intensityToAlpha(alphaImage, colorImage);
 
                         image = colorImage;
+                        artefactMargin = 0;
                     }
 
-                    p.drawImage(params.at(1).toInt(), params.at(2).toInt(), image);
+                    p.drawImage(params.at(1).toInt(), params.at(2).toInt(), image, artefactMargin, artefactMargin);
                 }
             }
             else if (command == "fillRect")

@@ -170,7 +170,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->artefactMargin
     );
 
-    bool hasAlphaValues = ImageUtils::hasAlphaValues(renderer_->buffer(), rectEnlarged);
+    bool hasAlphaValues = encoderSettings_.alphaChannelEnabled && ImageUtils::hasAlphaValues(renderer_->buffer(), rectEnlarged);
     QImage image;
 
     if (hasAlphaValues)

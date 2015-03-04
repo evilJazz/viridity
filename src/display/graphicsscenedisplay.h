@@ -47,6 +47,7 @@ struct EncoderSettings
     EncoderSettings() :
         useMultithreading(true),
         patchEncodingFormat(EncodingFormat_Auto),
+        alphaChannelEnabled(true),
         jpegQuality(94),
         inlineMaxBytes(2048)
     {}
@@ -62,6 +63,7 @@ struct EncoderSettings
     };
 
     EncodingFormat patchEncodingFormat;
+    bool alphaChannelEnabled;
     int jpegQuality;
     int inlineMaxBytes;
 };
