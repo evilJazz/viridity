@@ -403,6 +403,12 @@ var Viridity = function(options)
             {
                 var ws = (v.fullLocation.indexOf("https:") > -1 ? "wss:" : "ws:");
 
+                if (v.socket) // Explicitly close previous connection to avoid FF from reconnecting again...
+                {
+                    v.socket.onclose = function () {};
+                    v.socket.close();
+                }
+
                 v.socket = new WebSocket(ws + "//" + v.location + "/" + v.sessionId + "/v/ws");
 
                 v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
@@ -440,8 +446,8 @@ var Viridity = function(options)
             var pathnameNoFilename = String(parser.pathname);
             pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/"));
 
-            var hostWithPath = parser.host + pathnameNoFilename;
-            v.location = hostWithPath.replace(/\/$/, "");
+            var hostWithPath = parser.host.replace(/\/$/, "") + "/" + pathnameNoFilename.replace(/\/$/, "");
+            v.location = hostWithPath;
             v.fullLocation = parser.protocol + "//" + v.location;
 
             console.log("v.location: " + v.location);
