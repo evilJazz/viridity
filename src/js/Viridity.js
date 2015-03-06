@@ -444,14 +444,20 @@ var Viridity = function(options)
                 parser = window.location;
 
             var pathnameNoFilename = String(parser.pathname);
-            pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/"));
+            pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/")).replace(/\/$/, "");
 
-            var hostWithPath = parser.host.replace(/\/$/, "") + "/" + pathnameNoFilename.replace(/\/$/, "");
+            var hostWithPath = parser.host.replace(/\/$/, "");
+            if (pathnameNoFilename.length > 0)
+                hostWithPath += "/" + pathnameNoFilename;
+
             v.location = hostWithPath;
             v.fullLocation = parser.protocol + "//" + v.location;
 
-            console.log("v.location: " + v.location);
-            console.log("v.fullLocation: " + v.fullLocation);
+            if (debugVerbosity > 0)
+            {
+                console.log("v.location: " + v.location);
+                console.log("v.fullLocation: " + v.fullLocation);
+            }
         }
     }
 
