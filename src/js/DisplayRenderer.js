@@ -380,10 +380,12 @@
 
                     if (imageData.substring(0,3) === "fb:")
                     {
+                        img.crossOrigin = "Anonymous";
                         img.src = v.fullLocation + "/" + v.sessionId + "/p/" + imageData.substring(3);
                     }
                     else if (imageData.substring(0,4) === "http")
                     {
+                        img.crossOrigin = "Anonymous";
                         img.src = imageData;
                     }
                     else if (dr.useBlobBuilder)

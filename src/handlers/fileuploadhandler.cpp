@@ -382,8 +382,18 @@ void FileUploadHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::
             // Hand off to separate data handler!
             FileUploadDataHandler *handler = new FileUploadDataHandler(this, request, response, session);
             connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+            return;
+        }
+        else if (request->method() == "OPTIONS") // to allow CORS pre check
+        {
+            response->writeHead(200);
+            response->end("OK");
+            return;
         }
     }
+
+    response->writeHead(404);
+    response->end("Not found");
 }
 
 #include "fileuploadhandler.moc" // for FileUploadDataHandler
