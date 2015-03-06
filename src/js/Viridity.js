@@ -328,6 +328,8 @@ var Viridity = function(options)
             else if (v.connectionMethod === ConnectionMethod.LongPolling ||
                      v.connectionMethod === ConnectionMethod.ServerSentEvents)
                 v.inputEvents.push(msg);
+            else
+                v.inputEvents.push(msg);
         },
 
         _sendQueuedMessages: function()
@@ -382,8 +384,11 @@ var Viridity = function(options)
             }
         },
 
-        connect: function()
+        connect: function(options)
         {
+            if (typeof(options) == "object")
+                v.init(options);
+
             if (v.connectionMethod === ConnectionMethod.LongPolling)
             {
                 v._longPollingReceiveOutputMessages();
@@ -407,9 +412,9 @@ var Viridity = function(options)
             }
         },
 
-        init: function(connectionMethod, sessionId, originUri)
+        init: function(options)
         {
-            v.connectionMethod = connectionMethod;
+            v.connectionMethod = options.connectionMethod;
 
             if (v.connectionMethod === ConnectionMethod.Auto)
                 v.connectionMethod = ConnectionMethod.WebSockets;
@@ -420,14 +425,14 @@ var Viridity = function(options)
             if (v.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
                 v.connectionMethod = ConnectionMethod.LongPolling;
 
-            if (typeof(sessionId) != "undefined" && sessionId != "")
-                v.sessionId = sessionId;
+            if (typeof(options.sessionId) != "undefined" && options.sessionId != "")
+                v.sessionId = options.sessionId;
 
             var parser;
-            if (typeof(originUri) !== "undefined")
+            if (typeof(options.originUri) !== "undefined")
             {
                 parser = document.createElement('a');
-                parser.href = originUri;
+                parser.href = options.originUri;
             }
             else
                 parser = window.location;
@@ -441,12 +446,13 @@ var Viridity = function(options)
 
             console.log("v.location: " + v.location);
             console.log("v.fullLocation: " + v.fullLocation);
-
-            v.connect();
         }
     }
 
-    v.init(options.connectionMethod, options.sessionId, options.originUri);
+    if (typeof(options.autoConnect) == "undefined" || options.autoConnect)
+        v.connect(options);
+    else
+        v.init(options);
 
     return v;
 };

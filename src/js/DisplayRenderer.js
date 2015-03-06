@@ -30,9 +30,6 @@
             frontCtx: 0,
             ratio: 1,
 
-            location: "",
-            fullLocation: "",
-
             _imageDone: function()
             {
                 --dr.pendingPatchesCount;
@@ -383,7 +380,7 @@
 
                     if (imageData.substring(0,3) === "fb:")
                     {
-                        img.src = v.sessionId + "/p/" + imageData.substring(3);
+                        img.src = v.fullLocation + "/" + v.sessionId + "/p/" + imageData.substring(3);
                     }
                     else if (imageData.substring(0,4) === "http")
                     {
@@ -517,13 +514,6 @@
                 var joinedParams = typeof(params) === "array" ? params.join() : params;
 
                 v.sendMessage("newDisplay(" + joinedParams + ")", dr.targetId);
-
-                dr.fullLocation = window.location.href.replace(/\/$/, "");
-                if (debugVerbosity > 0)
-                    console.log("dr.fullLocation: " + dr.fullLocation);
-
-                var hostWithPath = window.location.host + window.location.pathname;
-                dr.location = hostWithPath.replace(/\/$/, "");
 
                 dr.canvas = document.createElement("canvas");
                 dr.ctx = dr.canvas.getContext("2d");
@@ -698,6 +688,8 @@
                 setInterval(dr._sendKeepAlive, dr.keepAliveInterval);
 
                 v.on("sessionDisconnected", dr._drawDisconnected);
+                v.on("sessionStart", dr.requestFullUpdate);
+                v.on("sessionReattached", dr.requestFullUpdate);
             }
         }
 
