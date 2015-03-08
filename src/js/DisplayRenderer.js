@@ -291,7 +291,7 @@
                     var dstX = parseInt(inputParams[5]);
                     var dstY = parseInt(inputParams[6]);
 
-                    dr.ctx.clearRect(dstX, dstY, dstWidth, dstHeight);
+                    dr.ctx.clearRect(dstX, dstY, srcWidth, srcHeight);
                     dr.ctx.drawImage(dr.frontCanvas, srcX, srcY, srcWidth, srcHeight, dstX, dstY, srcWidth, srcHeight);
                 }
                 else if (t.command === "dI")
