@@ -307,12 +307,9 @@
                         contentType = contentType.replace(";pa", "");
                     }
 
-                    console.log("replaced contentType: " + contentType);
-
                     var margin = parseInt(inputParams[5]);
 
                     var img = new Image;
-                    img.crossOrigin = "Anonymous";
                     img.onload = function()
                     {
                         if (frame !== dr.lastFrame)
@@ -382,10 +379,12 @@
 
                     if (t.dataAsString(0, 3) === "fb:")
                     {
+                        img.crossOrigin = "Anonymous";
                         img.src = v.fullLocation + "/" + v.sessionId + "/p/" + t.dataAsString(3);
                     }
                     else if (t.dataAsString(0, 4) === "http")
                     {
+                        img.crossOrigin = "Anonymous";
                         img.src = t.dataAsString();
                     }
                     else if (dr.useBlobBuilder)
