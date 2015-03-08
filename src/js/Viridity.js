@@ -93,7 +93,16 @@ if (!Uint8Array.prototype.slice)
 {
     Uint8Array.prototype.slice = function(startIndex, endIndex)
     {
-        return this.subarray(startIndex, endIndex);
+        // FF is picky about the second parameter, don't simplify and pass undefined!
+        // subarray will return zero length view for undefined endIndex...
+        if (typeof(endIndex) == "undefined")
+            return this.subarray(startIndex);
+        else
+            return this.subarray(startIndex, endIndex);
+
+        //var startOffset = this.byteOffset + startIndex;
+        //var length = typeof(endIndex) == "undefined" ? undefined : endIndex - startIndex;
+        //return new Uint8Array(this.buffer, startOffset, length);
     }
 }
 
@@ -151,6 +160,15 @@ var Viridity = function(options)
         {
             try
             {
+                if (WebSocket.prototype.hasOwnProperty("binaryType")) // Works in FF and IE11
+                    return true;
+            }
+            catch (e)
+            {
+            }
+
+            try // Dirty fallback...
+            {
                 var wstest = new WebSocket('ws://null');
                 wstest.onerror = function() {};
 
@@ -165,7 +183,9 @@ var Viridity = function(options)
             }
             finally
             {
-                wstest.close();
+                if (wstest)
+                    wstest.close();
+
                 wstest = null;
             }
         })(),
