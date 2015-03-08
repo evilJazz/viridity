@@ -66,7 +66,9 @@ protected:
     QImage buffer1_;
     QImage buffer2_;
     TiledRegion damageRegion_;
+
     ImageComparer *comparer_;
+    ComparerSettings settings_;
 
     QImage pushedFullFrame_;
 

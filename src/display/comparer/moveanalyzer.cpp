@@ -250,7 +250,6 @@ QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &template
     else
 #endif
         return findMovedRectExhaustive(searchArea, templateRect);
-
 }
 
 #ifdef USE_AREAFINGERPRINTS
@@ -272,14 +271,19 @@ QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const 
 
 QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect)
 {
-    //DGUARDMETHODTIMED;
     QRect roi = searchArea.intersected(imageBefore_->rect()).intersected(imageAfter_->rect());
+
+    if (roi.isEmpty())
+        return QRect();
 
     int templateWidth = templateRect.width();
     int templateHeight = templateRect.height();
 
     int roiBottom = roi.height() - templateHeight + 1;
     int roiRight = roi.width() - templateWidth + 1;
+
+    if (roiBottom < 1 || roiRight < 1)
+        return QRect();
 
 #ifdef USE_GRAYSCALE_OPT
     const int bytes = templateWidth * sizeof(uchar);
@@ -297,30 +301,47 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
     pBufStart2 = (QRgb *)imageAfter_->constScanLine(templateRect.y()) + templateRect.x();
 #endif
 
-    for (int y = 0; y < roiBottom; ++y)
-    {
-        pBuf1 = pBufStart1 + y * stride;
-
-        for (int x = 0; x < roiRight; ++x)
+    if (templateWidth >= 4)
+        for (int y = 0; y < roiBottom; ++y)
         {
-#ifndef USE_GRAYSCALE_OPT
-            if (*pBuf1 == *pBufStart2 &&
-                *(pBuf1 + 1) == *(pBufStart2 + 1) &&
-                *(pBuf1 + 2) == *(pBufStart2 + 2) &&
-                *(pBuf1 + 3) == *(pBufStart2 + 3) &&
-                ImageAux::contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
-            {
-#else
-            if (ImageAux::contentMatches<uchar>(pBuf1, pBufStart2, stride, bytes, templateHeight))
-            {
-                if (ImageAux::contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
-#endif
-                return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
-            }
+            pBuf1 = pBufStart1 + y * stride;
 
-            ++pBuf1;
+            for (int x = 0; x < roiRight; ++x)
+            {
+#ifndef USE_GRAYSCALE_OPT
+                if (*pBuf1 == *pBufStart2 &&
+                    *(pBuf1 + 1) == *(pBufStart2 + 1) &&
+                    *(pBuf1 + 2) == *(pBufStart2 + 2) &&
+                    *(pBuf1 + 3) == *(pBufStart2 + 3) &&
+                    ImageAux::contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+                {
+#else
+                if (ImageAux::contentMatches<uchar>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+                {
+                    if (ImageAux::contentMatches<QRgb>(imageBefore_, imageAfter_, x, y, templateRect.x(), templateRect.y(), templateWidth, templateHeight))
+#endif
+                    return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
+                }
+
+                ++pBuf1;
+            }
         }
-    }
+    else
+        for (int y = 0; y < roiBottom; ++y)
+        {
+            pBuf1 = pBufStart1 + y * stride;
+
+            for (int x = 0; x < roiRight; ++x)
+            {
+                if (*pBuf1 == *pBufStart2 &&
+                    ImageAux::contentMatches<QRgb>(pBuf1, pBufStart2, stride, bytes, templateHeight))
+                {
+                    return QRect(roi.left() + x, roi.top() + y, templateWidth, templateHeight);
+                }
+
+                ++pBuf1;
+            }
+        }
 
     return QRect();
 }

@@ -31,10 +31,16 @@ protected slots:
         GraphicsSceneDisplay *display = MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(id, params);
 
         EncoderSettings es;
-        es.patchEncodingFormat = EncoderSettings::EncodingFormat_PNG;
-        es.inlineMaxBytes = false;
+        es.patchEncodingFormat = EncoderSettings::EncodingFormat_Auto;
+        es.inlineMaxBytes = 0;
+        es.useMultithreading = false;
 
         display->setEncoderSettings(es);
+
+        ComparerSettings cs;
+        cs.useMultithreading = false;
+
+        display->setComparerSettings(cs);
 
         if (display)
         {

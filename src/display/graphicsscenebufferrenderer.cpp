@@ -50,6 +50,7 @@ void GraphicsSceneBufferRenderer::initComparer()
         delete comparer_;
 
     comparer_ = new ImageComparer(otherBuffer_, workBuffer_);
+    comparer_->setSettings(settings_);
 }
 
 void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
@@ -59,12 +60,15 @@ void GraphicsSceneBufferRenderer::setMinimizeDamageRegion(bool value)
 
 const ComparerSettings &GraphicsSceneBufferRenderer::settings() const
 {
-    return comparer_->settings();
+    return settings_;
 }
 
 void GraphicsSceneBufferRenderer::setSettings(const ComparerSettings &settings)
 {
-    comparer_->setSettings(settings);
+    settings_ = settings;
+
+    if (comparer_)
+        comparer_->setSettings(settings_);
 }
 
 QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
