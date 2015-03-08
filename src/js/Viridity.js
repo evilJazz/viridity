@@ -5,6 +5,7 @@ var ConnectionMethod = {
     WebSockets: 2
 };
 
+
 // Production steps of ECMA-262, Edition 5, 15.4.4.14
 // Reference: http://es5.github.io/#x15.4.4.14
 if (!Array.prototype.indexOf) {
@@ -71,6 +72,53 @@ if (!Array.prototype.indexOf) {
   };
 }
 
+if (!Uint8Array.prototype.convertToString)
+{
+    Uint8Array.prototype.convertToString = function()
+    {
+        try
+        {
+            var encodedString = String.fromCharCode.apply(null, this);
+            var decodedString = decodeURIComponent(escape(encodedString));
+            return decodedString;
+        }
+        catch (e)
+        {
+            return "";
+        }
+    }
+}
+
+if (!Uint8Array.prototype.slice)
+{
+    Uint8Array.prototype.slice = function(startIndex, endIndex)
+    {
+        return this.subarray(startIndex, endIndex);
+    }
+}
+
+if (!Uint8Array.prototype.indexOfChar)
+{
+    Uint8Array.prototype.indexOfChar = function(searchElement, fromIndex)
+    {
+        if (searchElement.length === 0)
+            return -1;
+
+        if (typeof(searchElement) == "string")
+            searchElement = searchElement.charCodeAt(0);
+
+        return Array.prototype.indexOf.call(this, searchElement, fromIndex);
+    }
+}
+
+if (!String.prototype.indexOfChar)
+{
+    String.prototype.indexOfChar = function(searchElement, fromIndex)
+    {
+        return this.indexOf(searchElement, fromIndex);
+    }
+}
+
 var Viridity = function(options)
 {
     var debugVerbosity = 0;
@@ -98,6 +146,29 @@ var Viridity = function(options)
 
         nextFreeTargetId: 0,
         targetCallbacks: {},
+
+        supportsBinaryWebSockets: (function()
+        {
+            try
+            {
+                var wstest = new WebSocket('ws://null');
+                wstest.onerror = function() {};
+
+                if (typeof(wstest.binaryType) !== "undefined")
+                    return true;
+                else
+                    return false;
+            }
+            catch (e)
+            {
+                return false;
+            }
+            finally
+            {
+                wstest.close();
+                wstest = null;
+            }
+        })(),
 
         callbacks: {
             sessionStart: [],
@@ -242,33 +313,63 @@ var Viridity = function(options)
 
         parseMessage: function(msg)
         {
-            var paramStartIndex = msg.indexOf("(");
+            var isBinary = typeof(msg) != "string";
 
-            var bm = msg.substring(0, paramStartIndex);
-            var indexOfMarker = bm.indexOf(">");
+            var msgView = isBinary ? new Uint8Array(msg) : msg;
+
+            var paramStartIndex = msgView.indexOfChar("(");
+
+            var bm = msgView.slice(0, paramStartIndex);
+            var indexOfMarker = bm.indexOfChar(">");
 
             var targetId = undefined;
 
             if (indexOfMarker > -1)
             {
-                targetId = msg.substring(0, indexOfMarker);
-                msg = msg.substr(indexOfMarker + 1);
+                targetId = msgView.slice(0, indexOfMarker);
+                msgView = msgView.slice(indexOfMarker + 1);
                 paramStartIndex -= indexOfMarker + 1;
             }
 
-            var paramEndIndex = msg.indexOf(")");
+            var paramEndIndex = msgView.indexOfChar(")");
+            var dataStartIndex = paramEndIndex + 2;
 
-            var command = msg.substring(0, paramStartIndex);
-            var params = msg.substring(paramStartIndex + 1, paramEndIndex);
+            var command = msgView.slice(0, paramStartIndex);
+            var params = msgView.slice(paramStartIndex + 1, paramEndIndex);
 
-            return {
-                message: msg,
+            if (isBinary)
+            {
+                if (targetId)
+                    targetId = targetId.convertToString();
+
+                command = command.convertToString();
+                params = params.convertToString();
+            }
+
+            var splitParams = params.split(/[\s,]+/);
+
+            var t = {
+                message: msgView,
                 targetId: targetId,
                 paramStartIndex: paramStartIndex,
                 paramEndIndex: paramEndIndex,
+                dataStartIndex: dataStartIndex,
                 command: command,
-                params: params
+                params: splitParams,
+                data: function(start, end)
+                {
+                    start = t.dataStartIndex + (typeof(start) == "number" ? start : 0);
+                    end = typeof(end) == "number" ? t.dataStartIndex + end : undefined;
+                    return t.message.slice(start, end);
+                },
+                dataAsString: function(start, end) { return !isBinary ? t.data(start, end) : t.data(start, end).convertToString(); },
+                dataIsBinary: isBinary
             }
+
+            if (debugVerbosity > 2)
+                console.log("t: " + JSON.stringify(t, null, " "));
+
+            return t;
         },
 
         processMessage: function(msg)
@@ -285,7 +386,7 @@ var Viridity = function(options)
                 processed = v.targetCallbacks[t.targetId](t);
             }
 
-            var inputParams = t.params.split(/[\s,]+/);
+            var inputParams = t.params;
 
             if (t.command === "info")
             {
@@ -409,7 +510,15 @@ var Viridity = function(options)
                     v.socket.close();
                 }
 
-                v.socket = new WebSocket(ws + "//" + v.location + "/" + v.sessionId + "/v/ws");
+                var add = ws + "//" + v.location + "/" + v.sessionId + "/v/ws";
+
+                if (v.supportsBinaryWebSockets)
+                {
+                    v.socket = new WebSocket(add + "b");
+                    v.socket.binaryType = "arraybuffer";
+                }
+                else
+                    v.socket = new WebSocket(add);
 
                 v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
                 v.socket.onopen = v._sendQueuedMessages;

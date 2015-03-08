@@ -26,7 +26,7 @@ public:
     QString response() const { return response_; }
     void setResponse(const QString &value);
 
-    Q_INVOKABLE QVariant sendData(const QString &command, const QString &destinationSessionId);
+    Q_INVOKABLE QVariant sendData(const QString &data, const QString &destinationSessionId);
 
 protected:
     // ViridityMessageHandler

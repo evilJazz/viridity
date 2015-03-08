@@ -98,7 +98,7 @@ protected:
     // ViridityMessageHandler
     virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
     virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
-    virtual QList<QByteArray> takePendingMessages();
+    virtual QList<QByteArray> takePendingMessages(bool returnBinary = false);
 
 private slots:
     void sceneDamagedRegionsAvailable();

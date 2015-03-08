@@ -15,7 +15,6 @@ WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
 {
     DGUARDMETHODTIMED;
     socket_ = new Tufao::WebSocket(this);
-    socket_->setMessagesType(Tufao::WebSocket::TEXT_MESSAGE);
 
     connect(socket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
     connect(socket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
@@ -33,8 +32,10 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 {
     DGUARDMETHODTIMED;
 
-    if (request->url().endsWith("/v/ws"))
+    if (request->url().endsWith("/v/ws") || request->url().endsWith("/v/wsb"))
     {
+        socket_->setMessagesType(request->url().endsWith("/v/ws") ? Tufao::WebSocket::TEXT_MESSAGE : Tufao::WebSocket::BINARY_MESSAGE);
+
         QString id = ViriditySession::parseIdFromUrl(request->url());
 
         ViriditySession *session = server()->sessionManager()->getSession(id);
@@ -85,14 +86,14 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
 
 bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 {
-    return request->url().endsWith("/v/ws");
+    return request->url().endsWith("/v/ws") || request->url().endsWith("/v/wsb");
 }
 
 void WebSocketHandler::handleMessagesAvailable()
 {
     if (session_ && session_->pendingMessagesAvailable())
     {
-        QList<QByteArray> messages = session_->takePendingMessages();
+        QList<QByteArray> messages = session_->takePendingMessages(socket_->messagesType() == Tufao::WebSocket::BINARY_MESSAGE);
 
         foreach (const QByteArray &message, messages)
             socket_->sendMessage(message);

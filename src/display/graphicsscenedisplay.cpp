@@ -287,7 +287,7 @@ struct GraphicsSceneDisplayThreadedCreatePatch
     GraphicsSceneDisplay *display;
 };
 
-QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
+QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
 {
     DGUARDMETHODTIMED;
 
@@ -341,58 +341,62 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages()
 
             QByteArray mimeType = patch->mimeType + (patch->packedAlpha ? ";pa" : "");
 
-            bool inlineBase64 = patch->data.size() < encoderSettings_.inlineMaxBytes || encoderSettings_.inlineMaxBytes == -1;
+            bool inlineData = patch->data.size() < encoderSettings_.inlineMaxBytes || encoderSettings_.inlineMaxBytes == -1;
 
-            if (inlineBase64)
+            if (inlineData && !returnBinary)
                 mimeType = mimeType + ";base64";
 
-            QString msg = QString().sprintf("%s>drawImage(%d,%d,%d,%d,%d,%d,%s):",
+            QByteArray msg = QString().sprintf("%s>dI(%d,%d,%d,%d,%d,%d,%s):",
                 id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 patch->artefactMargin,
                 mimeType.constData()
-            );
+            ).toLatin1();
 
-            if (!inlineBase64)
+            if (!inlineData)
             {
                 QMutexLocker l(&patchesMutex_);
                 patch->id = id_ + "_" + QString::number(frame_) + "_" + QString::number(i);
 
-                msg += QString("fb:" + patch->id).toLatin1().constData();
+                msg += "fb:" + patch->id;
 
                 patches_.insert(patch->id, patch);
             }
             else
             {
-                msg += patch->toBase64();
+                if (returnBinary)
+                    msg += patch->data.data();
+                else
+                    msg += patch->toBase64();
+
                 delete patch;
             }
 
-            messageList += msg.toUtf8();
+            messageList += msg;
         }
         else if (op.type == uotMove)
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("%s>moveImage(%d,%d,%d,%d,%d,%d,%d):",
+            QByteArray msg = QString().sprintf("%s>mI(%d,%d,%d,%d,%d,%d,%d):",
                 id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.dstPoint.x(), op.dstPoint.y()
-            );
+            ).toLatin1();
 
-            messageList += msg.toUtf8();
+            messageList += msg;
         }
         else if (op.type == uotFill)
         {
             const QRect &rect = op.srcRect;
 
-            QString msg = QString().sprintf("%s>fillRect(%d,%d,%d,%d,%d,%d,%d,%d,%d):",
+            QByteArray msg = QString().sprintf("%s>fR(%d,%d,%d,%d,%d,%d,%d,%d,%d):",
                 id_.toLatin1().constData(), frame_,
                 rect.x(), rect.y(), rect.width(), rect.height(),
                 op.fillColor.red(), op.fillColor.green(), op.fillColor.blue(), op.fillColor.alpha()
-            );
+            ).toLatin1();
 
-            messageList += msg.toUtf8();
+            messageList += msg;
         }
     }
 

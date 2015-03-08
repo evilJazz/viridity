@@ -18,10 +18,8 @@ var DataBridge = function(viridityChannel, id)
             if (t.targetId === c.targetId &&
                 (t.command === "data" || t.command === "dataResponse"))
             {
-                var paramStartIndex = t.params.indexOf(",");
-
-                var responseId = t.params.substring(0, paramStartIndex);
-                var input = t.params.substring(paramStartIndex + 1);
+                var responseId = t.params[0];
+                var input = t.data();
 
                 if (t.command === "dataResponse")
                 {
@@ -37,7 +35,7 @@ var DataBridge = function(viridityChannel, id)
                 else if (typeof(c.onNewDataReceived) == "function")
                 {
                     var result = c.onNewDataReceived(JSON.parse(input));
-                    v.sendMessage("dataResponse(" + responseId + "," + JSON.stringify(result) + ")", c.targetId);
+                    v.sendMessage("dataResponse(" + responseId + "):" + JSON.stringify(result), c.targetId);
                     processed = true;
                 }
             }
@@ -52,7 +50,7 @@ var DataBridge = function(viridityChannel, id)
             if (typeof(callback) == "function")
                 c.pendingResponseCallbacks[c.responseId] = callback;
 
-            var message = "data(" + c.responseId + "," + JSON.stringify(data) + ")";
+            var message = "data(" + c.responseId + "):" + JSON.stringify(data);
             v.sendMessage(message, c.targetId);
         }
     }

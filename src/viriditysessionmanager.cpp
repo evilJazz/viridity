@@ -21,7 +21,7 @@ QString createUniqueID()
 
 /* ViridityMessageHandler */
 
-QList<QByteArray> ViridityMessageHandler::takePendingMessages()
+QList<QByteArray> ViridityMessageHandler::takePendingMessages(bool returnBinary)
 {
     return QList<QByteArray>();
 }
@@ -141,7 +141,7 @@ bool ViriditySession::pendingMessagesAvailable() const
     return messages_.count() > 0 || messageHandlersRequestingMessageDispatch_.count() > 0;
 }
 
-QList<QByteArray> ViriditySession::takePendingMessages()
+QList<QByteArray> ViriditySession::takePendingMessages(bool returnBinary)
 {
     QMutexLocker l(&dispatchMutex_);
 
@@ -149,7 +149,7 @@ QList<QByteArray> ViriditySession::takePendingMessages()
 
     foreach (ViridityMessageHandler *handler, messageHandlersRequestingMessageDispatch_)
     {
-        messages += handler->takePendingMessages();
+        messages += handler->takePendingMessages(returnBinary);
     }
 
     messages_.clear();

@@ -69,11 +69,11 @@ void ViridityDataBridge::unregisterHandler()
     }
 }
 
-QVariant ViridityDataBridge::sendData(const QString &command, const QString &destinationSessionId)
+QVariant ViridityDataBridge::sendData(const QString &data, const QString &destinationSessionId)
 {
     int result = getNewResponseId();
 
-    QString message = QString("data(%1,%2)").arg(result).arg(command);
+    QString message = QString("data(%1):%2").arg(result).arg(data);
 
     bool dispatched = false;
 
@@ -112,13 +112,12 @@ bool ViridityDataBridge::localHandleMessage(const QByteArray &message, const QSt
     if (canHandleMessage(message, sessionId, targetId))
     {
         int paramStartIndex = message.indexOf("(");
-        int paramStopIndex = message.indexOf(")");
+        int paramStopIndex = message.indexOf("):");
         QByteArray rawParams = message.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
 
-        paramStartIndex = rawParams.indexOf(",");
         QString responseId = rawParams.mid(0, paramStartIndex);
 
-        QString input = QString::fromUtf8(rawParams.mid(paramStartIndex + 1, rawParams.length() - paramStartIndex - 1));
+        QString input = QString::fromUtf8(message.mid(paramStopIndex + 2));
 
         if (message.startsWith("dataResponse"))
         {
@@ -130,7 +129,7 @@ bool ViridityDataBridge::localHandleMessage(const QByteArray &message, const QSt
             setResponse(QString::null);
             emit dataReceived(responseId, input);
 
-            QString message = QString("dataResponse(%1,%2)").arg(responseId).arg(response());
+            QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
             session_->dispatchMessageToClient(message.toUtf8(), targetId);
             return true;
         }

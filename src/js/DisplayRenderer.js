@@ -234,7 +234,7 @@
 
             _messageCallback: function(t)
             {
-                var inputParams = t.params.split(/[\s,]+/);
+                var inputParams = t.params;
                 var frame = inputParams[0];
 
                 if (dr.lastFrame !== frame)
@@ -269,7 +269,7 @@
                     dr.frameCommands.push(frameCmd);
                 }
 
-                if (t.command === "fillRect")
+                if (t.command === "fR")
                 {
                     var dstX = parseInt(inputParams[1]);
                     var dstY = parseInt(inputParams[2]);
@@ -281,7 +281,7 @@
                     dr.ctx.fillStyle = "rgba(" + inputParams[5] + "," + inputParams[6] + "," + inputParams[7] + "," + (inputParams[8] / 255) + ")";
                     dr.ctx.fillRect(dstX, dstY, dstWidth, dstHeight);
                 }
-                else if (t.command === "moveImage")
+                else if (t.command === "mI")
                 {
                     var srcX = parseInt(inputParams[1]);
                     var srcY = parseInt(inputParams[2]);
@@ -291,9 +291,10 @@
                     var dstX = parseInt(inputParams[5]);
                     var dstY = parseInt(inputParams[6]);
 
+                    dr.ctx.clearRect(dstX, dstY, dstWidth, dstHeight);
                     dr.ctx.drawImage(dr.frontCanvas, srcX, srcY, srcWidth, srcHeight, dstX, dstY, srcWidth, srcHeight);
                 }
-                else if (t.command === "drawImage")
+                else if (t.command === "dI")
                 {
                     ++dr.pendingPatchesCount;
 
@@ -303,12 +304,15 @@
                     if (contentType.indexOf(";pa") > -1)
                     {
                         isPackedAlpha = true;
-                        contentType.replace(";pa", "");
+                        contentType = contentType.replace(";pa", "");
                     }
+
+                    console.log("replaced contentType: " + contentType);
 
                     var margin = parseInt(inputParams[5]);
 
                     var img = new Image;
+                    img.crossOrigin = "Anonymous";
                     img.onload = function()
                     {
                         if (frame !== dr.lastFrame)
@@ -376,17 +380,13 @@
                         dr._imageDone();
                     };
 
-                    var imageData = t.message.slice(t.paramEndIndex + 2);
-
-                    if (imageData.substring(0,3) === "fb:")
+                    if (t.dataAsString(0, 3) === "fb:")
                     {
-                        img.crossOrigin = "Anonymous";
-                        img.src = v.fullLocation + "/" + v.sessionId + "/p/" + imageData.substring(3);
+                        img.src = v.fullLocation + "/" + v.sessionId + "/p/" + t.dataAsString(3);
                     }
-                    else if (imageData.substring(0,4) === "http")
+                    else if (t.dataAsString(0, 4) === "http")
                     {
-                        img.crossOrigin = "Anonymous";
-                        img.src = imageData;
+                        img.src = t.dataAsString();
                     }
                     else if (dr.useBlobBuilder)
                     {
@@ -446,7 +446,7 @@
                                     }
                         }
 
-                        var buf = Base64Binary.decodeArrayBuffer(imageData);
+                        var buf = Base64Binary.decodeArrayBuffer(t.dataAsString());
 
                         /* SLOW!
                         var rawData = atob(imageData);
@@ -466,7 +466,24 @@
                         img.src = blobUrl;
                     }
                     else
-                        img.src = "data:" + contentType + "," + imageData;
+                    {
+                        if (t.dataIsBinary && contentType.indexOf("base64") === -1)
+                        {
+                            var bytes = t.data();
+                            var blob = new Blob([bytes], {type: contentType});
+
+                            var reader = new FileReader();
+                            reader.onload = function(e)
+                            {
+                                img.src = e.target.result;
+                            };
+                            reader.readAsDataURL(blob);
+                        }
+                        else
+                        {
+                            img.src = "data:" + contentType + "," + t.dataAsString();
+                        }
+                    }
                 }
                 else if (t.command === "info")
                 {
