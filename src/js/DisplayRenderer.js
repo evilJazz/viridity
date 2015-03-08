@@ -497,12 +497,12 @@
                 }
             },
 
-            resize: function(width, height)
+            resize: function(width, height, force)
             {
                 var scaledWidth = Math.round(width * dr.ratio);
                 var scaledHeight = Math.round(height * dr.ratio);
 
-                if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight)
+                if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight || force)
                 {
                     if (debugVerbosity > 0)
                         console.log(dr.sceneId + " -> width: " + width + " height: " + height);
@@ -519,9 +519,21 @@
                 }
             },
 
-            updateSize: function()
+            updateSize: function(force)
             {
-                dr.resize(containerElement.width(), containerElement.height());
+                dr.resize(containerElement.width(), containerElement.height(), force);
+            },
+
+            _requestNewDisplay: function()
+            {
+                var joinedParams = typeof(params) === "array" ? params.join() : params;
+                v.sendMessage("newDisplay(" + joinedParams + ")", dr.targetId);
+            },
+
+            _reconnectDisplay: function()
+            {
+                dr._requestNewDisplay();
+                dr.updateSize(true);
             },
 
             init: function()
@@ -529,9 +541,7 @@
                 dr.targetId = v.registerCallback(dr._messageCallback, targetId);
                 dr.params = params;
 
-                var joinedParams = typeof(params) === "array" ? params.join() : params;
-
-                v.sendMessage("newDisplay(" + joinedParams + ")", dr.targetId);
+                dr._requestNewDisplay();
 
                 dr.canvas = document.createElement("canvas");
                 dr.ctx = dr.canvas.getContext("2d");
@@ -558,12 +568,14 @@
                     "padding": 0
                 });
 
-                $(dr.frontCanvas).css({
-                    "margin": 0,
-                    "padding": 0,
-                    "position": "absolute",
-                    "outline": "none"
-                });
+                $(dr.frontCanvas)
+                    .addClass("viridity")
+                    .css({
+                        "margin": 0,
+                        "padding": 0,
+                        "position": "absolute",
+                        "outline": "none"
+                    });
 
                 // Set up default sizes...
                 if (containerElement.height() === 0)
@@ -706,12 +718,18 @@
                 setInterval(dr._sendKeepAlive, dr.keepAliveInterval);
 
                 v.on("sessionDisconnected", dr._drawDisconnected);
-                v.on("sessionStart", dr.requestFullUpdate);
-                v.on("sessionReattached", dr.requestFullUpdate);
+                v.on("sessionStart", dr._reconnectDisplay);
+                v.on("sessionReattached", dr._reconnectDisplay);
             }
         }
 
-        dr.init();
+        if (containerElement.find(".viridity").length > 0)
+        {
+            console.log("Other viridity display already instantiated for " + targetId + ". Returning null. Your code will fail.");
+            dr = null;
+        }
+        else
+            dr.init();
 
         return dr;
     };
