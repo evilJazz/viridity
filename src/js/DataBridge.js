@@ -19,7 +19,7 @@ var DataBridge = function(viridityChannel, id)
                 (t.command === "data" || t.command === "dataResponse"))
             {
                 var responseId = t.params[0];
-                var input = t.data();
+                var input = t.dataAsString();
 
                 if (t.command === "dataResponse")
                 {
