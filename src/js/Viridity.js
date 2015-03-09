@@ -128,6 +128,16 @@ if (!String.prototype.indexOfChar)
     }
 }
 
+String.prototype.removeLeadingSlash = function()
+{
+    return this.replace(/^\//, "");
+}
+
+String.prototype.removeTrailingSlash = function()
+{
+    return this.replace(/\/$/, "");
+}
+
 var Viridity = function(options)
 {
     var debugVerbosity = 0;
@@ -136,9 +146,9 @@ var Viridity = function(options)
     {
         connectionMethod: ConnectionMethod.Auto,
 
-        socket: 0,
+        socket: null,
 
-        eventSource: 0,
+        eventSource: null,
 
         location: "",
         fullLocation: "",
@@ -528,22 +538,30 @@ var Viridity = function(options)
                 {
                     v.socket.onclose = function () {};
                     v.socket.close();
+                    v.socket = null;
                 }
 
                 var add = ws + "//" + v.location + "/" + v.sessionId + "/v/ws";
 
-                if (v.supportsBinaryWebSockets)
+                try
                 {
-                    v.socket = new WebSocket(add + "b");
-                    v.socket.binaryType = "arraybuffer";
-                }
-                else
-                    v.socket = new WebSocket(add);
+                    if (v.supportsBinaryWebSockets)
+                    {
+                        v.socket = new WebSocket(add + "b");
+                        v.socket.binaryType = "arraybuffer";
+                    }
+                    else
+                        v.socket = new WebSocket(add);
 
-                v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
-                v.socket.onopen = v._sendQueuedMessages;
-                v.socket.onerror = v._handleDisconnect;
-                v.socket.onclose = v._handleDisconnect;
+                    v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
+                    v.socket.onopen = v._sendQueuedMessages;
+                    v.socket.onerror = v._handleDisconnect;
+                    v.socket.onclose = v._handleDisconnect;
+                }
+                catch (e)
+                {
+                    v._handleDisconnect();
+                }
             }
         },
 
@@ -573,11 +591,11 @@ var Viridity = function(options)
                 parser = window.location;
 
             var pathnameNoFilename = String(parser.pathname);
-            pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/")).replace(/\/$/, "");
+            pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/")).removeTrailingSlash();
 
-            var hostWithPath = parser.host.replace(/\/$/, "");
+            var hostWithPath = parser.host.removeTrailingSlash();
             if (pathnameNoFilename.length > 0)
-                hostWithPath += "/" + pathnameNoFilename;
+                hostWithPath += "/" + pathnameNoFilename.removeLeadingSlash();
 
             v.location = hostWithPath;
             v.fullLocation = parser.protocol + "//" + v.location;
