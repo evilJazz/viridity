@@ -245,6 +245,7 @@
                     if (dr.pendingPatchesCount != 0)
                     {
                         console.log(dr.targetId + " -> PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.pendingPatchesCount);
+                        dr.pendingPatchesCount = 0;
                     }
 
                     // This is to stop _determineReadyState() from sending ready() when image loading is quasi-synchronous, ie. base64 encoded sources.

@@ -104,6 +104,10 @@ void GraphicsSceneDisplay::clearPatches()
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
+
+    DOP(foreach (GraphicsSceneFramePatch *patch, patches_.values()))
+        DPRINTF("Deleting patch: %s", patch->id.toLatin1().constData());
+
     qDeleteAll(patches_.values());
     patches_.clear();
 }
@@ -408,6 +412,7 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
 
 void GraphicsSceneDisplay::requestFullUpdate()
 {
+    DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
     clearPatches();
 
