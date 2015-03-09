@@ -402,7 +402,7 @@ var Viridity = function(options)
             var t = v.parseMessage(msg);
             var processed = false;
 
-            if (debugVerbosity > 0)
+            if (debugVerbosity > 2)
                 console.log("Received message from server: " + msg);
 
             if (typeof(t.targetId) !== "undefined" &&

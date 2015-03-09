@@ -42,7 +42,8 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     frame_(0),
     renderer_(NULL),
     clientReady_(true),
-    patchesMutex_(QMutex::Recursive)
+    patchesMutex_(QMutex::Recursive),
+    fullUpdateRequested_(true)
 {
     DGUARDMETHODTIMED;
 
@@ -327,6 +328,17 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
             QtConcurrent::blockingFilter(updateOps, GraphicsSceneDisplayThreadedCreatePatch(this));
     }
 
+    if (fullUpdateRequested_)
+    {
+        fullUpdateRequested_ = false;
+
+        QByteArray msg = QString().sprintf("%s>fullUpdate(%d):",
+            id_.toLatin1().constData(), frame_
+        ).toLatin1();
+
+        messageList += msg;
+    }
+
     for (int i = 0; i < ops.count(); ++i)
     {
         const UpdateOperation &op = ops.at(i);
@@ -414,6 +426,7 @@ void GraphicsSceneDisplay::requestFullUpdate()
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
+    fullUpdateRequested_ = true;
     clearPatches();
 
     QMetaObject::invokeMethod(
@@ -447,7 +460,7 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
         );
     else if (message.startsWith("requestFullUpdate"))
         requestFullUpdate();
-    else if (message.startsWith("resize"))
+    else if (message.startsWith("resize")) // implicit requestFullUpdate!
     {
         QString command;
         QStringList params;
@@ -456,6 +469,10 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
 
         if (params.count() == 3)
         {
+            QMutexLocker l(&patchesMutex_);
+            fullUpdateRequested_ = true;
+            clearPatches();
+
             int width = params[0].toInt();
             int height = params[1].toInt();
             qreal ratio = params[2].toDouble();
@@ -466,6 +483,8 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
                 Q_ARG(int, width),
                 Q_ARG(int, height)
             );
+
+            clientReady();
         }
     }
     else

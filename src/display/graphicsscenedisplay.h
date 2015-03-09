@@ -126,6 +126,7 @@ private:
     friend class GraphicsSceneDisplayLocker;
     QHash<QString, GraphicsSceneFramePatch *> patches_;
     mutable QMutex patchesMutex_;
+    bool fullUpdateRequested_;
 
     friend class GraphicsSceneDisplayThreadedCreatePatch;
     GraphicsSceneFramePatch *createPatch(const QRect &rect);

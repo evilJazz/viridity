@@ -22,6 +22,7 @@
             lastFrame: 0,
             frameEndReceived: true,
             pendingPatchesCount: 0,
+            waitingForFullUpdate: false,
             frameCommands: [],
 
             keepAliveInterval: 60000,
@@ -74,6 +75,7 @@
 
             requestFullUpdate: function()
             {
+                dr.waitingForFullUpdate = true;
                 v.sendMessage("requestFullUpdate()", dr.targetId);
             },
 
@@ -237,6 +239,15 @@
                 var inputParams = t.params;
                 var frame = inputParams[0];
 
+                if (dr.waitingForFullUpdate && t.command !== "fullUpdate")
+                    return;
+
+                if (t.command === "fullUpdate")
+                {
+                    dr.waitingForFullUpdate = false;
+                    dr.pendingPatchesCount = 0;
+                }
+
                 if (dr.lastFrame !== frame)
                 {
                     if (debugVerbosity > 1) console.log(dr.targetId + " -> NEW FRAME: " + dr.lastFrame + " -> " + frame);
@@ -258,7 +269,7 @@
                     }
                 }
 
-                if (debugVerbosity > 1) console.log("command: " + t.command + " params: " + JSON.stringify(inputParams));
+                if (debugVerbosity > 1) console.log(dr.targetId + " -> command: " + t.command + " params: " + JSON.stringify(inputParams));
                 if (debugDraw)
                 {
                     var frameCmd =
@@ -492,7 +503,7 @@
                 }
                 else if (t.command === "end")
                 {
-                    if (debugVerbosity > 1) console.log("Frame end " + frame + " received...");
+                    if (debugVerbosity > 1) console.log(dr.targetId + " -> Frame end " + frame + " received...");
                     dr.frameEndReceived = true;
                     dr._determineReadyState();
                 }
@@ -506,16 +517,19 @@
                 if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight || force)
                 {
                     if (debugVerbosity > 0)
-                        console.log(dr.sceneId + " -> width: " + width + " height: " + height);
+                        console.log(dr.targetId + " -> width: " + width + " height: " + height);
 
                     // Only set back canvas size.
                     // Front canvas size will be updated as soon as the update frame arrives.
                     dr.canvas.width = scaledWidth;
                     dr.canvas.height = scaledHeight;
 
+                    dr.ctx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
+
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
+                    dr.waitingForFullUpdate = true;
                     v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
             },
