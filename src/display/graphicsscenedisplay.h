@@ -25,11 +25,11 @@ public:
     QString id;
     QRect rect;
     int artefactMargin;
-    QBuffer data;
+    QByteArray data;
     QByteArray mimeType;
     bool packedAlpha;
 
-    QByteArray toBase64() const { return data.data().toBase64(); }
+    QByteArray toBase64() const { return data.toBase64(); }
 };
 
 class GraphicsSceneDisplay;

@@ -204,7 +204,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         image.save(&pngBuffer, "PNG");
         pngBuffer.close();
 
-        patch->data.setData(pngBuffer.data());
+        patch->data = pngBuffer.data();
         patch->mimeType = "image/png";
         patch->packedAlpha = false;
     }
@@ -222,7 +222,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     #endif
         jpegBuffer.close();
 
-        patch->data.setData(jpegBuffer.data());
+        patch->data = jpegBuffer.data();
         patch->mimeType = "image/jpeg";
         patch->packedAlpha = hasAlphaValues;
     }
@@ -239,12 +239,10 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         image.save(&bmpBuffer, "BMP");
         bmpBuffer.close();
 
-        patch->data.setData(bmpBuffer.data());
+        patch->data = bmpBuffer.data();
         patch->mimeType = "image/bmp";
         patch->packedAlpha = false;
     }
-
-    patch->data.close();
 
     DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %lld kB (%lld byte)",
             rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.constData(),
@@ -365,7 +363,7 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
             else
             {
                 if (returnBinary)
-                    msg += patch->data.data();
+                    msg += patch->data;
                 else
                     msg += patch->toBase64();
 

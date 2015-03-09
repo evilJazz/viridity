@@ -38,14 +38,14 @@
 
             _determineReadyState: function()
             {
-                if (debugVerbosity > 1) console.log("pendingPatchesCount: " + dr.pendingPatchesCount)
+                if (debugVerbosity > 1) console.log(dr.targetId + " -> pendingPatchesCount: " + dr.pendingPatchesCount)
                 if (dr.frameEndReceived && dr.pendingPatchesCount == 0)
                 {
                     dr._flipToFront();
                     if (debugDraw)
                         dr._debugDraw();
 
-                    if (debugVerbosity > 1) console.log("SENDING READY!!!!");
+                    if (debugVerbosity > 1) console.log(dr.targetId + " -> SENDING READY!!!!");
 
                     v.sendMessage("ready()", dr.targetId);
                 }
@@ -239,12 +239,12 @@
 
                 if (dr.lastFrame !== frame)
                 {
-                    if (debugVerbosity > 1) console.log("NEW FRAME: " + dr.lastFrame + " -> " + frame);
+                    if (debugVerbosity > 1) console.log(dr.targetId + " -> NEW FRAME: " + dr.lastFrame + " -> " + frame);
                     dr.lastFrame = frame;
 
                     if (dr.pendingPatchesCount != 0)
                     {
-                        console.log("PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.pendingPatchesCount);
+                        console.log(dr.targetId + " -> PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.pendingPatchesCount);
                     }
 
                     // This is to stop _determineReadyState() from sending ready() when image loading is quasi-synchronous, ie. base64 encoded sources.
@@ -313,9 +313,9 @@
                     img.onload = function()
                     {
                         if (frame !== dr.lastFrame)
-                            console.log("ASYNCHRONOUS IMAGE!!!!! " + " frame is " + frame + ", but dr.lastFrame is " + dr.lastFrame);
+                            console.log(dr.targetId + " -> ASYNCHRONOUS IMAGE!!!!! " + " frame is " + frame + ", but dr.lastFrame is " + dr.lastFrame);
 
-                        if (debugVerbosity > 1) console.log("frame: " + frame + " img.src: " + img.src);
+                        if (debugVerbosity > 1) console.log(dr.targetId + " -> frame: " + frame + " img.src: " + img.src);
 
                         var dstX = parseInt(inputParams[1]);
                         var dstY = parseInt(inputParams[2]);

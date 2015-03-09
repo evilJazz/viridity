@@ -70,7 +70,7 @@ void GraphicsSceneDisplayRecorder::displayNewFrameMessagesGenerated(const QList<
         {
             i.next();
             diffFrameData_ << i.key();
-            diffFrameData_ << i.value()->data.data();
+            diffFrameData_ << i.value()->data;
         }
 
         diffFrameFile_.flush();

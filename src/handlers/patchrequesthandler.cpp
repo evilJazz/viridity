@@ -52,12 +52,10 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
 
                     if (patch)
                     {
-                        patch->data.open(QIODevice::ReadOnly);
-
                         response->writeHead(Tufao::HttpServerResponse::OK);
                         response->headers().insert("Content-Type", patch->mimeType.constData());
                         ViridityConnection::addNoCachingResponseHeaders(response);
-                        response->end(patch->data.readAll());
+                        response->end(patch->data);
 
                         delete patch;
                         return;
