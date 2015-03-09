@@ -168,20 +168,15 @@ var Viridity = function(options)
 
         supportsBinaryWebSockets: (function()
         {
-            try
-            {
-                if (WebSocket.prototype.hasOwnProperty("binaryType")) // Works in FF and IE11
-                    return true;
-            }
-            catch (e)
-            {
-            }
+            if (!"WebSocket" in window)
+                return false;
+
+            if ("binaryType" in WebSocket.prototype) // Works in FF and IE11
+                return true;
 
             try // Dirty fallback...
             {
-                var wstest = new WebSocket('ws://null');
-                wstest.onerror = function() {};
-
+                var wstest = new WebSocket((location.protocol == "https:" ? "wss" : "ws") + "://.");
                 if (typeof(wstest.binaryType) !== "undefined")
                     return true;
                 else
@@ -411,7 +406,7 @@ var Viridity = function(options)
                 console.log("Received message from server: " + msg);
 
             if (typeof(t.targetId) !== "undefined" &&
-                v.targetCallbacks.hasOwnProperty(t.targetId))
+                t.targetId in v.targetCallbacks)
             {
                 processed = v.targetCallbacks[t.targetId](t);
             }
@@ -572,10 +567,10 @@ var Viridity = function(options)
             if (v.connectionMethod === ConnectionMethod.Auto)
                 v.connectionMethod = ConnectionMethod.WebSockets;
 
-            if (v.connectionMethod === ConnectionMethod.WebSockets && !window.hasOwnProperty("WebSocket"))
+            if (v.connectionMethod === ConnectionMethod.WebSockets && !("WebSocket" in window))
                 v.connectionMethod = ConnectionMethod.ServerSentEvents;
 
-            if (v.connectionMethod === ConnectionMethod.ServerSentEvents && !window.hasOwnProperty("EventSource"))
+            if (v.connectionMethod === ConnectionMethod.ServerSentEvents && !("EventSource" in window))
                 v.connectionMethod = ConnectionMethod.LongPolling;
 
             if (typeof(options.sessionId) != "undefined" && options.sessionId != "")
