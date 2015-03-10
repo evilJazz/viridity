@@ -182,7 +182,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
             if (message.startsWith("newDisplay"))
             {
                 // Ignore all params and send full update...
-                display->requestFullUpdate();
+                display->requestFullUpdate(true);
                 releaseDisplay(display);
                 return true;
             }

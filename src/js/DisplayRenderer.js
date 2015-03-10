@@ -21,6 +21,7 @@
 
             lastFrame: 0,
             frameEndReceived: true,
+            frameErrors: 0,
             pendingPatchesCount: 0,
             waitingForFullUpdate: false,
             frameCommands: [],
@@ -40,15 +41,26 @@
             _determineReadyState: function()
             {
                 if (debugVerbosity > 1) console.log(dr.targetId + " -> pendingPatchesCount: " + dr.pendingPatchesCount)
-                if (dr.frameEndReceived && dr.pendingPatchesCount == 0)
+                if (dr.frameEndReceived && dr.pendingPatchesCount === 0)
                 {
-                    dr._flipToFront();
-                    if (debugDraw)
-                        dr._debugDraw();
+                    if (dr.frameErrors > 0)
+                    {
+                        console.log("ERROR LOADING IMAGES!");
+                        console.log("Requesting full update...");
+                        dr.requestFullUpdate(true);
+                    }
+                    else
+                    {
+                        dr._flipToFront();
+                        if (debugDraw)
+                            dr._debugDraw();
 
-                    if (debugVerbosity > 1) console.log(dr.targetId + " -> SENDING READY!!!!");
+                        if (debugVerbosity > 1) console.log(dr.targetId + " -> SENDING READY!!!!");
 
-                    v.sendMessage("ready()", dr.targetId);
+                        v.sendMessage("ready()", dr.targetId);
+                    }
+
+                    dr.frameErrors = 0;
                 }
             },
 
@@ -73,10 +85,11 @@
                 dr.frontCtx.drawImage(dr.canvas, 0, 0);
             },
 
-            requestFullUpdate: function()
+            requestFullUpdate: function(forced)
             {
+                if (typeof(forced) === "undefined") forced = false;
                 dr.waitingForFullUpdate = true;
-                v.sendMessage("requestFullUpdate()", dr.targetId);
+                v.sendMessage("requestFullUpdate(" + (forced ? "1" : "0") + ")", dr.targetId);
             },
 
             _sendKeepAlive: function()
@@ -244,6 +257,8 @@
 
                 if (t.command === "fullUpdate")
                 {
+                    if (debugVerbosity > 1) console.log(dr.targetId + " -> FULL UPDATE FRAME " + frame);
+
                     dr.waitingForFullUpdate = false;
                     dr.pendingPatchesCount = 0;
                 }
@@ -322,6 +337,12 @@
                     var margin = parseInt(inputParams[5]);
 
                     var img = new Image;
+                    img.onerror = function()
+                    {
+                        ++dr.frameErrors;
+                        dr._imageDone();
+                    };
+
                     img.onload = function()
                     {
                         if (frame !== dr.lastFrame)
@@ -516,8 +537,6 @@
 
                 if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight || force)
                 {
-                    dr.waitingForFullUpdate = true;
-
                     if (debugVerbosity > 0)
                         console.log(dr.targetId + " -> width: " + width + " height: " + height);
 
@@ -531,6 +550,7 @@
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
+                    if (debugVerbosity > 1) console.log(dr.targetId + " -> RESIZING TO " + scaledWidth + " x " + scaledHeight);
                     v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
             },

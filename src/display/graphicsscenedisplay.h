@@ -88,7 +88,7 @@ public:
     bool isUpdateAvailable() const;
     GraphicsSceneFramePatch *takePatch(const QString &patchId);
 
-    void requestFullUpdate();
+    void requestFullUpdate(bool forced = false);
 
 signals:
     void updateAvailable();

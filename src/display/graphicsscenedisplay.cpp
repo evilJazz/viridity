@@ -422,19 +422,22 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
     return messageList;
 }
 
-void GraphicsSceneDisplay::requestFullUpdate()
+void GraphicsSceneDisplay::requestFullUpdate(bool forced)
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
     fullUpdateRequested_ = true;
-    clearPatches();
+
+    if (forced)
+        clearPatches();
 
     QMetaObject::invokeMethod(
         renderer_, "fullUpdate",
         renderer_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
     );
 
-    clientReady();
+    if (forced)
+        clientReady();
 }
 
 bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -459,8 +462,18 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
             this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection
         );
     else if (message.startsWith("requestFullUpdate"))
-        requestFullUpdate();
-    else if (message.startsWith("resize")) // implicit requestFullUpdate!
+    {
+        QString command;
+        QStringList params;
+
+        ViridityMessageHandler::splitMessage(message, command, params);
+
+        if (params.count() == 1)
+            requestFullUpdate(params[0].toInt() == 1);
+        else
+            requestFullUpdate();
+    }
+    else if (message.startsWith("resize")) // implicit unforced requestFullUpdate, ie. no clearing of patches and setting client ready.
     {
         QString command;
         QStringList params;
@@ -469,13 +482,9 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
 
         if (params.count() == 3)
         {
-            QMutexLocker l(&patchesMutex_);
-            fullUpdateRequested_ = true;
-            clearPatches();
-
             int width = params[0].toInt();
             int height = params[1].toInt();
-            qreal ratio = params[2].toDouble();
+            //qreal ratio = params[2].toDouble();
 
             QMetaObject::invokeMethod(
                 renderer_, "setSize",
@@ -483,8 +492,6 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
                 Q_ARG(int, width),
                 Q_ARG(int, height)
             );
-
-            clientReady();
         }
     }
     else

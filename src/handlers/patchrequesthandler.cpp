@@ -5,6 +5,8 @@
 
 #include "viriditywebserver.h"
 
+//#define VIRIDITY_DEBUG_FAULTY_CONNECTION_SIMULATION
+
 PatchRequestHandler::PatchRequestHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent)
 {
@@ -22,6 +24,15 @@ bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
 
 void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
 {
+#ifdef VIRIDITY_DEBUG_SIMULATE_RANDOM_ERROR
+    if (QDateTime::currentMSecsSinceEpoch() % 101 == 0)
+    {
+        response->writeHead(404);
+        response->end("Not found");
+        return;
+    }
+#endif
+
     QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = server()->sessionManager()->acquireSession(id);
 
