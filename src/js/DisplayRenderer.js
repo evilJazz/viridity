@@ -158,13 +158,13 @@
                     var w = parseInt(inputParams[3]);
                     var h = parseInt(inputParams[4]);
 
-                    if (command === "fillRect")
+                    if (command === "fR")
                     {
                         dr.frontCtx.fillStyle = "rgba(0, 255, 0, " + alpha + ")";
                         dr.frontCtx.fillRect(x1, y1, w, h);
                         dr.frontCtx.strokeRect(x1, y1, w, h);
                     }
-                    else if (command === "moveImage")
+                    else if (command === "mI")
                     {
                         var x2 = parseInt(inputParams[5]);
                         var y2 = parseInt(inputParams[6]);
@@ -225,7 +225,7 @@
                         drawArrow(dr.frontCtx, centerX1, centerY1, centerX2, centerY2);
                         dr.frontCtx.stroke();
                     }
-                    else if (command === "drawImage")
+                    else if (command === "dI")
                     {
                         dr.frontCtx.fillStyle = "rgba(255, 0, 0, " + alpha + ")";
                         dr.frontCtx.fillRect(x1, y1, w, h);
@@ -516,6 +516,8 @@
 
                 if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight || force)
                 {
+                    dr.waitingForFullUpdate = true;
+
                     if (debugVerbosity > 0)
                         console.log(dr.targetId + " -> width: " + width + " height: " + height);
 
@@ -529,7 +531,6 @@
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
-                    dr.waitingForFullUpdate = true;
                     v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
             },

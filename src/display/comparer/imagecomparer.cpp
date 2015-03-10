@@ -173,6 +173,20 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<
     if (minRect.isEmpty())
         return false;
 
+    if (settings_.analyzeFills)
+    {
+        QColor solidColor = ImageAux::getSolidRectColor(imageAfter_, minRect);
+        if (solidColor.isValid())
+        {
+            op.type = uotFill;
+            op.srcRect = minRect;
+            op.dstPoint = minRect.topLeft();
+            op.fillColor = solidColor;
+
+            return true;
+        }
+    }
+
     if (settings_.analyzeMoves && !settings_.fineGrainedMoves)
     {
         QRect movedSrcRect = moveAnalyzer_->processRect(rect);
@@ -191,21 +205,7 @@ bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<
         }
     }
 
-    if (settings_.analyzeFills)
-    {
-        QColor solidColor = ImageAux::getSolidRectColor(imageAfter_, minRect);
-        if (solidColor.isValid())
-        {
-            op.type = uotFill;
-            op.srcRect = minRect;
-            op.dstPoint = minRect.topLeft();
-            op.fillColor = solidColor;
-
-            return true;
-        }
-    }
-
-    if (settings_.analyzeMoves)
+    if (settings_.analyzeMoves && !settings_.fineGrainedMoves)
     {
         DPRINTF("No move operation found for: %d, %d + %d x %d",
                 minRect.left(), minRect.top(), minRect.width(), minRect.height()

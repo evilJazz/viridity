@@ -26,9 +26,9 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, int template
     imageBefore_(imageBefore),
     imageAfter_(imageAfter),
     templateWidth_(templateWidth),
-    searchRadius_(100),
+    searchRadius_(200),
     mutex_(QMutex::Recursive),
-    searchMissesThreshold_(40),
+    searchMissesThreshold_(50),
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true)
 {
@@ -64,7 +64,7 @@ void MoveAnalyzer::swap()
 
     damagedAreas_.clear();
 
-    while (lastSuccessfulMoveVectors_.count() > 100)
+    while (lastSuccessfulMoveVectors_.count() > 200)
         lastSuccessfulMoveVectors_.removeLast();
 
     QImage *temp = imageBefore_;
