@@ -30,6 +30,10 @@
 
             frontCanvas: 0,
             frontCtx: 0,
+
+            resizeCanvas: 0,
+            resizeCtx: 0,
+
             ratio: 1,
 
             _imageDone: function()
@@ -540,12 +544,7 @@
                     if (debugVerbosity > 0)
                         console.log(dr.targetId + " -> width: " + width + " height: " + height);
 
-                    // Only set back canvas size.
-                    // Front canvas size will be updated as soon as the update frame arrives.
-                    dr.canvas.width = scaledWidth;
-                    dr.canvas.height = scaledHeight;
-
-                    dr.ctx.clearRect(0, 0, dr.canvas.width, dr.canvas.height);
+                    dr._resizeCanvas(dr.canvas, dr.ctx, scaledWidth, scaledHeight);
 
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
@@ -553,6 +552,22 @@
                     if (debugVerbosity > 1) console.log(dr.targetId + " -> RESIZING TO " + scaledWidth + " x " + scaledHeight);
                     v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
+            },
+
+            _resizeCanvas: function(canvas, ctx, width, height)
+            {
+                // Resize canvas and keep content, filling new space with 0x0.
+                dr.resizeCanvas.width = width;
+                dr.resizeCanvas.height = height;
+
+                dr.resizeCtx.clearRect(0, 0, width, height);
+                dr.resizeCtx.drawImage(canvas, 0, 0);
+
+                canvas.width = width;
+                canvas.height = height;
+
+                ctx.clearRect(0, 0, width, height);
+                ctx.drawImage(dr.resizeCanvas, 0, 0);
             },
 
             updateSize: function(force)
@@ -584,6 +599,9 @@
 
                 dr.frontCanvas = document.createElement("canvas");
                 dr.frontCtx = dr.frontCanvas.getContext("2d");
+
+                dr.resizeCanvas = document.createElement("canvas");
+                dr.resizeCtx = dr.resizeCanvas.getContext("2d");
 
                 var devicePixelRatio = window.devicePixelRatio || 1;
                 var backingStoreRatio = dr.frontCtx.webkitBackingStorePixelRatio ||

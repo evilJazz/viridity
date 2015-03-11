@@ -189,17 +189,31 @@ void GraphicsSceneBufferRenderer::setSize(int width, int height)
     if (buffer1_.width() != width || buffer1_.height() != height)
     {
         if (width != buffer1_.width() || height != buffer1_.height())
-            buffer1_ = QImage(width, height, QImage::Format_ARGB32);
+        {
+            if (buffer1_.isNull())
+            {
+                buffer1_ = QImage(width, height, QImage::Format_ARGB32);
+                buffer1_.fill(0);
+            }
+            else
+                buffer1_ = buffer1_.copy(0, 0, width, height);
+        }
 
         if (width != buffer2_.width() || height != buffer2_.height())
-            buffer2_ = QImage(width, height, QImage::Format_ARGB32);
-
-        workBuffer_ = &buffer1_;
-        otherBuffer_ = &buffer2_;
+        {
+            if (buffer2_.isNull())
+            {
+                buffer2_ = QImage(width, height, QImage::Format_ARGB32);
+                buffer2_.fill(0);
+            }
+            else
+                buffer2_ = buffer2_.copy(0, 0, width, height);
+        }
 
         initComparer();
         damageRegion_.clear();
-        fullUpdate();
+        damageRegion_ += QRect(0, 0, workBuffer_->width(), workBuffer_->height());
+        emitUpdatesAvailable();
     }
 }
 
