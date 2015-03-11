@@ -118,7 +118,7 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
 
             ViridityMessageHandler::splitMessage(message, command, params);
 
-            if (command == "drawImage")
+            if (command == "dI" || command == "drawImage")
             {
                 QList<QByteArray> parts = message.split(':');
 
@@ -138,6 +138,11 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
                     else if (mimeType.contains(";base64"))
                     {
                         QByteArray imageData = QByteArray::fromBase64(parts.at(1));
+                        image.loadFromData(imageData);
+                    }
+                    else // raw binary stream...
+                    {
+                        QByteArray imageData = parts.at(1);
                         image.loadFromData(imageData);
                     }
 
@@ -166,12 +171,12 @@ int GraphicsSceneDisplayDumpIterator::advanceToNextFrame()
                     p.drawImage(params.at(1).toInt(), params.at(2).toInt(), image, artefactMargin, artefactMargin);
                 }
             }
-            else if (command == "fillRect")
+            else if (command == "fR" || command == "fillRect")
             {
                 QBrush b(QColor(params.at(5).toInt(), params.at(6).toInt(), params.at(7).toInt(), params.at(8).toInt()));
                 p.fillRect(params.at(1).toInt(), params.at(2).toInt(), params.at(3).toInt(), params.at(4).toInt(), b);
             }
-            else if (command == "moveImage")
+            else if (command == "mI" || command == "moveImage")
             {
                 p.drawImage(params.at(5).toInt(), params.at(6).toInt(), imageBefore, params.at(1).toInt(), params.at(2).toInt(), params.at(3).toInt(), params.at(4).toInt());
             }
