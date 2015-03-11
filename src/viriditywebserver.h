@@ -58,8 +58,6 @@ private:
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
-    FileRequestHandler *fileRequestHandler_;
-    SessionRoutingRequestHandler *sessionRoutingRequestHandler_;
 
     ViridityWebServer *server_;
 
@@ -70,7 +68,7 @@ private:
 #endif
 };
 
-class ViridityWebServer : public QTcpServer
+class ViridityWebServer : public QTcpServer, private ViridityRequestHandler
 {
     Q_OBJECT
 public:
@@ -81,12 +79,19 @@ public:
 
     ViriditySessionManager *sessionManager();
 
+    void registerRequestHandler(ViridityRequestHandler *handler);
+    void unregisterRequestHandler(ViridityRequestHandler *handler);
+
 protected:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
     virtual void incomingConnection(qintptr handle);
 #else
     virtual void incomingConnection(int handle);
 #endif
+
+    friend class ViridityConnection;
+    virtual bool doesHandleRequest(Tufao::HttpServerRequest *request);
+    virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private slots:
     void newSessionCreated(ViriditySession *session);
@@ -98,6 +103,10 @@ private:
     int incomingConnectionCount_;
 
     QList<QThread *> sessionThreads_;
+
+    QList<ViridityRequestHandler *> requestHandlers_;
+    FileRequestHandler *fileRequestHandler_;
+    SessionRoutingRequestHandler *sessionRoutingRequestHandler_;
 };
 
 #endif // VIRIDITYWEBSERVER_H
