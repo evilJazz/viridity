@@ -29,9 +29,14 @@ SSEHandler::~SSEHandler()
     DGUARDMETHODTIMED;
 }
 
-bool SSEHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool SSEHandler::staticDoesHandleRequest(ViridityWebServer *server, Tufao::HttpServerRequest *request)
 {
     return request->url().endsWith("/v/ev");
+}
+
+bool SSEHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+{
+    return staticDoesHandleRequest(server(), request);
 }
 
 void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)

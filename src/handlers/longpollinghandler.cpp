@@ -30,10 +30,15 @@ LongPollingHandler::~LongPollingHandler()
     DGUARDMETHODTIMED;
 }
 
-bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool LongPollingHandler::staticDoesHandleRequest(ViridityWebServer *server, Tufao::HttpServerRequest *request)
 {
     QList<QByteArray> parts = request->url().split('?');
     return parts.count() > 0 && parts[0].endsWith("/v");
+}
+
+bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+{
+    return staticDoesHandleRequest(server(), request);
 }
 
 void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)

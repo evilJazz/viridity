@@ -5,7 +5,7 @@
 
 #include "viriditywebserver.h"
 
-//#define VIRIDITY_DEBUG_FAULTY_CONNECTION_SIMULATION
+//#define VIRIDITY_DEBUG_SIMULATE_RANDOM_ERROR
 
 PatchRequestHandler::PatchRequestHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent)

@@ -37,8 +37,6 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDesc
     webSocketHandler_(NULL),
     sseHandler_(NULL),
     longPollingHandler_(NULL),
-//    patchRequestHandler_(NULL),
-    fileRequestHandler_(NULL),
     server_(parent),
     socketDescriptor_(socketDescriptor)
 {
@@ -83,12 +81,6 @@ void ViridityConnection::setupConnection()
     connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
 
     connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
-
-    webSocketHandler_ = new WebSocketHandler(server_, this);
-    sseHandler_ = new SSEHandler(server_, this);
-    longPollingHandler_ = new LongPollingHandler(server_, this);
-    fileRequestHandler_ = new FileRequestHandler(server_, this);
-    sessionRoutingRequestHandler_ = new SessionRoutingRequestHandler(server_, this);
 }
 
 void ViridityConnection::onRequestReady()
@@ -106,20 +98,22 @@ void ViridityConnection::onRequestReady()
     if (request->headers().contains("Expect", "100-continue"))
         response->writeContinue();
 
-    if (sessionRoutingRequestHandler_->doesHandleRequest(request))
+    if (server_->doesHandleRequest(request))
     {
-        sessionRoutingRequestHandler_->handleRequest(request, response);
+        server_->handleRequest(request, response);
     }
-    else if (fileRequestHandler_->doesHandleRequest(request))
+    else if (SSEHandler::staticDoesHandleRequest(server_, request))
     {
-        fileRequestHandler_->handleRequest(request, response);
-    }
-    else if (sseHandler_->doesHandleRequest(request))
-    {
+        if (!sseHandler_)
+            sseHandler_ = new SSEHandler(server_, this);
+
         sseHandler_->handleRequest(request, response);
     }
-    else if (longPollingHandler_->doesHandleRequest(request))
+    else if (LongPollingHandler::staticDoesHandleRequest(server_, request))
     {
+        if (!longPollingHandler_)
+            longPollingHandler_ = new LongPollingHandler(server_, this);
+
         longPollingHandler_->handleRequest(request, response);
     }
     else
@@ -132,6 +126,10 @@ void ViridityConnection::onRequestReady()
 void ViridityConnection::onUpgrade(const QByteArray &head)
 {
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+
+    if (!webSocketHandler_)
+        webSocketHandler_ = new WebSocketHandler(server_, this);
+
     webSocketHandler_->handleUpgrade(request, head);
 }
 
@@ -146,6 +144,12 @@ ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *se
 {
     sessionManager_->setServer(this);
     connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(newSessionCreated(ViriditySession*)));
+
+    fileRequestHandler_ = new FileRequestHandler(this, this);
+    sessionRoutingRequestHandler_ = new SessionRoutingRequestHandler(this, this);
+
+    registerRequestHandler(fileRequestHandler_);
+    registerRequestHandler(sessionRoutingRequestHandler_);
 }
 
 ViridityWebServer::~ViridityWebServer()
@@ -221,4 +225,35 @@ void ViridityWebServer::incomingConnection(int handle)
     connection->moveToThread(connectionThreads_.at(threadIndex)); // Move connection to thread's event loop
 
     QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
+}
+
+void ViridityWebServer::registerRequestHandler(ViridityRequestHandler *handler)
+{
+    if (requestHandlers_.indexOf(handler) == -1)
+        requestHandlers_.append(handler);
+}
+
+void ViridityWebServer::unregisterRequestHandler(ViridityRequestHandler *handler)
+{
+    requestHandlers_.removeAll(handler);
+}
+
+bool ViridityWebServer::doesHandleRequest(Tufao::HttpServerRequest *request)
+{
+    bool result = false;
+
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+    {
+        result = handler->doesHandleRequest(request);
+        if (result) break;
+    }
+
+    return result;
+}
+
+void ViridityWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+{
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+        if (handler->doesHandleRequest(request))
+            handler->handleRequest(request, response);
 }

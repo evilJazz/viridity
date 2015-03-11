@@ -17,6 +17,8 @@ public:
     explicit SSEHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SSEHandler();
 
+    static bool staticDoesHandleRequest(ViridityWebServer *server, Tufao::HttpServerRequest *request);
+
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
