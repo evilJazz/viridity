@@ -45,7 +45,7 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp
 
 # Display related
-CONFIG += viridity_module_display viridity_use_improved_jpeg
+CONFIG += viridity_module_display viridity_use_improved_jpeg viridity_use_improved_png
 
 viridity_module_display {
     INCLUDEPATH += \
@@ -93,6 +93,18 @@ viridity_module_display {
             $$VIRIDITY_SRC_PATH/display/private/jpegwriter.cpp
 
         LIBS += -ljpeg
+    }
+
+    viridity_use_improved_png {
+        DEFINES += USE_IMPROVED_PNG
+
+        HEADERS += \
+            $$VIRIDITY_SRC_PATH/display/private/pngwriter.h
+
+        SOURCES += \
+            $$VIRIDITY_SRC_PATH/display/private/pngwriter.cpp
+
+        LIBS += -lpng
     }
 
     viridity_module_display_areafingerprints {

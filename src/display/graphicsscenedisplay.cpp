@@ -23,6 +23,10 @@
 #include "private/jpegwriter.h"
 #endif
 
+#ifdef USE_IMPROVED_PNG
+#include "private/pngwriter.h"
+#endif
+
 /* GraphicsSceneDisplayLocker */
 
 GraphicsSceneDisplayLocker::GraphicsSceneDisplayLocker(GraphicsSceneDisplay *display) :
@@ -206,7 +210,11 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         // Saving PNG is very expensive!
         QBuffer pngBuffer;
         pngBuffer.open(QIODevice::ReadWrite);
+#ifdef USE_IMPROVED_PNG
+        writePNG(image, &pngBuffer, 9, PNGAllFilters);
+#else
         image.save(&pngBuffer, "PNG");
+#endif
         pngBuffer.close();
 
         patch->data = pngBuffer.data();
@@ -220,11 +228,11 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 
         QBuffer jpegBuffer;
         jpegBuffer.open(QIODevice::ReadWrite);
-    #ifdef USE_IMPROVED_JPEG
+#ifdef USE_IMPROVED_JPEG
         writeJPEG(image, &jpegBuffer, encoderSettings_.jpegQuality, true, false);
-    #else
+#else
         image.save(&jpegBuffer, "JPEG", encoderSettings_.jpegQuality);
-    #endif
+#endif
         jpegBuffer.close();
 
         patch->data = jpegBuffer.data();
