@@ -16,6 +16,8 @@ TEMPLATE = app
 
 SOURCES += main.cpp
 
+CONFIG += viridity_module_display_areafingerprints
+
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao-min.pri)
 include(../../viridity.pri)

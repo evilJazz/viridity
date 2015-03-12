@@ -211,9 +211,9 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         QBuffer pngBuffer;
         pngBuffer.open(QIODevice::ReadWrite);
 #ifdef USE_IMPROVED_PNG
-        writePNG(image, &pngBuffer, 9, PNGAllFilters);
+        writePNG(image, &pngBuffer, encoderSettings_.compressionLevel, PNGAllFilters);
 #else
-        image.save(&pngBuffer, "PNG");
+        image.save(&pngBuffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(encoderSettings_.compressionLevel));
 #endif
         pngBuffer.close();
 

@@ -49,6 +49,7 @@ struct EncoderSettings
         patchEncodingFormat(EncodingFormat_Auto),
         alphaChannelEnabled(true),
         jpegQuality(94),
+        compressionLevel(1),
         inlineMaxBytes(2048)
     {}
 
@@ -65,6 +66,7 @@ struct EncoderSettings
     EncodingFormat patchEncodingFormat;
     bool alphaChannelEnabled;
     int jpegQuality;
+    int compressionLevel;
     int inlineMaxBytes;
 };
 

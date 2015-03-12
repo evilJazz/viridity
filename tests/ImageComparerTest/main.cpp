@@ -7,14 +7,20 @@
 
 #include <QPainter>
 
-#include "imagecomparer.h"
-#include "moveanalyzer.h"
+#include "comparer/imagecomparer.h"
+#include "comparer/moveanalyzer.h"
+#include "comparer/areafingerprint.h"
+#include "comparer/imageaux.h"
 #include "graphicsscenedisplay.h"
 
 #include "KCL/imageutils.h"
 
 #ifdef USE_IMPROVED_JPEG
 #include "private/jpegwriter.h"
+#endif
+
+#ifdef USE_IMPROVED_PNG
+#include "private/pngwriter.h"
 #endif
 
 class ImageComparerTest : public QObject
@@ -190,37 +196,11 @@ private slots:
         }
     }
 
-    void benchmarkSaveToBMPqCompress1()
-    {
-        QBENCHMARK
-        {
-            QBuffer buffer;
-            buffer.open(QIODevice::ReadWrite);
-            lena_.save(&buffer, "BMP");
-            buffer.close();
-
-            QByteArray compressedRaw = qCompress(buffer.data(), 1);
-        }
-    }
-
-    void benchmarkSaveToBMPqCompress9()
-    {
-        QBENCHMARK
-        {
-            QBuffer buffer;
-            buffer.open(QIODevice::ReadWrite);
-            lena_.save(&buffer, "BMP");
-            buffer.close();
-
-            QByteArray compressedRaw = qCompress(buffer.data(), 9);
-        }
-    }
-
     void benchmarkEstimatePNGCompressionLena()
     {
         QBENCHMARK
         {
-            GraphicsSceneDisplay::estimatePNGCompression(lena_);
+            ImageAux::estimatePNGCompression(lena_);
         }
     }
 
@@ -228,29 +208,159 @@ private slots:
     {
         QBENCHMARK
         {
-            GraphicsSceneDisplay::estimatePNGCompression(wikitext_);
+            ImageAux::estimatePNGCompression(wikitext_);
         }
     }
 
-    void benchmarkSaveToPNGLena()
+    void benchmarkSaveToPNG1Lena()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(1));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNG1WikiText()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            wikitext_.save(&buffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(1));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNG9Lena()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            lena_.save(&buffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(9));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNG9WikiText()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            wikitext_.save(&buffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(9));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNGOpt1Lena()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            writePNG(lena_, &buffer, 1, (PNGFilterFlag)(PNGFilterNone | PNGFilterSub | PNGFilterUp | PNGFilterAvg));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNGOpt1WikiText()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            writePNG(wikitext_, &buffer, 1, (PNGFilterFlag)(PNGFilterNone | PNGFilterSub | PNGFilterUp | PNGFilterAvg));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNGOpt9Lena()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            writePNG(lena_, &buffer, 9, (PNGFilterFlag)(PNGFilterNone | PNGFilterSub | PNGFilterUp | PNGFilterAvg));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToPNGOpt9WikiText()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            writePNG(wikitext_, &buffer, 9, (PNGFilterFlag)(PNGFilterNone | PNGFilterSub | PNGFilterUp | PNGFilterAvg));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+    }
+
+    void benchmarkSaveToQCompress1Lena()
     {
         QBENCHMARK
         {
-            QBuffer buffer;
-            buffer.open(QIODevice::ReadWrite);
-            lena_.save(&buffer, "PNG");
-            buffer.close();
+            QByteArray compressedRaw = qCompress(lena_.constBits(), lena_.byteCount(), 1);
         }
     }
 
-    void benchmarkSaveToPNGWikiText()
+    void benchmarkSaveToQCompress9Lena()
     {
         QBENCHMARK
         {
-            QBuffer buffer;
-            buffer.open(QIODevice::ReadWrite);
-            wikitext_.save(&buffer, "PNG");
-            buffer.close();
+            QByteArray compressedRaw = qCompress(lena_.constBits(), lena_.byteCount(), 9);
+        }
+    }
+
+    void benchmarkSaveToQCompress1WikiText()
+    {
+        QBENCHMARK
+        {
+            QByteArray compressedRaw = qCompress(wikitext_.constBits(), wikitext_.byteCount(), 1);
+        }
+    }
+
+    void benchmarkSaveToQCompress9WikiText()
+    {
+        QBENCHMARK
+        {
+            QByteArray compressedRaw = qCompress(wikitext_.constBits(), wikitext_.byteCount(), 9);
         }
     }
 
@@ -270,7 +380,7 @@ private slots:
         QBENCHMARK
         {
             QImage image = lena_.convertToFormat(QImage::Format_Indexed8, Qt::NoOpaqueDetection | Qt::OrderedDither | Qt::ColorOnly);
-            qDebug("colors used: %d", image.colorCount());
+            //qDebug("colors used: %d", image.colorCount());
         }
     }
 
@@ -321,7 +431,7 @@ private slots:
         }
     }
 
-    void benchmarkCompressToJPEG94()
+    void benchmarkSaveToJPEG94()
     {
         QBENCHMARK
         {

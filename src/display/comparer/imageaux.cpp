@@ -3,7 +3,13 @@
 #include <QPainter>
 #include <qmath.h>
 
-qreal ImageAux::estimatePNGCompression(const QImage &image, int *estimatedSize)
+int ImageAux::zlibCompressionLevelToQPNGHandlerQuality(int compressionLevel)
+{
+    // quality = (100-quality) * 9 / 91; // map [0,100] -> [9,0] in qpnghandler.cpp::write_png_image
+    return qFloor(100 - (qreal)(91 * compressionLevel) / 9);
+}
+
+qreal ImageAux::estimatePNGCompression(const QImage &image, int *estimatedSize, int compressionLevel)
 {
     qreal decimator = qMax(1., (qreal)qMax(image.byteCount(), 1) / (16 * 1024));
     qreal sqrtdec = qSqrt(decimator);
@@ -11,7 +17,7 @@ qreal ImageAux::estimatePNGCompression(const QImage &image, int *estimatedSize)
 
     QImage scaledImage = image.scaled(newSize.toSize(), Qt::IgnoreAspectRatio, Qt::FastTransformation);
 
-    QByteArray compressedRaw = qCompress(scaledImage.constBits(), scaledImage.byteCount(), 1);
+    QByteArray compressedRaw = qCompress(scaledImage.constBits(), scaledImage.byteCount(), compressionLevel);
 
     if (estimatedSize)
         *estimatedSize = compressedRaw.size() * decimator * 0.8;

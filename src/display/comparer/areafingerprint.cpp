@@ -1,6 +1,7 @@
 #include "areafingerprint.h"
 
 #include <QThread>
+#include <QtConcurrent>
 
 #define USE_NSN // Almost 7x faster than naive memcmp
 //#define USE_NSN_MEMCMP
