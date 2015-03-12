@@ -181,6 +181,8 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
             // Are we reattaching?
             if (message.startsWith("newDisplay"))
             {
+                DPRINTF("Reattaching to session %s, newDisplay received...", sessionId.toLatin1().constData());
+
                 // Ignore all params and send full update...
                 display->requestFullUpdate(true);
                 releaseDisplay(display);

@@ -144,6 +144,7 @@ void GraphicsSceneDisplay::clientReady()
     DGUARDMETHODTIMED;
     QMutexLocker l(&patchesMutex_);
     clientReady_ = true;
+    fullUpdateRequested_ = false;
 
     if (patches_.count() != 0)
     {
@@ -338,8 +339,8 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
 
     if (fullUpdateRequested_)
     {
-        fullUpdateRequested_ = false;
-
+        // NOTE: clientReady() will reset fullUpdateRequested_.
+        // Client has to send ready() in any case, ie. success and failure.
         QByteArray msg = QString().sprintf("%s>fullUpdate(%d):",
             id_.toLatin1().constData(), frame_
         ).toLatin1();
@@ -433,8 +434,11 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
 void GraphicsSceneDisplay::requestFullUpdate(bool forced)
 {
     DGUARDMETHODTIMED;
+    // If we already have a pending full update, do not start another one.
+    // Especially not one that was forced, as this will clear the patches of the previous one...
+    if (fullUpdateRequested_) return;
+
     QMutexLocker l(&patchesMutex_);
-    fullUpdateRequested_ = true;
 
     if (forced)
         clearPatches();
@@ -445,7 +449,10 @@ void GraphicsSceneDisplay::requestFullUpdate(bool forced)
     );
 
     if (forced)
-        clientReady();
+        clientReady(); // Will reset fullUpdateRequested_
+
+    // Finally set flag to indicate a pending full update. NOTE: clientReady() will reset it. Client has to send ready() in any case, ie. success and failure.
+    fullUpdateRequested_ = true;
 }
 
 bool GraphicsSceneDisplay::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)

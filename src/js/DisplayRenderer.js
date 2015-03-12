@@ -51,6 +51,7 @@
                     {
                         console.log("ERROR LOADING IMAGES!");
                         console.log("Requesting full update...");
+                        v.sendMessage("ready()", dr.targetId);
                         dr.requestFullUpdate(true);
                     }
                     else
