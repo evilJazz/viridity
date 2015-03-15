@@ -242,6 +242,24 @@ private slots:
         qDebug("buffer.size: %d", buffer.size());
     }
 
+    void benchmarkSaveToPNG1WikiTextSimplified()
+    {
+        QBuffer buffer;
+
+        QBENCHMARK
+        {
+            buffer.open(QIODevice::ReadWrite);
+            wikitext_.save(&buffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(1));
+            buffer.reset();
+            buffer.close();
+        }
+
+        qDebug("buffer.size: %d", buffer.size());
+
+        QByteArray simplified = ImageAux::removeAncillaryChunksFromPNGStream(buffer.data());
+        qDebug("simplified buffer.size: %d", simplified.size());
+    }
+
     void benchmarkSaveToPNG9Lena()
     {
         QBuffer buffer;

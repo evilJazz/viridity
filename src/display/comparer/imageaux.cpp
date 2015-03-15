@@ -46,6 +46,31 @@ QImage ImageAux::createPackedAlphaPatch(const QImage &image)
     return result;
 }
 
+QByteArray ImageAux::removeAncillaryChunksFromPNGStream(const QByteArray &input)
+{
+    QByteArray result;
+
+    if (input.at(0) == (char)0x89 && input.mid(1, 3) == "PNG")
+    {
+        result += input.mid(0, 8); // copy PNG file header
+        int index = 8;
+
+        while (index < input.size())
+        {
+            int dataLength = input.mid(index, 4).toHex().toInt(0, 16);
+            int chunkLength = 4 + 4 + dataLength + 4;
+            QByteArray chunkType = input.mid(index + 4, 4);
+
+            if (chunkType == "IHDR" || chunkType == "PLTE" || chunkType == "IDAT" || chunkType == "IEND")
+                result += input.mid(index, chunkLength);
+
+            index += chunkLength;
+        }
+    }
+
+    return result;
+}
+
 QColor ImageAux::getSolidRectColor(QImage *buffer, const QRect &area)
 {
     QRect roi = area.intersected(buffer->rect());

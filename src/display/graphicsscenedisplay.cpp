@@ -218,7 +218,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 #endif
         pngBuffer.close();
 
-        patch->data = pngBuffer.data();
+        patch->data = ImageAux::removeAncillaryChunksFromPNGStream(pngBuffer.data());
         patch->mimeType = "image/png";
         patch->packedAlpha = false;
     }
