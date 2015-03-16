@@ -121,6 +121,7 @@ public:
 signals:
     void newSessionCreated(ViriditySession *session);
     void sessionRemoved(ViriditySession *session);
+    void noSessions();
 
 protected:
     void removeSession(ViriditySession *session);

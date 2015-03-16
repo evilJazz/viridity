@@ -74,6 +74,8 @@ void ViridityConnection::setupConnection()
     // Hand-off incoming connection to Tufao to parse request...
     Tufao::HttpServerRequest *request = new Tufao::HttpServerRequest(socket, this);
 
+    DPRINTF("New connection from %s.", socket->peerAddress().toString().toLatin1().constData());
+
     connect(request, SIGNAL(ready()), this, SLOT(onRequestReady()));
     connect(request, SIGNAL(upgrade(QByteArray)), this, SLOT(onUpgrade(QByteArray)));
 

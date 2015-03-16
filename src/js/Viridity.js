@@ -221,7 +221,7 @@ var Viridity = function(options)
         _triggerCallback: function(eventName, params)
         {
             if (debugVerbosity > 1)
-                console.log("Now triggering event: " + eventName);
+                console.log("Now triggering event: " + eventName + " params: " + JSON.stringify(params));
 
             var callbacks = v.callbacks[eventName];
 
@@ -512,6 +512,9 @@ var Viridity = function(options)
 
         connect: function(options)
         {
+            if (debugVerbosity > 0)
+                console.log("Connecting to server: " + JSON.stringify(options));
+
             if (typeof(options) == "object")
                 v.init(options);
 
@@ -562,6 +565,9 @@ var Viridity = function(options)
 
         init: function(options)
         {
+            if (debugVerbosity > 0)
+                console.log("Initializing: " + JSON.stringify(options));
+
             v.connectionMethod = options.connectionMethod;
 
             if (v.connectionMethod === ConnectionMethod.Auto)

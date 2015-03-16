@@ -462,5 +462,8 @@ void ViriditySessionManager::killExpiredSessions()
         foreach (ViriditySession *session, sessions_.values())
             if (session->useCount() == 0 && session->lastUsed_.elapsed() > 6000)
                 removeSession(session);
+
+        if (sessions_.count() == 0)
+            emit noSessions();
     }
 }
