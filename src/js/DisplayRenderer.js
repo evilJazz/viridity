@@ -755,6 +755,37 @@
                 $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event); });
                 $(dr.frontCanvas).bind("contextmenu", function (event) { sendMouseEvent("contextMenu", event); });
 
+                function handleTouchEvent(event)
+                {
+                    event = event.originalEvent;
+
+                    var touchPoints = event.changedTouches;
+                    var first = touchPoints[0];
+
+                    var type;
+                    switch(event.type)
+                    {
+                        case "touchstart": type = "mouseDown"; break;
+                        case "touchmove":  type = "mouseMove"; break;
+                        case "touchend":   type = "mouseUp";   break;
+                        default:           type = "mouseUp";   break;
+                    }
+
+                    var simulatedEvent = document.createEvent("MouseEvent");
+                    simulatedEvent.initMouseEvent(type, true, true, window, 1,
+                                                  first.screenX, first.screenY,
+                                                  first.clientX, first.clientY, false,
+                                                  false, false, false, 0/*left*/, null);
+
+                    sendMouseEvent(type, simulatedEvent)
+                    event.preventDefault();
+                }
+
+                $(dr.frontCanvas).on("touchstart", handleTouchEvent);
+                $(dr.frontCanvas).on("touchmove", handleTouchEvent);
+                $(dr.frontCanvas).on("touchend", handleTouchEvent);
+                $(dr.frontCanvas).on("touchcancel", handleTouchEvent);
+
                 var setUpWheelSupport = function()
                 {
                     $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
