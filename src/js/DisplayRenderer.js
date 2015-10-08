@@ -777,7 +777,11 @@
                                                   first.clientX, first.clientY, false,
                                                   false, false, false, 0/*left*/, null);
 
-                    sendMouseEvent(type, simulatedEvent)
+                    if (event.type == "touchstart")
+                        sendMouseEvent("mouseMove", simulatedEvent);
+
+                    sendMouseEvent(type, simulatedEvent);
+
                     event.preventDefault();
                 }
 
