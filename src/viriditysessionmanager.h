@@ -141,7 +141,7 @@ private:
 
     QMutex sessionMutex_;
     QHash<QString, ViriditySession *> sessions_;
-    QTimer cleanupTimer_;
+    QTimer *cleanupTimer_;
 };
 
 #endif // VIRIDITYSESSIONMANAGER_H

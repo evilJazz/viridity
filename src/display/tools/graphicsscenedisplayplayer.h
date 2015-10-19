@@ -58,7 +58,7 @@ private slots:
 
 private:
     GraphicsSceneDisplayDumpIterator it_;
-    QTimer advanceTimer_;
+    QTimer *advanceTimer_;
     QGraphicsScene scene_;
     QGraphicsPixmapItem pixmapItem_;
 };

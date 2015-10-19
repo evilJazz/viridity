@@ -33,9 +33,9 @@ HttpServerRequest::HttpServerRequest(QAbstractSocket *socket, QObject *parent) :
     connect(socket, SIGNAL(readyRead()), this, SLOT(onReadyRead()));
     connect(socket, SIGNAL(disconnected()), this, SIGNAL(close()));
 
-    connect(&priv->timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
+    connect(priv->timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
     if (priv->timeout)
-        priv->timer.start(priv->timeout);
+        priv->timer->start(priv->timeout);
 }
 
 HttpServerRequest::~HttpServerRequest()
@@ -83,9 +83,9 @@ void HttpServerRequest::setTimeout(int msecs)
     priv->timeout = msecs;
 
     if (priv->timeout)
-        priv->timer.start(priv->timeout);
+        priv->timer->start(priv->timeout);
     else
-        priv->timer.stop();
+        priv->timer->stop();
 }
 
 int HttpServerRequest::timeout() const
@@ -101,7 +101,7 @@ HttpServerResponse::Options HttpServerRequest::responseOptions() const
 void HttpServerRequest::onReadyRead()
 {
     if (priv->timeout)
-        priv->timer.start(priv->timeout);
+        priv->timer->start(priv->timeout);
 
     priv->buffer += priv->socket->readAll();
     size_t nparsed = http_parser_execute(&priv->parser,
@@ -140,7 +140,7 @@ void HttpServerRequest::onReadyRead()
         disconnect(priv->socket, SIGNAL(readyRead()),
                    this, SLOT(onReadyRead()));
         disconnect(priv->socket, SIGNAL(disconnected()), this, SIGNAL(close()));
-        disconnect(&priv->timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
+        disconnect(priv->timer, SIGNAL(timeout()), this, SLOT(onTimeout()));
 
         QByteArray b(priv->buffer);
         clearBuffer();

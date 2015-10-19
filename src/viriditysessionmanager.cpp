@@ -241,8 +241,9 @@ ViriditySessionManager::ViriditySessionManager(QObject *parent) :
     sessionMutex_(QMutex::Recursive)
 {
     DGUARDMETHODTIMED;
-    connect(&cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
-    cleanupTimer_.start(5000);
+    cleanupTimer_ = new QTimer(this);
+    connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
+    cleanupTimer_->start(5000);
 }
 
 ViriditySessionManager::~ViriditySessionManager()

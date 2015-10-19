@@ -207,8 +207,9 @@ GraphicsSceneDisplayPlayer::GraphicsSceneDisplayPlayer(QWidget *parent) :
     setScene(&scene_);
     scene_.addItem(&pixmapItem_);
 
-    connect(&advanceTimer_, SIGNAL(timeout()), this, SLOT(advanceToNextFrame()));
-    advanceTimer_.setSingleShot(true);
+    advanceTimer_ = new QTimer(this);
+    connect(advanceTimer_, SIGNAL(timeout()), this, SLOT(advanceToNextFrame()));
+    advanceTimer_->setSingleShot(true);
 }
 
 GraphicsSceneDisplayPlayer::~GraphicsSceneDisplayPlayer()
@@ -223,13 +224,13 @@ void GraphicsSceneDisplayPlayer::setFilename(const QString &filename)
 
 void GraphicsSceneDisplayPlayer::play()
 {
-    advanceTimer_.stop();
+    advanceTimer_->stop();
     advanceToNextFrame();
 }
 
 void GraphicsSceneDisplayPlayer::stop()
 {
-    advanceTimer_.stop();
+    advanceTimer_->stop();
 }
 
 void GraphicsSceneDisplayPlayer::advanceToNextFrame()
@@ -239,8 +240,8 @@ void GraphicsSceneDisplayPlayer::advanceToNextFrame()
 
     if (diffTime > 0)
     {
-        advanceTimer_.setInterval(diffTime);
-        advanceTimer_.start();
+        advanceTimer_->setInterval(diffTime);
+        advanceTimer_->start();
     }
 }
 
