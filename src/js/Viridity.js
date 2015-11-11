@@ -160,6 +160,7 @@ var Viridity = function(options)
         inputEvents: [],
         inputEventsStarted: false,
 
+        reconnecting: false,
         reconnectTimer: null,
         reconnectInterval: 5000,
 
@@ -429,10 +430,10 @@ var Viridity = function(options)
                 v._triggerCallback("sessionInUse", v.sessionId);
             }
 
-            if (v.reconnectTimer !== null)
+            if (v.reconnecting)
             {
-                clearInterval(v.reconnectTimer);
-                v.reconnectTimer = null;
+                clearTimeout(v.reconnectTimer);
+                v.reconnecting = false;
             }
         },
 
@@ -446,7 +447,7 @@ var Viridity = function(options)
 
             if (v.connectionMethod === ConnectionMethod.WebSockets)
             {
-                if (v.socket.readyState === WebSocket.OPEN)
+                if (v.socket && v.socket.readyState === WebSocket.OPEN)
                     v.socket.send(msg);
                 else
                     v.inputEvents.push(msg);
@@ -460,7 +461,7 @@ var Viridity = function(options)
 
         _sendQueuedMessages: function()
         {
-            if (v.socket.readyState === WebSocket.OPEN)
+            if (v.socket && v.socket.readyState === WebSocket.OPEN)
             {
                 for (var i = 0, ii = v.inputEvents.length; i < ii; i++)
                     v.sendMessage(v.inputEvents[i]);
@@ -502,12 +503,52 @@ var Viridity = function(options)
 
         _handleDisconnect: function()
         {
-            if (v.reconnectTimer === null)
+            if (debugVerbosity > 1)
+                console.log("Disconnected.");
+
+            if (!v.reconnecting)
             {
+                if (debugVerbosity > 1)
+                    console.log("Starting reconnection...");
+
                 v.inputEventsStarted = false;
                 v._triggerCallback("sessionDisconnected", v.sessionId);
-                v.reconnectTimer = setInterval(v.connect, v.reconnectInterval);
+                v.reconnecting = true;
             }
+
+            v.reconnectTimer = setTimeout(v.connect, v.reconnectInterval);
+        },
+
+        _ensureWebSocketIsClosed: function()
+        {
+            if (v.socket) // Explicitly close previous connection to avoid FF from reconnecting again...
+            try
+            {
+                v.socket.onclose = function () {};
+
+                if (v.socket.readyState !== WebSocket.CLOSED)
+                    v.socket.close();
+            }
+            catch (e)
+            {
+            }
+
+            v.socket = null;
+        },
+
+        _ensureEventSourceIsClosed: function()
+        {
+            // Explicitly close previous connection to avoid browser initiated reconnect...
+            if (v.eventSource)
+            try
+            {
+                v.eventSource.close();
+            }
+            catch (e)
+            {
+            }
+
+            v.eventSource = null;
         },
 
         connect: function(options)
@@ -526,18 +567,13 @@ var Viridity = function(options)
             {
                 v.eventSource = new EventSource(v.fullLocation + "/" + v.sessionId + "/v/ev");
                 v.eventSource.onmessage = v._serverSentEventsMessageReceived;
-                v.eventSource.onerror = v._handleDisconnect;
+                v.eventSource.onerror = function() { v._ensureEventSourceIsClosed(); v._handleDisconnect(); };
             }
             else if (v.connectionMethod === ConnectionMethod.WebSockets)
             {
                 var ws = (v.fullLocation.indexOf("https:") > -1 ? "wss:" : "ws:");
 
-                if (v.socket) // Explicitly close previous connection to avoid FF from reconnecting again...
-                {
-                    v.socket.onclose = function () {};
-                    v.socket.close();
-                    v.socket = null;
-                }
+                v._ensureWebSocketIsClosed();
 
                 var add = ws + "//" + v.location + "/" + v.sessionId + "/v/ws";
 
@@ -553,11 +589,14 @@ var Viridity = function(options)
 
                     v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
                     v.socket.onopen = v._sendQueuedMessages;
-                    v.socket.onerror = v._handleDisconnect;
-                    v.socket.onclose = v._handleDisconnect;
+                    v.socket.onerror = function() { v._ensureWebSocketIsClosed(); v._handleDisconnect(); }
+                    v.socket.onclose = function() { v._ensureWebSocketIsClosed(); v._handleDisconnect(); }
                 }
                 catch (e)
                 {
+                    if (debugVerbosity > 1)
+                        console.log("Error on connect: " + e);
+
                     v._handleDisconnect();
                 }
             }
