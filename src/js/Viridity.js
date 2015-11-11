@@ -160,6 +160,10 @@ var Viridity = function(options)
         inputEvents: [],
         inputEventsStarted: false,
 
+        autoDowngrade: true,
+        reconnectTriesBeforeDowngrade: 10,
+
+        reconnectTries: 0,
         reconnecting: false,
         reconnectTimer: null,
         reconnectInterval: 5000,
@@ -434,6 +438,7 @@ var Viridity = function(options)
             {
                 clearTimeout(v.reconnectTimer);
                 v.reconnecting = false;
+                v.reconnectTries = 0;
             }
         },
 
@@ -501,21 +506,58 @@ var Viridity = function(options)
                 return false;
         },
 
+        _validateConnectionMethodFor: function(connectionMethod)
+        {
+            if (connectionMethod === ConnectionMethod.Auto)
+                connectionMethod = ConnectionMethod.WebSockets;
+
+            if (connectionMethod === ConnectionMethod.WebSockets && !("WebSocket" in window))
+                connectionMethod = ConnectionMethod.ServerSentEvents;
+
+            if (connectionMethod === ConnectionMethod.ServerSentEvents && !("EventSource" in window))
+                connectionMethod = ConnectionMethod.LongPolling;
+
+            return connectionMethod;
+        },
+
+        _getDowngradedConnectionMethodFor: function(connectionMethod)
+        {
+            if (connectionMethod === ConnectionMethod.Auto)
+                connectionMethod = ConnectionMethod.WebSockets;
+
+            if (connectionMethod > ConnectionMethod.LongPolling)
+                --connectionMethod;
+
+            return v._validateConnectionMethodFor(connectionMethod);
+        },
+
         _handleDisconnect: function()
         {
             if (debugVerbosity > 1)
-                console.log("Disconnected.");
+                console.log("Disconnected. Retry no. " + (v.reconnectTries + 1));
+
+            if (v.reconnectTries > 0 && v.autoDowngrade && v.connectionMethod !== ConnectionMethod.LongPolling && v.reconnectTries % v.reconnectTriesBeforeDowngrade == 0)
+            {
+                var newConnectionMethod = v._getDowngradedConnectionMethodFor(v.connectionMethod);
+
+                if (debugVerbosity > 1)
+                    console.log("Downgrading connection from " + v.connectionMethod + " to " + newConnectionMethod);
+
+                v.connectionMethod = newConnectionMethod;
+            }
 
             if (!v.reconnecting)
             {
                 if (debugVerbosity > 1)
                     console.log("Starting reconnection...");
 
+                v.reconnectTries = 0;
                 v.inputEventsStarted = false;
                 v._triggerCallback("sessionDisconnected", v.sessionId);
                 v.reconnecting = true;
             }
 
+            ++v.reconnectTries;
             v.reconnectTimer = setTimeout(v.connect, v.reconnectInterval);
         },
 
@@ -607,16 +649,7 @@ var Viridity = function(options)
             if (debugVerbosity > 0)
                 console.log("Initializing: " + JSON.stringify(options));
 
-            v.connectionMethod = options.connectionMethod;
-
-            if (v.connectionMethod === ConnectionMethod.Auto)
-                v.connectionMethod = ConnectionMethod.WebSockets;
-
-            if (v.connectionMethod === ConnectionMethod.WebSockets && !("WebSocket" in window))
-                v.connectionMethod = ConnectionMethod.ServerSentEvents;
-
-            if (v.connectionMethod === ConnectionMethod.ServerSentEvents && !("EventSource" in window))
-                v.connectionMethod = ConnectionMethod.LongPolling;
+            v.connectionMethod = v._validateConnectionMethodFor(options.connectionMethod);
 
             if (typeof(options.sessionId) != "undefined" && options.sessionId != "")
                 v.sessionId = options.sessionId;
