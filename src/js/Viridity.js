@@ -269,7 +269,7 @@ var Viridity = function(options)
                     }
                 };
 
-                $.ajax(options);
+                jQuery.ajax(options);
             }
             else
             {
@@ -325,7 +325,7 @@ var Viridity = function(options)
                 }
             };
 
-            $.ajax(options);
+            jQuery.ajax(options);
         },
 
         _serverSentEventsMessageReceived: function(e)
