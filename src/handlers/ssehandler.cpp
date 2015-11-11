@@ -75,7 +75,7 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
     }
     else // start new connection
     {
-        session_ = server()->sessionManager()->getNewSession();
+        session_ = server()->sessionManager()->getNewSession(ViridityConnection::getPeerAddressFromRequest(request));
 
         DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
 

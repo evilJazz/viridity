@@ -17,6 +17,7 @@ class ViriditySession : public QObject, public ViridityRequestHandler
 {
     Q_OBJECT
     Q_PROPERTY(QString id READ id CONSTANT)
+    Q_PROPERTY(QByteArray initialPeerAddress READ initialPeerAddress CONSTANT)
 public:
     explicit ViriditySession(ViriditySessionManager *sessionManager, const QString &id);
     virtual ~ViriditySession();
@@ -42,6 +43,9 @@ public:
 
     void setLogic(QObject *logic) { logic_ = logic; }
     QObject *logic() const { return logic_; }
+
+    void setInitialPeerAddress(const QByteArray &address) { initialPeerAddress_ = address; }
+    QByteArray initialPeerAddress() const { return initialPeerAddress_; }
 
     static QString parseIdFromUrl(const QByteArray &url);
 
@@ -78,6 +82,8 @@ protected:
     QObject *logic_;
     QElapsedTimer lastUsed_;
     int useCount_;
+
+    QByteArray initialPeerAddress_;
 };
 
 class ViridityMessageHandler
@@ -100,7 +106,7 @@ public:
     ViriditySessionManager(QObject *parent = 0);
     virtual ~ViriditySessionManager();
 
-    ViriditySession *getNewSession();
+    ViriditySession *getNewSession(const QByteArray &initialPeerAddress);
 
     ViriditySession *getSession(const QString &id);
 
@@ -131,7 +137,7 @@ protected:
 
 protected slots:
     virtual void registerHandlers(ViriditySession *session);
-    virtual ViriditySession *createSession(const QString &id); // Always executed in thread of session manager
+    virtual ViriditySession *createSession(const QString &id, const QByteArray &initialPeerAddress); // Always executed in thread of session manager
 
 private slots:
     void killExpiredSessions();

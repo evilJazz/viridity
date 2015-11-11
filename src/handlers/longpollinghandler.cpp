@@ -94,7 +94,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     }
     else // start new connection
     {
-        session = server()->sessionManager()->getNewSession();
+        session = server()->sessionManager()->getNewSession(ViridityConnection::getPeerAddressFromRequest(request));
 
         DPRINTF("NEW SESSION: %s", session->id().toLatin1().constData());
 

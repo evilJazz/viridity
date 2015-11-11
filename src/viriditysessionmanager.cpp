@@ -251,7 +251,7 @@ ViriditySessionManager::~ViriditySessionManager()
     DGUARDMETHODTIMED;
 }
 
-ViriditySession *ViriditySessionManager::getNewSession()
+ViriditySession *ViriditySessionManager::getNewSession(const QByteArray &initialPeerAddress)
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&sessionMutex_);
@@ -263,7 +263,8 @@ ViriditySession *ViriditySessionManager::getNewSession()
         this, "createSession",
         this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(ViriditySession *, session),
-        Q_ARG(const QString &, createUniqueID().left(10))
+        Q_ARG(const QString &, createUniqueID().left(10)),
+        Q_ARG(const QByteArray &, initialPeerAddress)
     );
 
     if (session)
@@ -334,10 +335,11 @@ void ViriditySessionManager::releaseSession(ViriditySession *session)
     }
 }
 
-ViriditySession *ViriditySessionManager::createSession(const QString &id)
+ViriditySession *ViriditySessionManager::createSession(const QString &id, const QByteArray &initialPeerAddress)
 {
     DGUARDMETHODTIMED;
     ViriditySession *session = createNewSessionInstance(id);
+    session->setInitialPeerAddress(initialPeerAddress);
     setLogic(session);
 
     connect(session, SIGNAL(destroyed()), session->logic(), SLOT(deleteLater()));
