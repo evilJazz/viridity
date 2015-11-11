@@ -55,6 +55,18 @@ void ViridityConnection::addNoCachingResponseHeaders(Tufao::HttpServerResponse *
     response->headers().insert("Expires", "0");
 }
 
+QByteArray ViridityConnection::getPeerAddressFromRequest(Tufao::HttpServerRequest *request)
+{
+    if (!request || !request->socket())
+        return QByteArray();
+
+    QByteArray peerAddress = request->socket()->peerAddress().toString().toLatin1();
+    if (request->headers().contains("X-Forwarded-For"))
+        peerAddress = request->headers().value("X-Forwarded-For");
+
+    return peerAddress;
+}
+
 void ViridityConnection::setupConnection()
 {
     DGUARDMETHODTIMED;
@@ -90,6 +102,8 @@ void ViridityConnection::onRequestReady()
     //DGUARDMETHODTIMED;
 
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+
+    DPRINTF("Request for %s of connection from %s ready.", request->url().constData(), ViridityConnection::getPeerAddressFromRequest(request).constData());
 
     QAbstractSocket *socket = request->socket();
     Tufao::HttpServerResponse *response = new Tufao::HttpServerResponse(socket, request->responseOptions(), this);
@@ -128,6 +142,8 @@ void ViridityConnection::onRequestReady()
 void ViridityConnection::onUpgrade(const QByteArray &head)
 {
     Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+
+    DPRINTF("Request for %s of connection from %s wants upgrade.", request->url().constData(), ViridityConnection::getPeerAddressFromRequest(request).constData());
 
     if (!webSocketHandler_)
         webSocketHandler_ = new WebSocketHandler(server_, this);

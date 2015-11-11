@@ -46,6 +46,7 @@ public:
     ViridityWebServer *server() { return server_; }
 
     static void addNoCachingResponseHeaders(Tufao::HttpServerResponse *response);
+    static QByteArray getPeerAddressFromRequest(Tufao::HttpServerRequest *request);
 
 public slots:
     void setupConnection();

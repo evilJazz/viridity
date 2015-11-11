@@ -69,16 +69,16 @@ void FileRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     if (!localFileName.isEmpty())
     {
         QFile file(localFileName);
-        file.open(QIODevice::ReadOnly);
+        if (file.open(QIODevice::ReadOnly))
+        {
+            response->writeHead(Tufao::HttpServerResponse::OK);
+            response->headers().insert("Content-Type", contentType);
+            ViridityConnection::addNoCachingResponseHeaders(response);
+            response->end(file.readAll());
+            return;
+        }
+    }
 
-        response->writeHead(Tufao::HttpServerResponse::OK);
-        response->headers().insert("Content-Type", contentType);
-        ViridityConnection::addNoCachingResponseHeaders(response);
-        response->end(file.readAll());
-    }
-    else
-    {
-        response->writeHead(404);
-        response->end("Not found");
-    }
+    response->writeHead(404);
+    response->end("Not found");
 }
