@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>QML Web Viewer</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+    * {
+        margin: 0;
+    }
+
+    html, body {
+        height: 100%;
+    }
+
+    #displayContainer {
+        min-height: 100%;
+        height: auto !important;
+        height: 100%;
+    }
+    </style>
+
+    <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+
+    <script src="Viridity.js"></script>
+    <script src="DataBridge.js"></script>
+    <script src="DisplayRenderer.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var channel = new Viridity({ connectionMethod: ConnectionMethod.WebSockets });
+
+            var initScene = function(sessionId)
+            {
+                var display = $("#displayContainer").viridity(channel, "main");
+            };
+
+            channel.on("sessionStart", initScene);
+            channel.on("sessionReattached", initScene);
+            channel.on("sessionInUse", function(sessionId)
+            {
+                alert("This session is already in use in another tab or window.");
+            });
+        });
+    </script>
+  </head>
+  <body>
+    <div id="displayContainer"></div>
+  </body>
+</html>

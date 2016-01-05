@@ -31,8 +31,7 @@ CONFIG += viridity_module_display_tools
 include(../../viridity.pri)
 
 RESOURCES += \
-    qmlresource.qrc \
-    ../../tests/testdata/test.qrc
+    resources.qrc
 
 linux-* {
     target.path = /opt/bin

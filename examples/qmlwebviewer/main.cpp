@@ -4,64 +4,102 @@
 
 #include <Viridity/ViridityWebServer>
 
+#include "viriditydeclarative.h"
+#include "viriditydatabridge.h"
+#include "graphicsscenedisplaysessionmanager.h"
+#include "declarativescenesizehandler.h"
+#include "handlers/filerequesthandler.h"
+
 #include "kclplugin.h"
 
-#include "commandbridge.h"
+#include "KCL/filesystemutils.h"
+#include "KCL/debug.h"
 
-void createScene(ViriditySession *session)
+class MySessionManager : public ViriditySessionManager
 {
-    QDeclarativeEngine *engine = new QDeclarativeEngine();
+public:
+    QString qmlFileName;
 
-    KCLPlugin *kcl = new KCLPlugin;
-    kcl->initializeEngine(engine, "KCL");
-    kcl->registerTypes("KCL");
+protected:
+    void setLogic(ViriditySession *session)
+    {
+        // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
 
-    CommandBridge *commandBridge = new CommandBridge(session, engine);
-    engine->rootContext()->setContextProperty("CommandBridge", commandBridge);
+        DGUARDMETHODTIMED;
+        QDeclarativeEngine *engine = new QDeclarativeEngine();
 
-    session->commandHandlers.append(commandBridge);
+        KCLPlugin *kcl = new KCLPlugin;
+        kcl->initializeEngine(engine, "KCL");
+        kcl->registerTypes("KCL");
 
-    QDeclarativeComponent component(engine, QUrl("qrc:/qml/test.qml"));
+        engine->rootContext()->setContextProperty("currentSession", session);
 
-    if (component.status() != QDeclarativeComponent::Ready)
-        qFatal("Component is not ready.");
+        ViridityDeclarative::registerTypes();
 
-    QObject *instance = component.create();
+        QDeclarativeComponent component(engine, QUrl::fromLocalFile(qmlFileName));
 
-    if (!instance)
-        qFatal("Could not create instance of component.");
+        if (component.status() != QDeclarativeComponent::Ready)
+            qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
 
-    QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
+        QObject *instance = component.create();
 
-    session->scene = new QGraphicsScene(engine);
-    session->scene->addItem(item);
+        if (!instance)
+            qFatal("Could not create instance of component.");
 
-    QObject::connect(session->scene, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
-}
+        QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 
-class MySingleSessionManager : public SingleLogicSessionManager
-{
-    void setLogic(ViriditySession *session) { createScene(session); }
-};
+        QDeclarativeItem *rootItem = qobject_cast<QDeclarativeItem *>(instance);
 
-class MyMultiSessionManager : public MultiLogicSessionManager
-{
-    void setLogic(ViriditySession *session) { createScene(session); }
+        // Install message handler for resize() commands on the item...
+        new DeclarativeSceneSizeHandler(session, "main", rootItem, rootItem);
+
+        QGraphicsScene *scene = new QGraphicsScene(engine);
+        scene->addItem(rootItem);
+
+        SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, scene);
+
+        session->setLogic(rootItem);
+        QObject::connect(session, SIGNAL(destroyed()), instance, SLOT(deleteLater()));
+    }
 };
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
 
-    const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
+    if (a.arguments().count() == 1)
+        qFatal("Usage: %s <QML-file to serve> [port] [HTML-directory to serve]", QFileInfo(a.applicationFilePath()).fileName().toUtf8().constData());
 
-    //MySingleSessionManager sessionManager;
-    MyMultiSessionManager sessionManager;
+    if (a.arguments().length() == 2)
+    {
+        QString htmlDirName = a.arguments().at(1);
+
+        if (QDir(htmlDirName).exists())
+        {
+            FileRequestHandler::publishDirectoryGlobally("/", htmlDirName);
+
+            QString indexFileName = FileSystemUtils::pathAppend(htmlDirName, "index.html");
+            if (QFileInfo::exists(indexFileName))
+                FileRequestHandler::publishFileGlobally("/", indexFileName);
+        }
+    }
+    else
+    {
+        FileRequestHandler::publishFileGlobally("/", ":/index.html");
+        FileRequestHandler::publishFileGlobally("/index.html", ":/index.html");
+    }
+
+    FileRequestHandler::publishDirectoryGlobally("/", ":/Client");
+
+    MySessionManager sessionManager;
+    sessionManager.qmlFileName = a.arguments().at(1);
+    const int dataPort = a.arguments().count() > 2 ? a.arguments().at(2).toInt() : 8080;
 
     ViridityWebServer server(&a, &sessionManager);
-    server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount());
-
-    qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
+    if (server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount()))
+        qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
+    else
+        qFatal("Could not setup server on 127.0.0.1 %d.", dataPort);
 
     return a.exec();
 }

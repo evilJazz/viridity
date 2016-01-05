@@ -1,0 +1,18 @@
+<RCC>
+    <qresource prefix="/qml">
+        <file alias="logic.qml">../testdata/qml/logic.qml</file>
+        <file alias="preview1.qml">../testdata/qml/preview1.qml</file>
+        <file alias="preview2.qml">../testdata/qml/preview2.qml</file>
+        <file alias="test.qml">../testdata/qml/test.qml</file>
+        <file alias="CheckBox.qml">../testdata/qml/CheckBox.qml</file>
+    </qresource>
+    <qresource prefix="/">
+        <file alias="detail1.html">../testdata/html/detail1.html</file>
+        <file alias="index.html">../testdata/html/index.html</file>
+    </qresource>
+    <qresource prefix="/testimages">
+        <file alias="backtile.png">../testdata/images/backtile.png</file>
+        <file alias="lena.png">../testdata/images/lena.png</file>
+        <file alias="wikitext.png">../testdata/images/wikitext.png</file>
+    </qresource>
+</RCC>

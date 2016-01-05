@@ -23,17 +23,16 @@ CONFIG(release, debug|release) {
 }
 
 include(../../3rdparty/kcl/kcl.pri)
-include(../../3rdparty/tufao/tufao.pri)
+include(../../3rdparty/tufao/tufao-min.pri)
 include(../../viridity.pri)
-
-OTHER_FILES += \
-    test.qml
-
-RESOURCES += \
-    qmlresource.qrc \
-    ../../tests/testdata/test.qrc
 
 linux-* {
     target.path = /opt/bin
     INSTALLS += target
 }
+
+RESOURCES += \
+    resources.qrc
+
+DISTFILES += \
+    index.html

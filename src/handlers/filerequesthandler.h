@@ -15,20 +15,25 @@ public:
     explicit FileRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~FileRequestHandler();
 
-    void publishFile(const QByteArray &url, const QByteArray &fileName, const QByteArray &mimeType);
+    void publishFile(const QByteArray &url, const QString &fileName, QByteArray mimeType = QByteArray());
     void unpublishFile(const QByteArray &url);
 
-    static void publishFileGlobally(const QByteArray &url, const QByteArray &fileName, const QByteArray &mimeType);
+    static void publishFileGlobally(const QByteArray &url, const QString &fileName, QByteArray mimeType = QByteArray());
     static void unpublishFileGlobally(const QByteArray &url);
+
+    static void publishDirectoryGlobally(const QByteArray &baseUrl, const QString &directoryName);
+    static void unpublishDirectoryGlobally(const QByteArray &baseUrl);
+
+    static QByteArray determineMimeType(const QString &fileName);
 
     bool doesHandleRequest(Tufao::HttpServerRequest *request);
     void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
 
 private:
-    QHash<QByteArray, QByteArray> fileNames_;
+    QHash<QByteArray, QString> fileNames_;
     QHash<QByteArray, QByteArray> contentTypes_;
 
-    static QHash<QByteArray, QByteArray> globalFileNames_;
+    static QHash<QByteArray, QString> globalFileNames_;
     static QHash<QByteArray, QByteArray> globalContentTypes_;
 };
 

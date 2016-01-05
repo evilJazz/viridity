@@ -43,6 +43,7 @@
 #include <qtextcodec.h>
 #include <qvariant.h>
 #include <qvector.h>
+#include <qstringlist.h>
 
 #ifdef QT_USE_BUNDLED_LIBPNG
 #include <../../3rdparty/libpng/png.h>
