@@ -25,4 +25,4 @@ include(../../viridity.pri)
 DEFINES += USE_MOVE_ANALYZER USE_MOVE_ANALYZER_FINEGRAINED
 
 RESOURCES += \
-    ../testdata/test.qrc
+    ../testdata/resources.qrc

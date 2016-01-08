@@ -6,8 +6,6 @@ TEMPLATE = app
 
 SOURCES += main.cpp
 
-#CONFIG += tufao
-
 CONFIG(debug, debug|release) {
     message("Configuring debug mode...")
     DEFINES += DEBUG
@@ -33,6 +31,3 @@ linux-* {
 
 RESOURCES += \
     resources.qrc
-
-DISTFILES += \
-    index.html

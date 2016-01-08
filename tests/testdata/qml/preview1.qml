@@ -2,7 +2,7 @@ import QtQuick 1.0
 
 Image {
     id: image
-    source: "qrc:/testimages/lena.png"
+    source: "../images/lena.png"
     fillMode: Image.PreserveAspectFit
     smooth: true
 

@@ -31,10 +31,10 @@ private slots:
     {
         testWidth_ = 64;
 
-        lena_.load(":/testimages/lena.png");
+        lena_.load(":/images/lena.png");
         lena_ = lena_.convertToFormat(QImage::Format_ARGB32);
 
-        wikitext_.load(":/testimages/wikitext.png");
+        wikitext_.load(":/images/wikitext.png");
         wikitext_ = wikitext_.convertToFormat(QImage::Format_ARGB32);
 
         imageBefore_ = QImage(1920, 1200, QImage::Format_ARGB32);

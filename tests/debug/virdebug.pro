@@ -31,7 +31,7 @@ CONFIG += viridity_module_display_tools
 include(../../viridity.pri)
 
 RESOURCES += \
-    resources.qrc
+    ../testdata/resources.qrc
 
 linux-* {
     target.path = /opt/bin

@@ -34,7 +34,7 @@ FocusScope {
         id: image
         visible: true
 
-        source: "qrc:/testimages/lena.png"
+        source: "../images/lena.png"
         fillMode: Image.PreserveAspectFit
 
         SequentialAnimation on x {
@@ -66,7 +66,7 @@ FocusScope {
         contentHeight: contentImage.height
         Image {
             id: contentImage
-            source: "qrc:/testimages/lena.png"
+            source: "../images/lena.png"
         }
     }
 

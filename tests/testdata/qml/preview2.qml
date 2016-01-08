@@ -10,7 +10,7 @@ Item {
 
         Image {
             id: contentImage
-            source: "qrc:/testimages/lena.png"
+            source: "../images/lena.png"
 
             opacity: 0.6
 
