@@ -8,6 +8,7 @@
 
 ViridityDataBridge::ViridityDataBridge(QObject *parent) :
     QObject(parent),
+    session_(NULL),
     response_(QString::null),
     responseId_(0)
 {

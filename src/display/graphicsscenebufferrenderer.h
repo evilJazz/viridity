@@ -8,7 +8,7 @@
 #include <QRegion>
 #include <QMutex>
 
-#include "graphicssceneobserver.h"
+#include "graphicssceneadapter.h"
 #include "comparer/tiles.h"
 #include "comparer/imagecomparer.h"
 
@@ -22,12 +22,15 @@ private:
     QMutexLocker m_;
 };
 
-class VIRIDITY_EXPORT GraphicsSceneBufferRenderer : public GraphicsSceneObserver
+class VIRIDITY_EXPORT GraphicsSceneBufferRenderer : public QObject
 {
     Q_OBJECT
 public:
     explicit GraphicsSceneBufferRenderer(QObject *parent = 0);
     virtual ~GraphicsSceneBufferRenderer();
+
+    void setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter);
+    GraphicsSceneAdapter *targetGraphicsSceneAdapter() const { return adapter_; }
 
     void setMinimizeDamageRegion(bool value);
     bool minimizeDamageRegion() { return minimizeDamageRegion_; }
@@ -40,7 +43,7 @@ public:
     const QImage &buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
 
-    void pushFullFrame(const QImage& image); // Only works if we have a NULL scene.
+    void pushFullFrame(const QImage& image); // Only works if we have a NULL adapter.
 
 public slots:
     void fullUpdate();
@@ -52,9 +55,13 @@ signals:
 protected slots:
     void sceneAttached();
     void sceneChanged(QList<QRectF> rects);
+    void sceneDetaching();
     void sceneDetached();
+    void sceneDestroyed();
 
 protected:
+    GraphicsSceneAdapter *adapter_;
+
     bool minimizeDamageRegion_;
     bool updatesAvailable_;
 

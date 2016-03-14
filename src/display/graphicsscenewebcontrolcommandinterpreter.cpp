@@ -1,34 +1,21 @@
 #include "graphicsscenewebcontrolcommandinterpreter.h"
 
-#include <QApplication>
+#include <QCoreApplication>
 #include <QEvent>
 #include <QMouseEvent>
-#include <QGraphicsSceneMouseEvent>
-#include <QGraphicsItem>
 
-#include <QDeclarativeItem>
+#include "graphicssceneadapter.h"
 
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
 #endif
 #include "KCL/debug.h"
 
-// Hacker class to get access to private QEvent::spont member. Not nice, but better than pointer hackery.
-class QCoreApplicationPrivate
-{
-public:
-    static void setEventSpontaneous(QEvent *event)
-    {
-        event->spont = true;
-    }
-};
-
 /* GraphicsSceneWebControlCommandInterpreter */
 
 GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpreter(QObject *parent) :
     QObject(parent),
-    scene_(NULL),
-    buttonDown_(false),
+    adapter_(NULL),
     keyDownKeyCodeHandled_(false)
 {
 }
@@ -37,23 +24,9 @@ GraphicsSceneWebControlCommandInterpreter::~GraphicsSceneWebControlCommandInterp
 {
 }
 
-void GraphicsSceneWebControlCommandInterpreter::setTargetGraphicsScene(QGraphicsScene *scene)
+void GraphicsSceneWebControlCommandInterpreter::setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter)
 {
-    scene_ = scene;
-}
-
-void GraphicsSceneWebControlCommandInterpreter::postEvent(QEvent *event, bool spontaneous)
-{
-    if (spontaneous)
-        QCoreApplicationPrivate::setEventSpontaneous(event);
-
-    QApplication::postEvent(scene_, event);
-}
-
-void GraphicsSceneWebControlCommandInterpreter::postEvent(QEvent::Type eventType, bool spontaneous)
-{
-    QEvent *event = new QEvent(eventType);
-    postEvent(event, spontaneous);
+    adapter_ = adapter;
 }
 
 Qt::KeyboardModifier GraphicsSceneWebControlCommandInterpreter::parseParamKeyboardModifiers(const QStringList &params, int index)
@@ -116,30 +89,6 @@ QPoint GraphicsSceneWebControlCommandInterpreter::parseParamPoint(const QStringL
     return QPoint();
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleMouseEnter(const QString &command, const QStringList &params)
-{
-    if (!scene_->isActive())
-        postEvent(QEvent::WindowActivate);
-
-    postEvent(QEvent::Enter, true);
-
-    if (!scene_->hasFocus())
-        scene_->setFocus();
-
-    QInputMethodEvent *enterFocus = new QInputMethodEvent();
-    postEvent(enterFocus);
-
-    return true;
-}
-
-bool GraphicsSceneWebControlCommandInterpreter::handleMouseExit(const QString &command, const QStringList &params)
-{
-    //postEvent(QEvent::Leave, true);
-    //scene_->clearFocus();
-    //postEvent(QEvent::WindowDeactivate, false);
-    return true;
-}
-
 bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &command, const QStringList &params)
 {
     QPoint screenPos(parseParamPoint(params, 0));
@@ -152,41 +101,22 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
     if (command.endsWith("Wheel") && params.count() >= 6)
     {
         QPoint delta(parseParamPoint(params, 4));
-
-        QGraphicsSceneWheelEvent *we = new QGraphicsSceneWheelEvent(QEvent::GraphicsSceneWheel);
-        we->setWidget(NULL);
-        we->setScenePos(scenePos);
-        we->setScreenPos(screenPos);
-        we->setButtons(buttons);
-        we->setModifiers(modifiers);
-
-        if (delta.y() != 0)
-        {
-            we->setDelta(delta.y() * 10);
-            we->setOrientation(Qt::Vertical);
-        }
-        else
-        {
-            we->setDelta(delta.x() * 10);
-            we->setOrientation(Qt::Horizontal);
-        }
-
-        we->setAccepted(false);
-        postEvent(we, true);
+        adapter_->handleMouseWheelEvent(delta, scenePos, button, buttons, modifiers);
         return true;
     }
     else if (command == "contextMenu")
     {
-        QGraphicsSceneContextMenuEvent *cme = new QGraphicsSceneContextMenuEvent(QEvent::GraphicsSceneContextMenu);
-
-        cme->setWidget(NULL);
-        cme->setScenePos(scenePos);
-        cme->setScreenPos(screenPos);
-        cme->setModifiers(modifiers);
-        cme->setReason(QGraphicsSceneContextMenuEvent::Mouse);
-
-        cme->setAccepted(false);
-        postEvent(cme, true);
+        adapter_->handleContextMenuEvent(scenePos, modifiers, QContextMenuEvent::Mouse);
+        return true;
+    }
+    else if (command.endsWith("Enter"))
+    {
+        adapter_->handleMouseEnterEvent(scenePos, button, buttons, modifiers);
+        return true;
+    }
+    else if (command.endsWith("Exit"))
+    {
+        adapter_->handleMouseExitEvent(scenePos, button, buttons, modifiers);
         return true;
     }
     else
@@ -194,58 +124,17 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
         QEvent::Type type(QEvent::GraphicsSceneMouseMove);
 
         if (command.endsWith("Move"))
-        {
-            type = QEvent::GraphicsSceneMouseMove;
-
-            if (buttonDown_)
-                buttons = button = lastButton_;
-            else
-                buttons = button = Qt::NoButton;
-        }
+            type = QEvent::MouseMove;
         else if (command.endsWith("Down"))
-        {
-            type = QEvent::GraphicsSceneMousePress;
-            lastButtonDownScenePos_ = scenePos;
-            lastButtonDownScreenPos_ = screenPos;
-            lastButton_ = button;
-            buttonDown_ = true;
-        }
+            type = QEvent::MouseButtonPress;
         else if (command.endsWith("Up"))
-        {
-            type = QEvent::GraphicsSceneMouseRelease;
-            buttonDown_ = false;
-        }
+            type = QEvent::MouseButtonRelease;
         else if (command.endsWith("DblClick"))
-        {
-            type = QEvent::GraphicsSceneMouseDoubleClick;
-            buttonDown_ = false;
-        }
+            type = QEvent::MouseButtonDblClick;
         else
-        {
-            buttonDown_ = false;
             return false;
-        }
 
-        QGraphicsSceneMouseEvent *me = new QGraphicsSceneMouseEvent(type);
-        me->setButtonDownScenePos(button, lastButtonDownScenePos_);
-        me->setButtonDownScreenPos(button, lastButtonDownScreenPos_);
-
-        me->setScenePos(scenePos);
-        me->setScreenPos(screenPos);
-
-        me->setLastScenePos(lastScenePos_);
-        me->setLastScreenPos(lastScreenPos_);
-
-        lastScenePos_ = scenePos;
-        lastScreenPos_ = screenPos;
-
-        me->setButtons(buttons);
-        me->setButton(button);
-        me->setModifiers(modifiers);
-
-        me->setAccepted(false);
-
-        postEvent(me, true);
+        adapter_->handleMouseEvent(type, scenePos, button, buttons, modifiers);
         return true;
     }
 }
@@ -348,32 +237,28 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
         return false;
     }
 
-    QKeyEvent *ke = new QKeyEvent(type, key, modifiers, text);
-    postEvent(ke, true);
+    adapter_->handleKeyEvent(type, key, modifiers, text);
     return true;
 }
 
 bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    return message.startsWith("mouseEnter") ||
-           message.startsWith("mouseExit") ||
-           message.startsWith("mouse") ||
+    return message.startsWith("mouse") ||
            message.startsWith("key") ||
            message.startsWith("contextMenu");
 }
 
 bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
+    if (!adapter_)
+        return false;
+
     QString command;
     QStringList params;
 
     ViridityMessageHandler::splitMessage(message, command, params);
 
-    if (message.startsWith("mouseEnter"))
-        return handleMouseEnter(command, params);
-    else if (message.startsWith("mouseExit"))
-        return handleMouseExit(command, params);
-    else if ((message.startsWith("mouse") || message.startsWith("contextMenu")) && params.count() >= 2)
+    if ((message.startsWith("mouse") || message.startsWith("contextMenu")) && params.count() >= 2)
         return handleMouseEvent(command, params);
     else if (message.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);

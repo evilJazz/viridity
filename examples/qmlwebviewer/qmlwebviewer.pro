@@ -1,4 +1,4 @@
-QT       += core gui declarative
+QT       += core
 
 TARGET = qmlwebviewer
 
@@ -20,9 +20,12 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
-include(../../3rdparty/kcl/kcl.pri)
-include(../../3rdparty/tufao/tufao-min.pri)
+CONFIG += viridity_module_display_qtquick1
+#CONFIG += viridity_module_display_qtquick2
+
 include(../../viridity.pri)
+include(../../3rdparty/tufao/tufao-min.pri)
+include(../../3rdparty/kcl/kcl.pri)
 
 linux-* {
     target.path = /opt/bin

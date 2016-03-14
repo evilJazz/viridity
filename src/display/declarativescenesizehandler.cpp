@@ -1,15 +1,17 @@
 #include "declarativescenesizehandler.h"
 
+#include <QThread>
+
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
 #endif
 #include "KCL/debug.h"
 
-DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, QDeclarativeItem *rootItem, bool scaleItem, QObject *parent) :
+DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, GraphicsSceneAdapter *adapter, bool scaleItem, QObject *parent) :
     QObject(parent),
     session_(session),
     id_(id),
-    rootItem_(rootItem),
+    adapter_(adapter),
     scaleItem_(scaleItem)
 {
     DGUARDMETHODTIMED;
@@ -70,22 +72,8 @@ bool DeclarativeSceneSizeHandler::localHandleMessage(const QByteArray &message, 
 
         DPRINTF("Received new size: %d x %d, pixel ratio: %f", width, height, ratio);
 
-        if (rootItem_)
-        {
-            if (scaleItem_)
-            {
-                rootItem_->setWidth(width / ratio);
-                rootItem_->setHeight(height / ratio);
-
-                rootItem_->setTransformOrigin(QDeclarativeItem::TopLeft);
-                rootItem_->setScale(ratio);
-            }
-            else
-            {
-                rootItem_->setWidth(width);
-                rootItem_->setHeight(height);
-            }
-        }
+        if (adapter_)
+            adapter_->setSize(width, height, scaleItem_ ? ratio : 0.f);
 
         emit resized(width, height, ratio);
 

@@ -74,7 +74,7 @@ class GraphicsSceneDisplay : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter);
+    explicit GraphicsSceneDisplay(const QString &id, GraphicsSceneAdapter *adapter, GraphicsSceneWebControlCommandInterpreter *commandInterpreter);
     virtual ~GraphicsSceneDisplay();
 
     QString id() const { return id_; }
@@ -85,7 +85,7 @@ public:
     const ComparerSettings comparerSettings() const;
     void setComparerSettings(const ComparerSettings &comparerSettings);
 
-    QGraphicsScene *scene() const { return scene_; }
+    GraphicsSceneAdapter *adapter() const { return adapter_; }
 
     bool isUpdateAvailable() const;
     GraphicsSceneFramePatch *takePatch(const QString &patchId);
@@ -108,7 +108,7 @@ private slots:
     void clientReady();
 
 private:
-    QGraphicsScene *scene_;
+    GraphicsSceneAdapter *adapter_;
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter_;
 
     QString id_;

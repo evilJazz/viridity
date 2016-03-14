@@ -1,8 +1,6 @@
 #ifndef VIRIDITYDECLARATIVE_H
 #define VIRIDITYDECLARATIVE_H
 
-#include <QtDeclarative>
-
 class ViridityDeclarative
 {
 public:

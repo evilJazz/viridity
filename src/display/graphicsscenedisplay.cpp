@@ -36,9 +36,9 @@ GraphicsSceneDisplayLocker::GraphicsSceneDisplayLocker(GraphicsSceneDisplay *dis
 
 /* GraphicsSceneDisplay */
 
-GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *scene, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
+GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, GraphicsSceneAdapter *adapter, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
     QObject(),
-    scene_(scene),
+    adapter_(adapter),
     commandInterpreter_(commandInterpreter),
     id_(id),
     updateCheckInterval_(10),
@@ -52,7 +52,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     DGUARDMETHODTIMED;
 
     renderer_ = new GraphicsSceneBufferRenderer(this);
-    renderer_->setTargetGraphicsScene(scene_);
+    renderer_->setTargetGraphicsSceneAdapter(adapter_);
 
     connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
 
@@ -60,8 +60,6 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, QGraphicsScene *sc
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
     updateCheckTimer_->setSingleShot(false);
     updateCheckTimer_->start(updateCheckInterval_);
-
-    renderer_->setEnabled(true);
 }
 
 GraphicsSceneDisplay::~GraphicsSceneDisplay()
@@ -96,7 +94,7 @@ void GraphicsSceneDisplay::setComparerSettings(const ComparerSettings &comparerS
 
 bool GraphicsSceneDisplay::isUpdateAvailable() const
 {
-    if (scene_)
+    if (adapter_)
     {
         QMutexLocker l(&patchesMutex_);
         return clientReady_ && patches_.count() == 0 && updateAvailable_;

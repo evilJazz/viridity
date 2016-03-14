@@ -2,6 +2,12 @@
 
 #include "viriditydatabridge.h"
 
+#ifdef KCL_QTQUICK2
+    #include <QtQuick>
+#else
+    #include <QtDeclarative>
+#endif
+
 void ViridityDeclarative::registerTypes()
 {
     qmlRegisterType<ViridityDataBridge>("Viridity", 1, 0, "NativeViridityDataBridge");

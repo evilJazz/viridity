@@ -78,17 +78,17 @@ class SingleGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySess
 {
     Q_OBJECT
 public:
-    SingleGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent, QGraphicsScene *scene);
+    SingleGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent, GraphicsSceneAdapter *adapter);
     virtual ~SingleGraphicsSceneDisplaySessionManager() {}
 
-    QGraphicsScene *scene() const { return scene_; }
+    GraphicsSceneAdapter *adapter() const { return adapter_; }
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter() const { return commandInterpreter_; }
 
 protected slots:
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params);
 
 private:
-    QGraphicsScene *scene_;
+    GraphicsSceneAdapter *adapter_;
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter_;
 };
 
@@ -103,8 +103,8 @@ protected slots:
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params);
     virtual void tearDownDisplayInstance(GraphicsSceneDisplay *display);
 
-    virtual QGraphicsScene *getScene(const QString &id, const QStringList &params) = 0;
-    virtual void tearDownScene(const QString &id, QGraphicsScene *scene);
+    virtual GraphicsSceneAdapter *getAdapter(const QString &id, const QStringList &params) = 0;
+    virtual void tearDownAdapter(const QString &id, GraphicsSceneAdapter *adapter);
 };
 
 #endif // GRAPHICSSCENEDISPLAYSESSIONMANAGER_H

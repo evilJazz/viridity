@@ -1,7 +1,7 @@
 # Enable if you want to debug Viridity...
 #DEFINES += VIRIDITY_DEBUG
 
-QT += core gui network concurrent
+QT += core network concurrent
 
 DEFINES += USE_MULTITHREADING
 
@@ -48,6 +48,8 @@ SOURCES += \
 CONFIG += viridity_module_display viridity_use_improved_jpeg viridity_use_improved_png
 
 viridity_module_display {
+    QT += gui
+
     INCLUDEPATH += \
         $$VIRIDITY_SRC_PATH/display
 
@@ -57,15 +59,12 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/comparer/imagecompareroptools.h \
         $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.h \
         $$VIRIDITY_SRC_PATH/display/comparer/tiles.h \
-        $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.h \
-        $$VIRIDITY_SRC_PATH/display/graphicssceneobserver.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
-        $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \
-        $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.h \
-        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h
+        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h  \
+        $$VIRIDITY_SRC_PATH/display/graphicssceneadapter.h
 
     SOURCES += \
         $$VIRIDITY_SRC_PATH/display/comparer/imageaux.cpp \
@@ -73,14 +72,10 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/comparer/imagecompareroptools.cpp \
         $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.cpp \
         $$VIRIDITY_SRC_PATH/display/comparer/tiles.cpp \
-        $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.cpp \
-        $$VIRIDITY_SRC_PATH/display/graphicssceneobserver.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.cpp  \
-        $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.cpp \
-        $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.cpp \
         $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp
 
     viridity_use_improved_jpeg {
@@ -127,6 +122,64 @@ viridity_module_display {
             $$VIRIDITY_SRC_PATH/display/private/graphicsscenedisplaytests.cpp \
             $$VIRIDITY_SRC_PATH/display/tools/graphicsscenedisplayrecorder.cpp \
             $$VIRIDITY_SRC_PATH/display/tools/graphicsscenedisplayplayer.cpp
+    }
+
+    include($${PWD}/3rdparty/kcl/qmlpp/src/qmlpp.pri)
+
+    viridity_module_display_qtquick1 {
+        message("Viridity: Configuring with QtQuick 1.x support")
+
+        QT += declarative
+        DEFINES += USE_QTQUICK1
+        CONFIG += viridity_module_display_qgraphicscene viridity_module_display_declarative
+
+        HEADERS += \
+            $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.h
+
+        SOURCES += \
+            $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.cpp
+
+        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
+    }
+
+    viridity_module_display_qtquick2 {
+        message("Viridity: Configuring with QtQuick 2.x support")
+
+        QT += qml quick
+        DEFINES += USE_QTQUICK2
+        CONFIG += viridity_module_display_declarative
+
+        HEADERS += \
+            $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.h
+
+        SOURCES += \
+            $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
+
+        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
+    }
+
+    viridity_module_display_declarative {
+        HEADERS += \
+            $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h
+
+        SOURCES += \
+            $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.cpp
+    }
+
+    viridity_module_display_qgraphicscene {
+        message("Viridity: Configuring with QGraphicsScene support")
+
+        DEFINES += USE_QGRAPHICSSCENE
+
+        HEADERS += \
+            $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \
+            $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.h \
+            $$VIRIDITY_SRC_PATH/display/adapters/qgraphicssceneadapter.h
+
+        SOURCES += \
+            $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.cpp \
+            $$VIRIDITY_SRC_PATH/display/private/synchronizedscenerenderer.cpp \
+            $$VIRIDITY_SRC_PATH/display/adapters/qgraphicssceneadapter.cpp
     }
 }
 

@@ -2,8 +2,6 @@
 
 #include <QThread>
 
-#include "private/synchronizedscenerenderer.h"
-
 #define USE_SCENE_DAMAGEREGION
 
 #ifndef VIRIDITY_DEBUG
@@ -21,7 +19,8 @@ GraphicsSceneBufferRendererLocker::GraphicsSceneBufferRendererLocker(GraphicsSce
 /* GraphicsSceneBufferRenderer */
 
 GraphicsSceneBufferRenderer::GraphicsSceneBufferRenderer(QObject *parent) :
-    GraphicsSceneObserver(parent),
+    QObject(parent),
+    adapter_(NULL),
     minimizeDamageRegion_(true),
     updatesAvailable_(false),
     bufferAndRegionMutex_(QMutex::Recursive),
@@ -40,6 +39,32 @@ GraphicsSceneBufferRenderer::~GraphicsSceneBufferRenderer()
 
     if (comparer_)
         delete comparer_;
+}
+
+void GraphicsSceneBufferRenderer::setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter)
+{
+    if (adapter != adapter_)
+    {
+        if (adapter_)
+        {
+            sceneDetaching();
+
+            disconnect(adapter_, SIGNAL(sceneChanged(QList<QRectF>)));
+            disconnect(adapter_, SIGNAL(destroyed()));
+
+            sceneDetached();
+        }
+
+        adapter_ = adapter;
+
+        if (adapter_)
+        {
+            sceneAttached();
+
+            connect(adapter_, SIGNAL(destroyed()), this, SLOT(sceneDestroyed()));
+            connect(adapter_, SIGNAL(sceneChanged(QList<QRectF>)), this, SLOT(sceneChanged(QList<QRectF>)));
+        }
+    }
 }
 
 void GraphicsSceneBufferRenderer::initComparer()
@@ -81,7 +106,7 @@ QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
 
     QVector<QRect> rects;
 
-    if (scene_)
+    if (adapter_)
     {
 #ifdef USE_SCENE_DAMAGEREGION
         rects = damageRegion_.rects();
@@ -90,15 +115,13 @@ QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
 
         p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
-        SynchronizedSceneRenderer syncedSceneRenderer(scene_);
-        syncedSceneRenderer.render(&p, rects);
+        adapter_->render(&p, rects);
 #else
         p.eraseRect(workBuffer_->rect());
 
         p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
-        SynchronizedSceneRenderer syncedSceneRenderer(scene_);
-        syncedSceneRenderer.render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
+        adapter_->render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
 #endif
 
         rects = comparer_->findDifferences();
@@ -161,7 +184,7 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
 
 void GraphicsSceneBufferRenderer::pushFullFrame(const QImage &image)
 {
-    if (!scene_)
+    if (!adapter_)
     {
         pushedFullFrame_ = image;
         emitUpdatesAvailable();
@@ -219,10 +242,10 @@ void GraphicsSceneBufferRenderer::setSize(int width, int height)
 
 void GraphicsSceneBufferRenderer::setSizeFromScene()
 {
-    if (scene_)
+    if (adapter_)
     {
-        int width = scene_->width();
-        int height = scene_->height();
+        int width = adapter_->width();
+        int height = adapter_->height();
         setSize(width, height);
     }
 }
@@ -253,12 +276,24 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
     emitUpdatesAvailable();
 }
 
+void GraphicsSceneBufferRenderer::sceneDetaching()
+{
+
+}
+
 void GraphicsSceneBufferRenderer::sceneDetached()
 {
     QMutexLocker m(&bufferAndRegionMutex_);
     buffer1_ = QImage();
     buffer2_ = QImage();
     damageRegion_.clear();
+}
+
+void GraphicsSceneBufferRenderer::sceneDestroyed()
+{
+    DGUARDMETHODTIMED;
+    adapter_ = NULL;
+    sceneDetached();
 }
 
 void GraphicsSceneBufferRenderer::swapWorkBuffer()

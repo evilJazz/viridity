@@ -273,18 +273,18 @@ void GraphicsSceneDisplaySessionManager::killAllDisplays()
 
 /* SingleGraphicsSceneDisplaySessionManager */
 
-SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent, QGraphicsScene *scene) :
+SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent, GraphicsSceneAdapter *adapter) :
     GraphicsSceneDisplaySessionManager(session, parent),
-    scene_(scene)
+    adapter_(adapter)
 {
     commandInterpreter_ = new GraphicsSceneWebControlCommandInterpreter(this);
-    commandInterpreter_->setTargetGraphicsScene(scene_);
+    commandInterpreter_->setTargetGraphicsSceneAdapter(adapter_);
 }
 
 GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)
 {
     DGUARDMETHODTIMED;
-    return new GraphicsSceneDisplay(id, scene_, commandInterpreter_);
+    return new GraphicsSceneDisplay(id, adapter_, commandInterpreter_);
 }
 
 /* MultiGraphicsSceneDisplaySessionManager */
@@ -297,14 +297,14 @@ MultiGraphicsSceneDisplaySessionManager::MultiGraphicsSceneDisplaySessionManager
 
 GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)
 {
-    QGraphicsScene *scene = getScene(id, params);
+    GraphicsSceneAdapter *adapter = getAdapter(id, params);
 
-    if (scene)
+    if (adapter)
     {
-        GraphicsSceneWebControlCommandInterpreter *ci = new GraphicsSceneWebControlCommandInterpreter(scene);
-        ci->setTargetGraphicsScene(scene);
+        GraphicsSceneWebControlCommandInterpreter *ci = new GraphicsSceneWebControlCommandInterpreter(adapter);
+        ci->setTargetGraphicsSceneAdapter(adapter);
 
-        GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, scene, ci);
+        GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, adapter, ci);
         return display;
     }
     else
@@ -313,12 +313,12 @@ GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInst
 
 void MultiGraphicsSceneDisplaySessionManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
 {
-    tearDownScene(display->id(), display->scene());
+    tearDownAdapter(display->id(), display->adapter());
 }
 
-void MultiGraphicsSceneDisplaySessionManager::tearDownScene(const QString &id, QGraphicsScene *scene)
+void MultiGraphicsSceneDisplaySessionManager::tearDownAdapter(const QString &id, GraphicsSceneAdapter *adapter)
 {
-    delete scene;
+    delete adapter;
 }
 
 #include "graphicsscenedisplaysessionmanager.moc" // for MainThreadGateway
