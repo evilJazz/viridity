@@ -1,5 +1,6 @@
 #include "declarativescenesizehandler.h"
 
+#include <QStringList>
 #include <QThread>
 
 #ifndef VIRIDITY_DEBUG

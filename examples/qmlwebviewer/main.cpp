@@ -133,7 +133,7 @@ int main(int argc, char *argv[])
             FileRequestHandler::publishDirectoryGlobally("/", htmlDirName);
 
             QString indexFileName = FileSystemUtils::pathAppend(htmlDirName, "index.html");
-            if (QFileInfo::exists(indexFileName))
+            if (QFileInfo(indexFileName).exists())
                 FileRequestHandler::publishFileGlobally("/", indexFileName);
         }
     }

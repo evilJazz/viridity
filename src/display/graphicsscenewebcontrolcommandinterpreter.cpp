@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QEvent>
 #include <QMouseEvent>
+#include <QStringList>
 
 #include "graphicssceneadapter.h"
 
