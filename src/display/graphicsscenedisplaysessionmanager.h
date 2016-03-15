@@ -84,12 +84,17 @@ public:
     GraphicsSceneAdapter *adapter() const { return adapter_; }
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter() const { return commandInterpreter_; }
 
+    EncoderSettings &encoderSettings() { return es_; }
+    ComparerSettings &comparerSettings() { return cs_; }
+
 protected slots:
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params);
 
 private:
     GraphicsSceneAdapter *adapter_;
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter_;
+    EncoderSettings es_;
+    ComparerSettings cs_;
 };
 
 class MultiGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySessionManager

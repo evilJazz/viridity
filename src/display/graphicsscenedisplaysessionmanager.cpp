@@ -284,7 +284,10 @@ SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManag
 GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)
 {
     DGUARDMETHODTIMED;
-    return new GraphicsSceneDisplay(id, adapter_, commandInterpreter_);
+    GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, adapter_, commandInterpreter_);
+    display->setEncoderSettings(es_);
+    display->setComparerSettings(cs_);
+    return display;
 }
 
 /* MultiGraphicsSceneDisplaySessionManager */

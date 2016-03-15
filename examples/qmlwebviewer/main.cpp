@@ -119,6 +119,19 @@ protected:
         SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, adapter);
 #endif
 
+        EncoderSettings &es = displaySessionManager->encoderSettings();
+        es.patchEncodingFormat = EncoderSettings::EncodingFormat_Auto;
+        es.alphaChannelEnabled = true;
+        es.inlineMaxBytes = 0;
+        es.compressionLevel = 1;
+        es.jpegQuality = 50;
+        es.useMultithreading = true;
+
+        ComparerSettings &cs = displaySessionManager->comparerSettings();
+        cs.tileWidth = 64;
+        cs.useMultithreading = true;
+        cs.analyzeMoves = true;
+
         session->setLogic(rootItem);
         QObject::connect(session, SIGNAL(destroyed()), instance, SLOT(deleteLater()));
     }
