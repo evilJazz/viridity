@@ -59,7 +59,6 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
     offscreenSurface_->setFormat(context_->format());
     offscreenSurface_->create();
 
-    //m_renderControl = new RenderControl(this);
     renderControl_ = new QQuickRenderControl(this);
 
     // Create a QQuickWindow that is associated with our render control. Note that this
@@ -120,7 +119,7 @@ int QtQuick2Adapter::height() const
 
 void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 {
-    if (!qFuzzyCompare(ratio, 1.f))
+/*    if (!qFuzzyCompare(ratio, 1.f))
     {
         rootItem_->setWidth(width / ratio);
         rootItem_->setHeight(height / ratio);
@@ -129,6 +128,7 @@ void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
         rootItem_->setScale(ratio);
     }
     else
+*/
     {
         rootItem_->setWidth(width);
         rootItem_->setHeight(height);

@@ -8,6 +8,7 @@
 #include <QQmlEngine>
 #include <QQmlContext>
 #include <QQmlComponent>
+#include <QQuickWindow>
 #include <QQuickItem>
 #include "display/adapters/qtquick2adapter.h"
 #endif
@@ -74,7 +75,7 @@ protected:
         // Install message handler for resize() commands on the item...
         new DeclarativeSceneSizeHandler(session, "main", adapter, true, rootItem);
 
-        SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, new QGraphicsSceneAdapter(scene));
+        SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, adapter);
 #else
         QQmlEngine *engine = new QQmlEngine();
 
@@ -99,6 +100,16 @@ protected:
         QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 
         QQuickItem *rootItem = qobject_cast<QQuickItem *>(instance);
+
+        if (!rootItem)
+        {
+            QQuickWindow *window = qobject_cast<QQuickWindow *>(instance);
+            if (!window)
+                qFatal("Could not cast instance to usable type.");
+
+            rootItem = window->contentItem();
+            window->hide();
+        }
 
         GraphicsSceneAdapter *adapter = new QtQuick2Adapter(rootItem);
 
