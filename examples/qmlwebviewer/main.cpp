@@ -97,27 +97,27 @@ protected:
         if (!instance)
             qFatal("Could not create instance of component.");
 
-        QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
-
+        GraphicsSceneAdapter *adapter = 0;
         QQuickItem *rootItem = qobject_cast<QQuickItem *>(instance);
-
         if (!rootItem)
         {
             QQuickWindow *window = qobject_cast<QQuickWindow *>(instance);
             if (!window)
                 qFatal("Could not cast instance to usable type.");
 
-            rootItem = window->contentItem();
-            window->hide();
+            adapter = new QtQuick2Adapter(window);
         }
-
-        GraphicsSceneAdapter *adapter = new QtQuick2Adapter(rootItem);
+        else
+            adapter = new QtQuick2Adapter(rootItem);
 
         // Install message handler for resize() commands on the item...
         new DeclarativeSceneSizeHandler(session, "main", adapter, true, rootItem);
 
         SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, adapter);
 #endif
+        QObject::connect(displaySessionManager, SIGNAL(destroyed()), adapter, SLOT(deleteLater()));
+        QObject::connect(session, SIGNAL(destroyed()), instance, SLOT(deleteLater()));
+        QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
 
         EncoderSettings &es = displaySessionManager->encoderSettings();
         es.patchEncodingFormat = EncoderSettings::EncodingFormat_Auto;
@@ -133,7 +133,6 @@ protected:
         cs.analyzeMoves = true;
 
         session->setLogic(rootItem);
-        QObject::connect(session, SIGNAL(destroyed()), instance, SLOT(deleteLater()));
     }
 };
 
@@ -143,6 +142,7 @@ int main(int argc, char *argv[])
     QApplication a(argc, argv);
 #else
     QGuiApplication a(argc, argv);
+    a.setQuitOnLastWindowClosed(false);
 #endif
 
     if (a.arguments().count() == 1)

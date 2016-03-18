@@ -79,7 +79,7 @@ class SingleGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySess
     Q_OBJECT
 public:
     SingleGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent, GraphicsSceneAdapter *adapter);
-    virtual ~SingleGraphicsSceneDisplaySessionManager() {}
+    virtual ~SingleGraphicsSceneDisplaySessionManager();
 
     GraphicsSceneAdapter *adapter() const { return adapter_; }
     GraphicsSceneWebControlCommandInterpreter *commandInterpreter() const { return commandInterpreter_; }
@@ -102,7 +102,7 @@ class MultiGraphicsSceneDisplaySessionManager : public GraphicsSceneDisplaySessi
     Q_OBJECT
 public:
     MultiGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent = 0);
-    virtual ~MultiGraphicsSceneDisplaySessionManager() {}
+    virtual ~MultiGraphicsSceneDisplaySessionManager();
 
 protected slots:
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params);

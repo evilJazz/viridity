@@ -8,6 +8,7 @@
 #include <QEvent>
 
 class QQuickItem;
+class QQuickWindow;
 class QOpenGLContext;
 class QOffscreenSurface;
 class QOpenGLFramebufferObject;
@@ -19,6 +20,7 @@ class QtQuick2Adapter : public GraphicsSceneAdapter
     Q_OBJECT
 public:
     QtQuick2Adapter(QQuickItem *rootItem);
+    QtQuick2Adapter(QQuickWindow *window);
     virtual ~QtQuick2Adapter();
 
     int width() const;
@@ -37,6 +39,8 @@ public:
     void render(QPainter *painter, const QVector<QRect> &rects);
 
 private slots:
+    void detachFromRootItem();
+
     void createFbo();
     void destroyFbo();
     void handleSceneChanged();
@@ -44,6 +48,7 @@ private slots:
 
 private:
     QQuickItem *rootItem_;
+    QQuickWindow *window_;
     QOpenGLContext *context_;
     QOffscreenSurface *offscreenSurface_;
     QOpenGLFramebufferObject *fbo_;
@@ -61,6 +66,8 @@ private:
 
     QPointF lastScenePos_;
     QPoint lastScreenPos_;
+
+    void init();
 
     void ensureBufferUpdated();
 

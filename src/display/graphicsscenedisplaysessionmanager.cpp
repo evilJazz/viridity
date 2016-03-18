@@ -277,8 +277,14 @@ SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManag
     GraphicsSceneDisplaySessionManager(session, parent),
     adapter_(adapter)
 {
+    DGUARDMETHODTIMED;
     commandInterpreter_ = new GraphicsSceneWebControlCommandInterpreter(this);
     commandInterpreter_->setTargetGraphicsSceneAdapter(adapter_);
+}
+
+SingleGraphicsSceneDisplaySessionManager::~SingleGraphicsSceneDisplaySessionManager()
+{
+    DGUARDMETHODTIMED;
 }
 
 GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)
@@ -295,7 +301,12 @@ GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayIns
 MultiGraphicsSceneDisplaySessionManager::MultiGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent) :
     GraphicsSceneDisplaySessionManager(session, parent)
 {
+    DGUARDMETHODTIMED;
+}
 
+MultiGraphicsSceneDisplaySessionManager::~MultiGraphicsSceneDisplaySessionManager()
+{
+    DGUARDMETHODTIMED;
 }
 
 GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)

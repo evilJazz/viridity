@@ -1,6 +1,7 @@
 #include "qtquick2adapter.h"
 
 #include <QQuickItem>
+#include <QQuickWindow>
 #include <QPainter>
 #include <QOpenGLContext>
 #include <QOpenGLFunctions>
@@ -33,15 +34,42 @@ public:
 /* QtQuick2Adapter */
 
 QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
-    GraphicsSceneAdapter(rootItem),
+    GraphicsSceneAdapter(NULL),
     rootItem_(rootItem),
+    window_(NULL),
     fbo_(0),
     updateRequired_(true),
     buttonDown_(false)
 {
+    DGUARDMETHODTIMED;
+
     if (!rootItem_)
         qFatal("Root item is not assigned.");
 
+    init();
+}
+
+QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
+    GraphicsSceneAdapter(NULL),
+    rootItem_(NULL),
+    window_(window),
+    fbo_(0),
+    updateRequired_(true),
+    buttonDown_(false)
+{
+    DGUARDMETHODTIMED;
+
+    if (!window_)
+        qFatal("Window is not assigned.");
+
+    rootItem_ = window_->contentItem();
+    window_->hide();
+
+    init();
+}
+
+void QtQuick2Adapter::init()
+{
     QSurfaceFormat format;
     // Qt Quick may need a depth and stencil buffer. Always make sure these are available.
     format.setDepthBufferSize(16);
@@ -75,6 +103,7 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
 
     // Parent the root item to the window's content item.
     rootItem_->setParentItem(quickWindow_->contentItem());
+    connect(rootItem_, &QQuickItem::destroyed, this, &QtQuick2Adapter::detachFromRootItem);
 
     // Update item and rendering related geometries.
     setSize(rootItem_->width(), rootItem_->height(), 1.f);
@@ -86,7 +115,35 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
 
 QtQuick2Adapter::~QtQuick2Adapter()
 {
-    rootItem_ = NULL;
+    DGUARDMETHODTIMED;
+
+    detachFromRootItem();
+
+    delete quickWindow_;
+    delete fbo_;
+
+    context_->doneCurrent();
+    delete offscreenSurface_;
+
+    delete context_;
+}
+
+void QtQuick2Adapter::detachFromRootItem()
+{
+    DGUARDMETHODTIMED;
+
+    if (rootItem_)
+    {
+        disconnect(rootItem_, &QQuickItem::destroyed, this, &QtQuick2Adapter::detachFromRootItem);
+
+        if (window_)
+            rootItem_->setParentItem(window_->contentItem());
+        else
+            rootItem_->setParentItem(NULL);
+
+        rootItem_ = NULL;
+        window_ = NULL;
+    }
 
     // Make sure the context is current while doing cleanup. Note that we use the
     // offscreen surface here because passing 'this' at this point is not safe: the
@@ -96,15 +153,11 @@ QtQuick2Adapter::~QtQuick2Adapter()
 
     // Delete the render control first since it will free the scenegraph resources.
     // Destroy the QQuickWindow only afterwards.
-    delete renderControl_;
-
-    delete quickWindow_;
-    delete fbo_;
-
-    context_->doneCurrent();
-    delete offscreenSurface_;
-
-    delete context_;
+    if (renderControl_)
+    {
+        delete renderControl_;
+        renderControl_ = NULL;
+    }
 }
 
 int QtQuick2Adapter::width() const
@@ -288,7 +341,7 @@ void QtQuick2Adapter::handleSceneChanged()
 
 void QtQuick2Adapter::updateBuffer()
 {
-    if (!context_->makeCurrent(offscreenSurface_))
+    if (!context_->makeCurrent(offscreenSurface_) || !renderControl_)
         return;
 
     // Polish, synchronize and render the next frame (into our fbo).  In this example
@@ -300,7 +353,6 @@ void QtQuick2Adapter::updateBuffer()
     renderControl_->render();
 
     buffer_ = fbo_->toImage();
-    //buffer_.save("/home/darkstar/Desktop/rendercontrol.bmp");
 
     quickWindow_->resetOpenGLState();
     QOpenGLFramebufferObject::bindDefault();
