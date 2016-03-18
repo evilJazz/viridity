@@ -162,32 +162,35 @@ void QtQuick2Adapter::detachFromRootItem()
 
 int QtQuick2Adapter::width() const
 {
-    return rootItem_->width();
+    return quickWindow_->width();
 }
 
 int QtQuick2Adapter::height() const
 {
-    return rootItem_->height();
+    return quickWindow_->height();
 }
 
 void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 {
-/*    if (!qFuzzyCompare(ratio, 1.f))
+    DGUARDMETHODTIMED;
+
+    dpr_ = ratio;
+
+    if (!qFuzzyCompare(ratio, 1.f))
     {
         rootItem_->setWidth(width / ratio);
         rootItem_->setHeight(height / ratio);
-
-        rootItem_->setTransformOrigin(QQuickItem::TopLeft);
-        rootItem_->setScale(ratio);
     }
     else
-*/
     {
         rootItem_->setWidth(width);
         rootItem_->setHeight(height);
     }
 
-    quickWindow_->setGeometry(0, 0, rootItem_->width(), rootItem_->height());
+    rootItem_->setTransformOrigin(QQuickItem::TopLeft);
+    rootItem_->setScale(ratio);
+
+    quickWindow_->setGeometry(0, 0, width, height);
 
     if (context_->makeCurrent(offscreenSurface_))
     {
@@ -315,14 +318,14 @@ void QtQuick2Adapter::render(QPainter *painter, const QVector<QRect> &rects)
 
 void QtQuick2Adapter::createFbo()
 {
-    //qreal dpr = qApp->devicePixelRatio();
-    qreal dpr = 1.f;
-    fbo_ = new QOpenGLFramebufferObject(rootItem_->width() * dpr, rootItem_->height() * dpr, QOpenGLFramebufferObject::CombinedDepthStencil);
+    DGUARDMETHODTIMED;
+    fbo_ = new QOpenGLFramebufferObject(quickWindow_->width(), quickWindow_->height(), QOpenGLFramebufferObject::CombinedDepthStencil);
     quickWindow_->setRenderTarget(fbo_);
 }
 
 void QtQuick2Adapter::destroyFbo()
 {
+    DGUARDMETHODTIMED;
     delete fbo_;
     fbo_ = 0;
 }
@@ -334,13 +337,15 @@ void QtQuick2Adapter::handleSceneChanged()
         updateRequired_ = true;
 
         QList<QRectF> rects;
-        rects << QRectF(QPoint(0, 0), rootItem_->boundingRect().size());
+        rects << QRectF(QPoint(0, 0), quickWindow_->size());
         emit sceneChanged(rects);
     }
 }
 
 void QtQuick2Adapter::updateBuffer()
 {
+    DGUARDMETHODTIMED;
+
     if (!context_->makeCurrent(offscreenSurface_) || !renderControl_)
         return;
 
@@ -364,6 +369,8 @@ void QtQuick2Adapter::updateBuffer()
 
 void QtQuick2Adapter::ensureBufferUpdated()
 {
+    DGUARDMETHODTIMED;
+
     if (updateRequired_)
     {
         QMetaObject::invokeMethod(

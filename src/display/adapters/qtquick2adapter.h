@@ -51,6 +51,7 @@ private:
     QQuickWindow *window_;
     QOpenGLContext *context_;
     QOffscreenSurface *offscreenSurface_;
+    qreal dpr_;
     QOpenGLFramebufferObject *fbo_;
     QQuickRenderControl *renderControl_;
     QQuickWindow *quickWindow_;

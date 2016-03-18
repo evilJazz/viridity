@@ -39,64 +39,47 @@ protected:
     void setLogic(ViriditySession *session)
     {
         DGUARDMETHODTIMED;
-
         // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
 
+        // Keep the engine in the main thread, do not parent to session as it is moved to a separate thread later on.
 #ifdef USE_QTQUICK1
         QDeclarativeEngine *engine = new QDeclarativeEngine();
+#else
+        QQmlEngine *engine = new QQmlEngine();
+#endif
 
+        // Initialize addons...
         KCLPlugin *kcl = new KCLPlugin;
         kcl->initializeEngine(engine, "KCL");
         kcl->registerTypes("KCL");
 
-        ViridityDeclarative::registerTypes();
-
         engine->rootContext()->setContextProperty("currentSession", session);
 
+#ifdef USE_QTQUICK1
         QDeclarativeComponent component(engine, QUrl::fromLocalFile(qmlFileName));
 
         if (component.status() != QDeclarativeComponent::Ready)
             qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
+#else
+        QQmlComponent component(engine, QUrl::fromLocalFile(qmlFileName));
+
+        if (component.status() != QQmlComponent::Ready)
+            qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
+#endif
 
         QObject *instance = component.create();
 
         if (!instance)
             qFatal("Could not create instance of component.");
 
-        QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
-
+#ifdef USE_QTQUICK1
         QDeclarativeItem *rootItem = qobject_cast<QDeclarativeItem *>(instance);
 
         QGraphicsScene *scene = new QGraphicsScene(engine);
         scene->addItem(rootItem);
 
         GraphicsSceneAdapter *adapter = new QtQuick1Adapter(rootItem);
-
-        // Install message handler for resize() commands on the item...
-        new DeclarativeSceneSizeHandler(session, "main", adapter, true, rootItem);
-
-        SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, adapter);
 #else
-        QQmlEngine *engine = new QQmlEngine();
-
-        KCLPlugin *kcl = new KCLPlugin;
-        kcl->initializeEngine(engine, "KCL");
-        kcl->registerTypes("KCL");
-
-        ViridityDeclarative::registerTypes();
-
-        engine->rootContext()->setContextProperty("currentSession", session);
-
-        QQmlComponent component(engine, QUrl::fromLocalFile(qmlFileName));
-
-        if (component.status() != QQmlComponent::Ready)
-            qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
-
-        QObject *instance = component.create();
-
-        if (!instance)
-            qFatal("Could not create instance of component.");
-
         GraphicsSceneAdapter *adapter = 0;
         QQuickItem *rootItem = qobject_cast<QQuickItem *>(instance);
         if (!rootItem)
@@ -109,12 +92,14 @@ protected:
         }
         else
             adapter = new QtQuick2Adapter(rootItem);
+#endif
 
         // Install message handler for resize() commands on the item...
         new DeclarativeSceneSizeHandler(session, "main", adapter, true, rootItem);
 
         SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, adapter);
-#endif
+
+        // Take care of our created instances because they are not parented and live in the main thread.
         QObject::connect(displaySessionManager, SIGNAL(destroyed()), adapter, SLOT(deleteLater()));
         QObject::connect(session, SIGNAL(destroyed()), instance, SLOT(deleteLater()));
         QObject::connect(instance, SIGNAL(destroyed()), engine, SLOT(deleteLater()));
@@ -144,6 +129,8 @@ int main(int argc, char *argv[])
     QGuiApplication a(argc, argv);
     a.setQuitOnLastWindowClosed(false);
 #endif
+
+    ViridityDeclarative::registerTypes();
 
     if (a.arguments().count() == 1)
         qFatal("Usage: %s <QML-file to serve> [port] [HTML-directory to serve]", QFileInfo(a.applicationFilePath()).fileName().toUtf8().constData());
