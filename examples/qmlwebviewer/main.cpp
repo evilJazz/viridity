@@ -107,7 +107,7 @@ protected:
         EncoderSettings &es = displaySessionManager->encoderSettings();
         es.patchEncodingFormat = EncoderSettings::EncodingFormat_Auto;
         es.alphaChannelEnabled = true;
-        es.inlineMaxBytes = 0;
+        es.inlineMaxBytes = -1;
         es.compressionLevel = 1;
         es.jpegQuality = 50;
         es.useMultithreading = true;
@@ -115,7 +115,9 @@ protected:
         ComparerSettings &cs = displaySessionManager->comparerSettings();
         cs.tileWidth = 64;
         cs.useMultithreading = true;
-        cs.analyzeMoves = true;
+        cs.analyzeMoves = false;
+        cs.minifyTiles = true;
+        cs.minifyTileCountThreshold = 10;
 
         session->setLogic(rootItem);
     }

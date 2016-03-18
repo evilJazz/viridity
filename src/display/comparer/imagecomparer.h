@@ -22,6 +22,8 @@ struct ComparerSettings
     ComparerSettings() :
         tileWidth(32),
         useMultithreading(true),
+        minifyTiles(true),
+        minifyTileCountThreshold(10),
         analyzeFills(true),
         analyzeMoves(true),
         fineGrainedMoves(false)
@@ -30,6 +32,9 @@ struct ComparerSettings
     int tileWidth;
 
     bool useMultithreading;
+
+    bool minifyTiles;
+    int minifyTileCountThreshold;
 
     bool analyzeFills;
     bool analyzeMoves;
@@ -52,7 +57,7 @@ public:
 
 protected:
     friend struct MapProcessRect;
-    bool processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas = NULL);
+    bool processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas = NULL, bool useMinifiedTile = true);
 
 private:
     friend class ImageComparerTest;

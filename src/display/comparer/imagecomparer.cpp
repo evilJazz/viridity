@@ -66,9 +66,10 @@ QVector<QRect> ImageComparer::findDifferences()
 
 struct MapProcessRect
 {
-    MapProcessRect(ImageComparer *comparer, QVector<QRect> *additionalSearchAreas) :
+    MapProcessRect(ImageComparer *comparer, QVector<QRect> *additionalSearchAreas, bool useMinifiedTile) :
         comparer(comparer),
-        additionalSearchAreas(additionalSearchAreas)
+        additionalSearchAreas(additionalSearchAreas),
+        useMinifiedTile(useMinifiedTile)
     {
     }
 
@@ -77,7 +78,7 @@ struct MapProcessRect
     UpdateOperation operator()(const QRect &rect)
     {
         UpdateOperation op;
-        if (!comparer->processRect(rect, op))
+        if (!comparer->processRect(rect, op, additionalSearchAreas, useMinifiedTile))
             op.type = uotNoOp;
 
         return op;
@@ -85,6 +86,7 @@ struct MapProcessRect
 
     ImageComparer *comparer;
     QVector<QRect> *additionalSearchAreas;
+    bool useMinifiedTile;
 };
 
 void reduceProcessRectToList(UpdateOperationList &list, const UpdateOperation &op)
@@ -136,15 +138,17 @@ UpdateOperationList ImageComparer::findUpdateOperations(const QRect &searchArea,
         tiles = TileOperations::splitRectIntoTiles(minSearchRect, settings_.tileWidth, settings_.tileWidth);
     }
 
+    bool useMinifiedTile = settings_.minifyTiles && (settings_.minifyTileCountThreshold == -1 || tiles.count() <= settings_.minifyTileCountThreshold);
+
     if (settings_.useMultithreading)
     {
-        result += QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this, additionalSearchAreas), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
+        result += QtConcurrent::blockingMappedReduced(tiles, MapProcessRect(this, additionalSearchAreas, useMinifiedTile), &reduceProcessRectToList, QtConcurrent::UnorderedReduce);
     }
     else
     {
         foreach (const QRect &rect, tiles)
         {
-            if (processRect(rect, op, additionalSearchAreas))
+            if (processRect(rect, op, additionalSearchAreas, useMinifiedTile))
                 result.append(op);
         }
     }
@@ -165,13 +169,16 @@ void ImageComparer::swap()
         moveAnalyzer_->swap();
 }
 
-bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas)
+bool ImageComparer::processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas, bool useMinifiedTile)
 {
     QReadLocker l(&settingsMREW_);
 
     QRect minRect = ImageAux::findChangedRect32(imageBefore_, imageAfter_, rect);
     if (minRect.isEmpty())
         return false;
+
+    if (!useMinifiedTile)
+        minRect = rect;
 
     if (settings_.analyzeFills)
     {
