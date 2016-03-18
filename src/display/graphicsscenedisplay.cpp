@@ -181,15 +181,8 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
     bool hasAlphaValues = encoderSettings_.alphaChannelEnabled && ImageUtils::hasAlphaValues(renderer_->buffer(), rectEnlarged);
     QImage image;
 
-    if (hasAlphaValues)
-    {
-        image = QImage(rectEnlarged.size(), QImage::Format_ARGB32);
-        image.fill(0);
-    }
-    else
-    {
-        image = QImage(rectEnlarged.size(), QImage::Format_RGB888);
-    }
+    image = QImage(rectEnlarged.size(), hasAlphaValues ? QImage::Format_ARGB32 : QImage::Format_RGB888);
+    image.fill(0);
 
     QPainter p;
     p.begin(&image);
