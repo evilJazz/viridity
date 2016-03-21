@@ -1,4 +1,5 @@
 #include <QApplication>
+#include <QFileInfo>
 
 #include "display/tools/graphicsscenedisplayplayer.h"
 
@@ -17,7 +18,7 @@ int main(int argc, char *argv[])
     }
     else
     {
-        qFatal("Please specify a filename.");
+        qFatal("Usage: %s <Dump-file to play>", QFileInfo(a.applicationFilePath()).fileName().toUtf8().constData());
         return 1;
     }
 }
