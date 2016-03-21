@@ -27,7 +27,7 @@ CONFIG(release, debug|release) {
 include(../../3rdparty/kcl/kcl.pri)
 include(../../3rdparty/tufao/tufao-min.pri)
 
-CONFIG += viridity_module_display_tools
+CONFIG += viridity_module_display_tools viridity_module_display_qtquick1
 include(../../viridity.pri)
 
 RESOURCES += \

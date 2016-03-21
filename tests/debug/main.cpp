@@ -12,6 +12,7 @@
 #include "viriditydatabridge.h"
 #include "graphicsscenedisplaysessionmanager.h"
 #include "declarativescenesizehandler.h"
+#include "display/adapters/qtquick1adapter.h"
 #include "handlers/filerequesthandler.h"
 #include "handlers/fileuploadhandler.h"
 
@@ -52,7 +53,7 @@ protected slots:
         return display;
     }
 
-    virtual QGraphicsScene *getScene(const QString &id, const QStringList &params)
+    virtual GraphicsSceneAdapter *getAdapter(const QString &id, const QStringList &params)
     {
         // RUNS IN MAIN THREAD!
 
@@ -69,19 +70,21 @@ protected slots:
 
         QDeclarativeItem *item = qobject_cast<QDeclarativeItem *>(instance);
 
-        // Install message handler for resize() commands on the item...
-        new DeclarativeSceneSizeHandler(session(), id, item, item);
-
         QGraphicsScene *scene = new QGraphicsScene(engine);
         scene->addItem(item);
 
-        return scene;
+        QtQuick1Adapter *adapter = new QtQuick1Adapter(item);
+
+        // Install message handler for resize() commands on the item...
+        new DeclarativeSceneSizeHandler(session(), id, adapter, true);
+
+        return adapter;
     }
 
-    virtual void tearDownScene(const QString &id, QGraphicsScene *scene)
+    virtual void tearDownAdapter(const QString &id, GraphicsSceneAdapter *adapter)
     {
         // RUNS IN MAIN THREAD!
-        delete scene;
+        delete adapter;
     }
 };
 
