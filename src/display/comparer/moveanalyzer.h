@@ -5,6 +5,7 @@
 
 #include <QObject>
 #include <QVector>
+#include <QVector2D>
 #include <QRect>
 #include <QImage>
 #include <QMutex>
@@ -19,7 +20,7 @@ typedef QList<MoveOperation> MoveOperationList;
 
 struct VectorEstimate
 {
-    QPoint vector;
+    QVector2D vector;
     int extentX;
     int extentY;
 

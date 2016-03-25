@@ -133,7 +133,7 @@ QRect MoveAnalyzer::processRect(const QRect &rect, QVector<QRect> *additionalSea
             foreach (const VectorEstimate &moveVector, list)
             {
                 movedRectSearchArea = rect;
-                movedRectSearchArea.translate(-moveVector.vector);
+                movedRectSearchArea.translate(-moveVector.vector.toPoint());
                 if (moveVector.extentX > 0 || moveVector.extentY > 0)
                     movedRectSearchArea.adjust(-moveVector.extentX, -moveVector.extentY, moveVector.extentX, moveVector.extentY);
 
@@ -183,7 +183,7 @@ QRect MoveAnalyzer::processRect(const QRect &rect, QVector<QRect> *additionalSea
         if (!movedSrcRect.isEmpty())
         {
             VectorEstimate currentMoveVector;
-            currentMoveVector.vector = rect.topLeft() - movedSrcRect.topLeft();
+            currentMoveVector.vector = QVector2D(rect.topLeft() - movedSrcRect.topLeft());
             currentMoveVector.extentX = 0;
             currentMoveVector.extentY = 0;
 
