@@ -29,8 +29,8 @@ public:
     explicit GraphicsSceneBufferRenderer(QObject *parent = 0);
     virtual ~GraphicsSceneBufferRenderer();
 
-    void setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter);
-    GraphicsSceneAdapter *targetGraphicsSceneAdapter() const { return adapter_; }
+    void setTargetGraphicsSceneAdapter(AbstractGraphicsSceneAdapter *adapter);
+    AbstractGraphicsSceneAdapter *targetGraphicsSceneAdapter() const { return adapter_; }
 
     void setMinimizeDamageRegion(bool value);
     bool minimizeDamageRegion() { return minimizeDamageRegion_; }
@@ -60,7 +60,7 @@ protected slots:
     void sceneDestroyed();
 
 protected:
-    GraphicsSceneAdapter *adapter_;
+    AbstractGraphicsSceneAdapter *adapter_;
 
     bool minimizeDamageRegion_;
     bool updatesAvailable_;

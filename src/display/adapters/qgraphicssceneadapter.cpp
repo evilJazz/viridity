@@ -23,7 +23,7 @@ public:
 /* QGraphicsSceneAdapter */
 
 QGraphicsSceneAdapter::QGraphicsSceneAdapter(QGraphicsScene *scene) :
-    GraphicsSceneAdapter(scene),
+    AbstractGraphicsSceneAdapter(scene),
     scene_(scene),
     buttonDown_(false)
 {

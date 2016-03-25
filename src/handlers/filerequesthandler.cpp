@@ -123,7 +123,7 @@ void FileRequestHandler::handleRequest(ViridityHttpServerRequest *request, Virid
         {
             response->writeHead(ViridityHttpServerResponse::OK);
             response->headers().insert("Content-Type", contentType);
-            ViridityWebServer::addNoCachingResponseHeaders(response);
+            response->addNoCachingResponseHeaders();
             response->end(file.readAll());
             return;
         }

@@ -1,24 +1,25 @@
-#ifndef GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H
-#define GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H
+#ifndef GRAPHICSSCENEDISPLAYCOMMANDINTERPRETER_H
+#define GRAPHICSSCENEDISPLAYCOMMANDINTERPRETER_H
 
 #include "viridity_global.h"
 
 #include <QObject>
 #include <QEvent>
+#include <QPoint>
 
 #include "viriditysessionmanager.h"
 
-class GraphicsSceneAdapter;
+class AbstractGraphicsSceneAdapter;
 
-class GraphicsSceneWebControlCommandInterpreter : public QObject, public ViridityMessageHandler
+class GraphicsSceneDisplayCommandInterpreter : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
 public:
-    explicit GraphicsSceneWebControlCommandInterpreter(QObject *parent = 0);
-    virtual ~GraphicsSceneWebControlCommandInterpreter();
+    explicit GraphicsSceneDisplayCommandInterpreter(QObject *parent = 0);
+    virtual ~GraphicsSceneDisplayCommandInterpreter();
 
-    void setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter);
-    GraphicsSceneAdapter *targetGraphicsSceneAdapter() const { return adapter_; }
+    void setTargetGraphicsSceneAdapter(AbstractGraphicsSceneAdapter *adapter);
+    AbstractGraphicsSceneAdapter *targetGraphicsSceneAdapter() const { return adapter_; }
 
 protected:
     // ViridityMessageHandler
@@ -26,7 +27,7 @@ protected:
     Q_INVOKABLE virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId);
 
 private:
-    GraphicsSceneAdapter *adapter_;
+    AbstractGraphicsSceneAdapter *adapter_;
 
     bool keyDownKeyCodeHandled_;
     int keyDownKeyCode_;
@@ -40,4 +41,4 @@ private:
     QString textForKey(int key, Qt::KeyboardModifier modifiers);
 };
 
-#endif // GRAPHICSSCENEWEBCONTROLCOMMANDINTERPRETER_H
+#endif // GRAPHICSSCENEDISPLAYCOMMANDINTERPRETER_H

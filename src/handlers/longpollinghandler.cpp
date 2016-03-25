@@ -94,7 +94,7 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
     }
     else // start new connection
     {
-        session = server()->sessionManager()->getNewSession(ViridityWebServer::getPeerAddressFromRequest(request));
+        session = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
         DPRINTF("NEW SESSION: %s", session->id().toLatin1().constData());
 
@@ -141,7 +141,7 @@ void LongPollingHandler::pushMessageAndEnd(ViridityHttpServerResponse *response,
 {
     response->writeHead(ViridityHttpServerResponse::OK);
     response->headers().insert("Content-Type", "text/plain; charset=utf8");
-    ViridityWebServer::addNoCachingResponseHeaders(response);
+    response->addNoCachingResponseHeaders();
     response->end(msg);
 }
 

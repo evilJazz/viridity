@@ -67,7 +67,7 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
         }
         else
         {
-            session_ = server()->sessionManager()->getNewSession(ViridityWebServer::getPeerAddressFromRequest(request));
+            session_ = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
             connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 

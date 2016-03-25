@@ -1,4 +1,4 @@
-#include "graphicsscenewebcontrolcommandinterpreter.h"
+#include "graphicsscenedisplaycommandinterpreter.h"
 
 #include <QCoreApplication>
 #include <QEvent>
@@ -12,25 +12,25 @@
 #endif
 #include "KCL/debug.h"
 
-/* GraphicsSceneWebControlCommandInterpreter */
+/* GraphicsSceneDisplayCommandInterpreter */
 
-GraphicsSceneWebControlCommandInterpreter::GraphicsSceneWebControlCommandInterpreter(QObject *parent) :
+GraphicsSceneDisplayCommandInterpreter::GraphicsSceneDisplayCommandInterpreter(QObject *parent) :
     QObject(parent),
     adapter_(NULL),
     keyDownKeyCodeHandled_(false)
 {
 }
 
-GraphicsSceneWebControlCommandInterpreter::~GraphicsSceneWebControlCommandInterpreter()
+GraphicsSceneDisplayCommandInterpreter::~GraphicsSceneDisplayCommandInterpreter()
 {
 }
 
-void GraphicsSceneWebControlCommandInterpreter::setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter)
+void GraphicsSceneDisplayCommandInterpreter::setTargetGraphicsSceneAdapter(AbstractGraphicsSceneAdapter *adapter)
 {
     adapter_ = adapter;
 }
 
-Qt::KeyboardModifier GraphicsSceneWebControlCommandInterpreter::parseParamKeyboardModifiers(const QStringList &params, int index)
+Qt::KeyboardModifier GraphicsSceneDisplayCommandInterpreter::parseParamKeyboardModifiers(const QStringList &params, int index)
 {
     if (index < params.count())
     {
@@ -44,7 +44,7 @@ Qt::KeyboardModifier GraphicsSceneWebControlCommandInterpreter::parseParamKeyboa
     return Qt::NoModifier;
 }
 
-Qt::MouseButton GraphicsSceneWebControlCommandInterpreter::parseParamMouseButton(const QStringList &params, int index)
+Qt::MouseButton GraphicsSceneDisplayCommandInterpreter::parseParamMouseButton(const QStringList &params, int index)
 {
     if (index < params.count())
     {
@@ -73,7 +73,7 @@ Qt::MouseButton GraphicsSceneWebControlCommandInterpreter::parseParamMouseButton
     return Qt::NoButton;
 }
 
-QPoint GraphicsSceneWebControlCommandInterpreter::parseParamPoint(const QStringList &params, int startIndex)
+QPoint GraphicsSceneDisplayCommandInterpreter::parseParamPoint(const QStringList &params, int startIndex)
 {
     if (startIndex < params.count() - 1)
     {
@@ -90,7 +90,7 @@ QPoint GraphicsSceneWebControlCommandInterpreter::parseParamPoint(const QStringL
     return QPoint();
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &command, const QStringList &params)
+bool GraphicsSceneDisplayCommandInterpreter::handleMouseEvent(const QString &command, const QStringList &params)
 {
     QPoint screenPos(parseParamPoint(params, 0));
     QPointF scenePos(screenPos);
@@ -140,7 +140,7 @@ bool GraphicsSceneWebControlCommandInterpreter::handleMouseEvent(const QString &
     }
 }
 
-QString GraphicsSceneWebControlCommandInterpreter::textForKey(int key, Qt::KeyboardModifier modifiers)
+QString GraphicsSceneDisplayCommandInterpreter::textForKey(int key, Qt::KeyboardModifier modifiers)
 {
     QString text = QChar(key);
     if (modifiers & Qt::ShiftModifier)
@@ -151,7 +151,7 @@ QString GraphicsSceneWebControlCommandInterpreter::textForKey(int key, Qt::Keybo
     return text;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &command, const QStringList &params)
+bool GraphicsSceneDisplayCommandInterpreter::handleKeyEvent(const QString &command, const QStringList &params)
 {
     int key = params[0].toInt();
 
@@ -242,14 +242,14 @@ bool GraphicsSceneWebControlCommandInterpreter::handleKeyEvent(const QString &co
     return true;
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool GraphicsSceneDisplayCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     return message.startsWith("mouse") ||
            message.startsWith("key") ||
            message.startsWith("contextMenu");
 }
 
-bool GraphicsSceneWebControlCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool GraphicsSceneDisplayCommandInterpreter::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     if (!adapter_)
         return false;

@@ -41,7 +41,7 @@ GraphicsSceneBufferRenderer::~GraphicsSceneBufferRenderer()
         delete comparer_;
 }
 
-void GraphicsSceneBufferRenderer::setTargetGraphicsSceneAdapter(GraphicsSceneAdapter *adapter)
+void GraphicsSceneBufferRenderer::setTargetGraphicsSceneAdapter(AbstractGraphicsSceneAdapter *adapter)
 {
     if (adapter != adapter_)
     {

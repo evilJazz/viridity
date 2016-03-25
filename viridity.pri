@@ -58,9 +58,9 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/comparer/imagecompareroptools.h \
         $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.h \
         $$VIRIDITY_SRC_PATH/display/comparer/tiles.h \
-        $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.h \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaycommandinterpreter.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.h \
-        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.h \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaymanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
         $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.h  \
         $$VIRIDITY_SRC_PATH/display/graphicssceneadapter.h
@@ -71,9 +71,9 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/comparer/imagecompareroptools.cpp \
         $$VIRIDITY_SRC_PATH/display/comparer/moveanalyzer.cpp \
         $$VIRIDITY_SRC_PATH/display/comparer/tiles.cpp \
-        $$VIRIDITY_SRC_PATH/display/graphicsscenewebcontrolcommandinterpreter.cpp \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaycommandinterpreter.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.cpp \
-        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.cpp \
+        $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaymanager.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.cpp  \
         $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.cpp
 

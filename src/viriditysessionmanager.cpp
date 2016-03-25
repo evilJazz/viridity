@@ -56,7 +56,7 @@ void ViridityMessageHandler::splitMessage(const QByteArray &message, QString &co
 
 /* ViriditySession */
 
-ViriditySession::ViriditySession(ViriditySessionManager *sessionManager, const QString &id) :
+ViriditySession::ViriditySession(AbstractViriditySessionManager *sessionManager, const QString &id) :
     QObject(), // No parent since we move this object into different thread later on...
     sessionManager_(sessionManager),
     id_(id),
@@ -235,7 +235,7 @@ void ViriditySession::unregisterRequestHandler(ViridityRequestHandler *handler)
 
 /* ViriditySessionManager */
 
-ViriditySessionManager::ViriditySessionManager(QObject *parent) :
+AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) :
     QObject(parent),
     server_(NULL),
     sessionMutex_(QMutex::Recursive)
@@ -246,12 +246,12 @@ ViriditySessionManager::ViriditySessionManager(QObject *parent) :
     cleanupTimer_->start(5000);
 }
 
-ViriditySessionManager::~ViriditySessionManager()
+AbstractViriditySessionManager::~AbstractViriditySessionManager()
 {
     DGUARDMETHODTIMED;
 }
 
-ViriditySession *ViriditySessionManager::getNewSession(const QByteArray &initialPeerAddress)
+ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray &initialPeerAddress)
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&sessionMutex_);
@@ -282,7 +282,7 @@ ViriditySession *ViriditySessionManager::getNewSession(const QByteArray &initial
         return NULL;
 }
 
-void ViriditySessionManager::removeSession(ViriditySession *session)
+void AbstractViriditySessionManager::removeSession(ViriditySession *session)
 {
     QMutexLocker l(&sessionMutex_);
     sessions_.remove(session->id());
@@ -290,17 +290,17 @@ void ViriditySessionManager::removeSession(ViriditySession *session)
     QMetaObject::invokeMethod(session, "deleteLater");
 }
 
-ViriditySession *ViriditySessionManager::createNewSessionInstance(const QString &id)
+ViriditySession *AbstractViriditySessionManager::createNewSessionInstance(const QString &id)
 {
     ViriditySession *session = new ViriditySession(this, id);
     return session;
 }
 
-void ViriditySessionManager::registerHandlers(ViriditySession *session)
+void AbstractViriditySessionManager::registerHandlers(ViriditySession *session)
 {
 }
 
-ViriditySession *ViriditySessionManager::getSession(const QString &id)
+ViriditySession *AbstractViriditySessionManager::getSession(const QString &id)
 {
     QMutexLocker l(&sessionMutex_);
     if (sessions_.contains(id))
@@ -309,7 +309,7 @@ ViriditySession *ViriditySessionManager::getSession(const QString &id)
     return NULL;
 }
 
-ViriditySession *ViriditySessionManager::acquireSession(const QString &id)
+ViriditySession *AbstractViriditySessionManager::acquireSession(const QString &id)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -324,7 +324,7 @@ ViriditySession *ViriditySessionManager::acquireSession(const QString &id)
     return session;
 }
 
-void ViriditySessionManager::releaseSession(ViriditySession *session)
+void AbstractViriditySessionManager::releaseSession(ViriditySession *session)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -335,7 +335,7 @@ void ViriditySessionManager::releaseSession(ViriditySession *session)
     }
 }
 
-ViriditySession *ViriditySessionManager::createSession(const QString &id, const QByteArray &initialPeerAddress)
+ViriditySession *AbstractViriditySessionManager::createSession(const QString &id, const QByteArray &initialPeerAddress)
 {
     DGUARDMETHODTIMED;
     ViriditySession *session = createNewSessionInstance(id);
@@ -349,7 +349,7 @@ ViriditySession *ViriditySessionManager::createSession(const QString &id, const 
     return session;
 }
 
-QStringList ViriditySessionManager::sessionIds(QObject *logic)
+QStringList AbstractViriditySessionManager::sessionIds(QObject *logic)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -364,7 +364,7 @@ QStringList ViriditySessionManager::sessionIds(QObject *logic)
     return result;
 }
 
-bool ViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId)
+bool AbstractViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -397,7 +397,7 @@ bool ViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message
     return result;
 }
 
-bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId)
+bool AbstractViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -418,7 +418,7 @@ bool ViriditySessionManager::dispatchMessageToClientMatchingLogic(const QByteArr
     return dispatched > 0;
 }
 
-bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool AbstractViriditySessionManager::dispatchMessageToClient(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     QMutexLocker l(&sessionMutex_);
 
@@ -455,7 +455,7 @@ bool ViriditySessionManager::dispatchMessageToClient(const QByteArray &message, 
     return dispatched > 0;
 }
 
-void ViriditySessionManager::killExpiredSessions()
+void AbstractViriditySessionManager::killExpiredSessions()
 {
     if (sessionMutex_.tryLock())
     {

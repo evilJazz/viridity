@@ -34,7 +34,7 @@ public:
 /* QtQuick2Adapter */
 
 QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
-    GraphicsSceneAdapter(NULL),
+    AbstractGraphicsSceneAdapter(NULL),
     rootItem_(rootItem),
     window_(NULL),
     fbo_(0),
@@ -50,7 +50,7 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
 }
 
 QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
-    GraphicsSceneAdapter(NULL),
+    AbstractGraphicsSceneAdapter(NULL),
     rootItem_(NULL),
     window_(window),
     fbo_(0),

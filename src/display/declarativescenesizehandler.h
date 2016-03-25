@@ -10,7 +10,7 @@ class DeclarativeSceneSizeHandler : public QObject, public ViridityMessageHandle
 {
     Q_OBJECT
 public:
-    explicit DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, GraphicsSceneAdapter *adapter, bool scaleItem = false, QObject *parent = 0);
+    explicit DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, AbstractGraphicsSceneAdapter *adapter, bool scaleItem = false, QObject *parent = 0);
     virtual ~DeclarativeSceneSizeHandler();
 
     QString id() const { return id_; }
@@ -31,7 +31,7 @@ private slots:
 private:
     ViriditySession *session_;
     QString id_;
-    GraphicsSceneAdapter *adapter_;
+    AbstractGraphicsSceneAdapter *adapter_;
     bool scaleItem_;
 };
 

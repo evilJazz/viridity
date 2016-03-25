@@ -1,6 +1,6 @@
 #include "patchrequesthandler.h"
 
-#include "graphicsscenedisplaysessionmanager.h"
+#include "graphicsscenedisplaymanager.h"
 #include "graphicsscenedisplay.h"
 
 #include "viriditywebserver.h"
@@ -50,7 +50,7 @@ void PatchRequestHandler::handleRequest(ViridityHttpServerRequest *request, Viri
 
         QString displayId = patchId.split('_')[0];
 
-        foreach (GraphicsSceneDisplaySessionManager *sm, GraphicsSceneDisplaySessionManager::activeSessionManagers())
+        foreach (AbstractGraphicsSceneDisplayManager *sm, AbstractGraphicsSceneDisplayManager::activeDisplayManagers())
         {
             if (sm->session() == session)
             {
@@ -65,7 +65,7 @@ void PatchRequestHandler::handleRequest(ViridityHttpServerRequest *request, Viri
                     {
                         response->writeHead(ViridityHttpServerResponse::OK);
                         response->headers().insert("Content-Type", patch->mimeType.constData());
-                        ViridityWebServer::addNoCachingResponseHeaders(response);
+                        response->addNoCachingResponseHeaders();
                         response->end(patch->data);
 
                         delete patch;

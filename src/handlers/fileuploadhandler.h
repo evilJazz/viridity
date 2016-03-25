@@ -2,6 +2,7 @@
 #define FILEUPLOADHANDLER_H
 
 #include <QObject>
+#include <QVariantList>
 
 #include "viridityrequesthandler.h"
 

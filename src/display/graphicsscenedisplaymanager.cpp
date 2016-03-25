@@ -1,4 +1,4 @@
-#include "graphicsscenedisplaysessionmanager.h"
+#include "graphicsscenedisplaymanager.h"
 
 #include <QCoreApplication>
 
@@ -33,14 +33,14 @@ public:
         manager->tearDownDisplayInstance(display);
     }
 
-    GraphicsSceneDisplaySessionManager *manager;
+    AbstractGraphicsSceneDisplayManager *manager;
 };
 
-/* GraphicsSceneDisplaySessionManager */
+/* AbstractGraphicsSceneDisplayManager */
 
-QList<GraphicsSceneDisplaySessionManager *> GraphicsSceneDisplaySessionManager::activeSessionManagers_;
+QList<AbstractGraphicsSceneDisplayManager *> AbstractGraphicsSceneDisplayManager::activeDisplayManagers_;
 
-GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent) :
+AbstractGraphicsSceneDisplayManager::AbstractGraphicsSceneDisplayManager(ViriditySession *session, QObject *parent) :
     QObject(parent),
     session_(session),
     displayMutex_(QMutex::Recursive)
@@ -50,7 +50,7 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViridityS
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
     cleanupTimer_->start(10000);
 
-    activeSessionManagers_.append(this);
+    activeDisplayManagers_.append(this);
 
     mainThreadGateway_ = new MainThreadGateway();
     mainThreadGateway_->manager = this;
@@ -63,7 +63,7 @@ GraphicsSceneDisplaySessionManager::GraphicsSceneDisplaySessionManager(ViridityS
     connect(session, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
 }
 
-GraphicsSceneDisplaySessionManager::~GraphicsSceneDisplaySessionManager()
+AbstractGraphicsSceneDisplayManager::~AbstractGraphicsSceneDisplayManager()
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
@@ -74,19 +74,19 @@ GraphicsSceneDisplaySessionManager::~GraphicsSceneDisplaySessionManager()
         session_->unregisterRequestHandler(patchRequestHandler_);
     }
 
-    activeSessionManagers_.removeAll(this);
+    activeDisplayManagers_.removeAll(this);
 
     killAllDisplays();
 
     QMetaObject::invokeMethod(mainThreadGateway_, "deleteLater");
 }
 
-void GraphicsSceneDisplaySessionManager::handleSessionDestroyed()
+void AbstractGraphicsSceneDisplayManager::handleSessionDestroyed()
 {
     session_ = NULL;
 }
 
-GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay(const QString &id, const QStringList &params)
+GraphicsSceneDisplay *AbstractGraphicsSceneDisplayManager::getNewDisplay(const QString &id, const QStringList &params)
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
@@ -118,7 +118,7 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getNewDisplay(const QS
     return display;
 }
 
-void GraphicsSceneDisplaySessionManager::removeDisplay(GraphicsSceneDisplay *display)
+void AbstractGraphicsSceneDisplayManager::removeDisplay(GraphicsSceneDisplay *display)
 {
     QMutexLocker l(&displayMutex_);
     displays_.remove(display->id());
@@ -133,11 +133,11 @@ void GraphicsSceneDisplaySessionManager::removeDisplay(GraphicsSceneDisplay *dis
     delete display;
 }
 
-void GraphicsSceneDisplaySessionManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
+void AbstractGraphicsSceneDisplayManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
 {
 }
 
-bool GraphicsSceneDisplaySessionManager::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool AbstractGraphicsSceneDisplayManager::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     QMutexLocker l(&displayMutex_);
     return
@@ -145,7 +145,7 @@ bool GraphicsSceneDisplaySessionManager::canHandleMessage(const QByteArray &mess
         (displays_.contains(targetId) && static_cast<ViridityMessageHandler *>(displays_.value(targetId))->canHandleMessage(message, sessionId, targetId));
 }
 
-bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool AbstractGraphicsSceneDisplayManager::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
@@ -200,7 +200,7 @@ bool GraphicsSceneDisplaySessionManager::handleMessage(const QByteArray &message
     return false;
 }
 
-void GraphicsSceneDisplaySessionManager::handleDisplayUpdateAvailable()
+void AbstractGraphicsSceneDisplayManager::handleDisplayUpdateAvailable()
 {
     DGUARDMETHODTIMED;
     GraphicsSceneDisplay *display = qobject_cast<GraphicsSceneDisplay *>(sender());
@@ -208,7 +208,7 @@ void GraphicsSceneDisplaySessionManager::handleDisplayUpdateAvailable()
         session_->handlerIsReadyForDispatch(display);
 }
 
-GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getDisplay(const QString &id)
+GraphicsSceneDisplay *AbstractGraphicsSceneDisplayManager::getDisplay(const QString &id)
 {
     QMutexLocker l(&displayMutex_);
     if (displays_.contains(id))
@@ -217,7 +217,7 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::getDisplay(const QStri
     return NULL;
 }
 
-GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::acquireDisplay(const QString &id)
+GraphicsSceneDisplay *AbstractGraphicsSceneDisplayManager::acquireDisplay(const QString &id)
 {
     QMutexLocker l(&displayMutex_);
 
@@ -233,7 +233,7 @@ GraphicsSceneDisplay *GraphicsSceneDisplaySessionManager::acquireDisplay(const Q
     return display;
 }
 
-void GraphicsSceneDisplaySessionManager::releaseDisplay(GraphicsSceneDisplay *display)
+void AbstractGraphicsSceneDisplayManager::releaseDisplay(GraphicsSceneDisplay *display)
 {
     QMutexLocker l(&displayMutex_);
 
@@ -245,12 +245,12 @@ void GraphicsSceneDisplaySessionManager::releaseDisplay(GraphicsSceneDisplay *di
     }
 }
 
-QList<GraphicsSceneDisplaySessionManager *> GraphicsSceneDisplaySessionManager::activeSessionManagers()
+QList<AbstractGraphicsSceneDisplayManager *> AbstractGraphicsSceneDisplayManager::activeDisplayManagers()
 {
-    return activeSessionManagers_;
+    return activeDisplayManagers_;
 }
 
-void GraphicsSceneDisplaySessionManager::killObsoleteDisplays()
+void AbstractGraphicsSceneDisplayManager::killObsoleteDisplays()
 {
     QMutexLocker l(&displayMutex_);
 
@@ -263,7 +263,7 @@ void GraphicsSceneDisplaySessionManager::killObsoleteDisplays()
     }
 }
 
-void GraphicsSceneDisplaySessionManager::killAllDisplays()
+void AbstractGraphicsSceneDisplayManager::killAllDisplays()
 {
     QMutexLocker l(&displayMutex_);
 
@@ -271,23 +271,23 @@ void GraphicsSceneDisplaySessionManager::killAllDisplays()
         removeDisplay(res.display);
 }
 
-/* SingleGraphicsSceneDisplaySessionManager */
+/* SingleGraphicsSceneDisplayManager */
 
-SingleGraphicsSceneDisplaySessionManager::SingleGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent, GraphicsSceneAdapter *adapter) :
-    GraphicsSceneDisplaySessionManager(session, parent),
+SingleGraphicsSceneDisplayManager::SingleGraphicsSceneDisplayManager(ViriditySession *session, QObject *parent, AbstractGraphicsSceneAdapter *adapter) :
+    AbstractGraphicsSceneDisplayManager(session, parent),
     adapter_(adapter)
 {
     DGUARDMETHODTIMED;
-    commandInterpreter_ = new GraphicsSceneWebControlCommandInterpreter(this);
+    commandInterpreter_ = new GraphicsSceneDisplayCommandInterpreter(this);
     commandInterpreter_->setTargetGraphicsSceneAdapter(adapter_);
 }
 
-SingleGraphicsSceneDisplaySessionManager::~SingleGraphicsSceneDisplaySessionManager()
+SingleGraphicsSceneDisplayManager::~SingleGraphicsSceneDisplayManager()
 {
     DGUARDMETHODTIMED;
 }
 
-GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)
+GraphicsSceneDisplay *SingleGraphicsSceneDisplayManager::createDisplayInstance(const QString &id, const QStringList &params)
 {
     DGUARDMETHODTIMED;
     GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, adapter_, commandInterpreter_);
@@ -296,26 +296,26 @@ GraphicsSceneDisplay *SingleGraphicsSceneDisplaySessionManager::createDisplayIns
     return display;
 }
 
-/* MultiGraphicsSceneDisplaySessionManager */
+/* MultiGraphicsSceneDisplayManager */
 
-MultiGraphicsSceneDisplaySessionManager::MultiGraphicsSceneDisplaySessionManager(ViriditySession *session, QObject *parent) :
-    GraphicsSceneDisplaySessionManager(session, parent)
+AbstractMultiGraphicsSceneDisplayManager::AbstractMultiGraphicsSceneDisplayManager(ViriditySession *session, QObject *parent) :
+    AbstractGraphicsSceneDisplayManager(session, parent)
 {
     DGUARDMETHODTIMED;
 }
 
-MultiGraphicsSceneDisplaySessionManager::~MultiGraphicsSceneDisplaySessionManager()
+AbstractMultiGraphicsSceneDisplayManager::~AbstractMultiGraphicsSceneDisplayManager()
 {
     DGUARDMETHODTIMED;
 }
 
-GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(const QString &id, const QStringList &params)
+GraphicsSceneDisplay *AbstractMultiGraphicsSceneDisplayManager::createDisplayInstance(const QString &id, const QStringList &params)
 {
-    GraphicsSceneAdapter *adapter = getAdapter(id, params);
+    AbstractGraphicsSceneAdapter *adapter = getAdapter(id, params);
 
     if (adapter)
     {
-        GraphicsSceneWebControlCommandInterpreter *ci = new GraphicsSceneWebControlCommandInterpreter(adapter);
+        GraphicsSceneDisplayCommandInterpreter *ci = new GraphicsSceneDisplayCommandInterpreter(adapter);
         ci->setTargetGraphicsSceneAdapter(adapter);
 
         GraphicsSceneDisplay *display = new GraphicsSceneDisplay(id, adapter, ci);
@@ -325,14 +325,14 @@ GraphicsSceneDisplay *MultiGraphicsSceneDisplaySessionManager::createDisplayInst
         return NULL;
 }
 
-void MultiGraphicsSceneDisplaySessionManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
+void AbstractMultiGraphicsSceneDisplayManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
 {
     tearDownAdapter(display->id(), display->adapter());
 }
 
-void MultiGraphicsSceneDisplaySessionManager::tearDownAdapter(const QString &id, GraphicsSceneAdapter *adapter)
+void AbstractMultiGraphicsSceneDisplayManager::tearDownAdapter(const QString &id, AbstractGraphicsSceneAdapter *adapter)
 {
     delete adapter;
 }
 
-#include "graphicsscenedisplaysessionmanager.moc" // for MainThreadGateway
+#include "graphicsscenedisplaymanager.moc" // for MainThreadGateway

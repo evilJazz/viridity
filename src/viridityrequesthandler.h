@@ -6,6 +6,11 @@
 #include "Tufao/HttpServerResponse"
 #include "Tufao/Headers"
 
+/*!
+    \addtogroup virid
+    @{
+*/
+
 class ViridityWebServer;
 
 /*! ViridityHttpServerRequest defines an incoming request from a peer/client/browser. The current implementation is based on Tufao::HttpServerRequest and might be replaced in a compatible manner in the future. */
@@ -81,5 +86,7 @@ public:
 protected:
     ViridityWebServer *server_;
 };
+
+/*! @}*/
 
 #endif // VIRIDITYREQUESTHANDLER_H

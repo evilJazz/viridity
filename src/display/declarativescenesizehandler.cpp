@@ -8,7 +8,7 @@
 #endif
 #include "KCL/debug.h"
 
-DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, GraphicsSceneAdapter *adapter, bool scaleItem, QObject *parent) :
+DeclarativeSceneSizeHandler::DeclarativeSceneSizeHandler(ViriditySession *session, const QString &id, AbstractGraphicsSceneAdapter *adapter, bool scaleItem, QObject *parent) :
     QObject(parent),
     session_(session),
     id_(id),

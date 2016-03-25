@@ -15,7 +15,7 @@ class QOpenGLFramebufferObject;
 class QQuickRenderControl;
 class QQuickWindow;
 
-class QtQuick2Adapter : public GraphicsSceneAdapter
+class QtQuick2Adapter : public AbstractGraphicsSceneAdapter
 {
     Q_OBJECT
 public:

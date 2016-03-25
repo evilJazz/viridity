@@ -20,8 +20,8 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
-CONFIG += viridity_module_display_qtquick1
-#CONFIG += viridity_module_display_qtquick2
+contains(QT_VERSION, ^4\\..*): CONFIG += viridity_module_display_qtquick1
+contains(QT_VERSION, ^5\\..*): CONFIG += viridity_module_display_qtquick2
 
 include(../../viridity.pri)
 include(../../3rdparty/tufao/tufao-min.pri)
@@ -34,3 +34,5 @@ linux-* {
 
 RESOURCES += \
     resources.qrc
+
+DEFINES += VIRIDITY_DEBUG

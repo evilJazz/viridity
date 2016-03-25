@@ -8,14 +8,14 @@
 
 class QPainter;
 
-/* GraphicsSceneAdapter */
+/* AbstractGraphicsSceneAdapter */
 
-class GraphicsSceneAdapter : public QObject
+class AbstractGraphicsSceneAdapter : public QObject
 {
     Q_OBJECT
 public:
-    GraphicsSceneAdapter(QObject *parent) : QObject(parent) {  qRegisterMetaType< QList<QRectF> >("QList<QRectF>"); }
-    virtual ~GraphicsSceneAdapter() {}
+    AbstractGraphicsSceneAdapter(QObject *parent) : QObject(parent) {  qRegisterMetaType< QList<QRectF> >("QList<QRectF>"); }
+    virtual ~AbstractGraphicsSceneAdapter() {}
 
     virtual int width() const = 0;
     virtual int height() const = 0;

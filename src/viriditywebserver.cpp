@@ -110,7 +110,7 @@ void ViridityConnection::onRequestReady()
 
     ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
 
-    DPRINTF("Request for %s of connection from %s ready.", request->url().constData(), ViridityConnection::getPeerAddressFromRequest(request).constData());
+    DPRINTF("Request for %s of connection from %s ready.", request->url().constData(), request->getPeerAddressFromRequest().constData());
 
     QAbstractSocket *socket = request->socket();
     ViridityHttpServerResponse *response = new ViridityHttpServerResponse(socket, request->responseOptions(), this);
@@ -150,7 +150,7 @@ void ViridityConnection::onUpgrade(const QByteArray &head)
 {
     ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
 
-    DPRINTF("Request for %s of connection from %s wants upgrade.", request->url().constData(), ViridityConnection::getPeerAddressFromRequest(request).constData());
+    DPRINTF("Request for %s of connection from %s wants upgrade.", request->url().constData(), request->getPeerAddressFromRequest().constData());
 
     if (!webSocketHandler_)
         webSocketHandler_ = new WebSocketHandler(server_, this);
@@ -162,13 +162,13 @@ void ViridityConnection::onUpgrade(const QByteArray &head)
 
 /* ViridityWebServer */
 
-ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager) :
+ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionManager *sessionManager) :
     QTcpServer(parent),
     sessionManager_(sessionManager),
     incomingConnectionCount_(0)
 {
     sessionManager_->setServer(this);
-    connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(newSessionCreated(ViriditySession*)));
+    connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(handleNewSessionCreated(ViriditySession*)));
 
     fileRequestHandler_ = new FileRequestHandler(this, this);
     sessionRoutingRequestHandler_ = new SessionRoutingRequestHandler(this, this);
@@ -179,21 +179,19 @@ ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *se
 
 ViridityWebServer::~ViridityWebServer()
 {
-    // the thread can't have a parent then...
-    foreach (QThread* t, connectionThreads_)
+    foreach (QThread *t, connectionThreads_)
         t->quit();
 
-    foreach (QThread* t, connectionThreads_)
+    foreach (QThread *t, connectionThreads_)
     {
         t->wait();
         delete t;
     }
 
-    // the thread can't have a parent then...
-    foreach (QThread* t, sessionThreads_)
+    foreach (QThread *t, sessionThreads_)
         t->quit();
 
-    foreach (QThread* t, sessionThreads_)
+    foreach (QThread *t, sessionThreads_)
     {
         t->wait();
         delete t;
@@ -202,14 +200,16 @@ ViridityWebServer::~ViridityWebServer()
 
 bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
 {
-    connectionThreads_.reserve(threadsNumber);
+    threadsNumber = qMax(1, threadsNumber / 2);
 
+    connectionThreads_.reserve(threadsNumber);
     for (int i = 0; i < threadsNumber; ++i)
     {
         connectionThreads_.append(new QThread(this));
         connectionThreads_.at(i)->start();
     }
 
+    sessionThreads_.reserve(threadsNumber);
     for (int i = 0; i < threadsNumber; ++i)
     {
         sessionThreads_.append(new QThread(this));
@@ -219,12 +219,12 @@ bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int th
     return QTcpServer::listen(address, port);
 }
 
-ViriditySessionManager *ViridityWebServer::sessionManager()
+AbstractViriditySessionManager *ViridityWebServer::sessionManager()
 {
     return sessionManager_;
 }
 
-void ViridityWebServer::newSessionCreated(ViriditySession *session)
+void ViridityWebServer::handleNewSessionCreated(ViriditySession *session)
 {
     DGUARDMETHODTIMED;
 

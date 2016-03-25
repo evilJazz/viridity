@@ -70,7 +70,7 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
     }
     else // start new connection
     {
-        session_ = server()->sessionManager()->getNewSession(ViridityWebServer::getPeerAddressFromRequest(request));
+        session_ = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
         DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
 
@@ -92,7 +92,7 @@ void SSEHandler::setUpResponse(ViridityHttpServerResponse *response)
     response_ = response;
 
     response_->headers().insert("Content-Type", "text/event-stream");
-    ViridityWebServer::addNoCachingResponseHeaders(response_);
+    response_->addNoCachingResponseHeaders();
     response_->writeHead(ViridityHttpServerResponse::OK);
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));

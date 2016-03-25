@@ -10,7 +10,7 @@
 
 #include "viriditydeclarative.h"
 #include "viriditydatabridge.h"
-#include "graphicsscenedisplaysessionmanager.h"
+#include "graphicsscenedisplaymanager.h"
 #include "declarativescenesizehandler.h"
 #include "display/adapters/qtquick1adapter.h"
 #include "handlers/filerequesthandler.h"
@@ -18,10 +18,10 @@
 
 #include "tools/graphicsscenedisplayrecorder.h"
 
-class MySceneDisplaySessionManager : public MultiGraphicsSceneDisplaySessionManager
+class MySceneDisplaySessionManager : public AbstractMultiGraphicsSceneDisplayManager
 {
 public:
-    MySceneDisplaySessionManager(ViriditySession *session, QObject *parent = 0) : MultiGraphicsSceneDisplaySessionManager(session, parent) {}
+    MySceneDisplaySessionManager(ViriditySession *session, QObject *parent = 0) : AbstractMultiGraphicsSceneDisplayManager(session, parent) {}
     virtual ~MySceneDisplaySessionManager() {}
 
     QDeclarativeEngine *engine;
@@ -29,7 +29,7 @@ public:
 protected slots:
     virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params)
     {
-        GraphicsSceneDisplay *display = MultiGraphicsSceneDisplaySessionManager::createDisplayInstance(id, params);
+        GraphicsSceneDisplay *display = AbstractMultiGraphicsSceneDisplayManager::createDisplayInstance(id, params);
 
         EncoderSettings es;
         es.patchEncodingFormat = EncoderSettings::EncodingFormat_Auto;
@@ -53,7 +53,7 @@ protected slots:
         return display;
     }
 
-    virtual GraphicsSceneAdapter *getAdapter(const QString &id, const QStringList &params)
+    virtual AbstractGraphicsSceneAdapter *getAdapter(const QString &id, const QStringList &params)
     {
         // RUNS IN MAIN THREAD!
 
@@ -81,14 +81,14 @@ protected slots:
         return adapter;
     }
 
-    virtual void tearDownAdapter(const QString &id, GraphicsSceneAdapter *adapter)
+    virtual void tearDownAdapter(const QString &id, AbstractGraphicsSceneAdapter *adapter)
     {
         // RUNS IN MAIN THREAD!
         delete adapter;
     }
 };
 
-class MySessionManager : public ViriditySessionManager
+class MySessionManager : public AbstractViriditySessionManager
 {
 protected:
     void setLogic(ViriditySession *session)

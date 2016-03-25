@@ -6,7 +6,7 @@
 class QGraphicsScene;
 class SynchronizedSceneChangedHandler;
 
-class QGraphicsSceneAdapter : public GraphicsSceneAdapter
+class QGraphicsSceneAdapter : public AbstractGraphicsSceneAdapter
 {
     Q_OBJECT
 public:

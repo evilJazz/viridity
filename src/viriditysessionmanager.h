@@ -10,7 +10,7 @@
 #include "viridityrequesthandler.h"
 
 class ViridityWebServer;
-class ViriditySessionManager;
+class AbstractViriditySessionManager;
 class ViridityMessageHandler;
 
 class ViriditySession : public QObject, public ViridityRequestHandler
@@ -19,7 +19,7 @@ class ViriditySession : public QObject, public ViridityRequestHandler
     Q_PROPERTY(QString id READ id CONSTANT)
     Q_PROPERTY(QByteArray initialPeerAddress READ initialPeerAddress CONSTANT)
 public:
-    explicit ViriditySession(ViriditySessionManager *sessionManager, const QString &id);
+    explicit ViriditySession(AbstractViriditySessionManager *sessionManager, const QString &id);
     virtual ~ViriditySession();
 
     void registerMessageHandler(ViridityMessageHandler *handler);
@@ -36,7 +36,7 @@ public:
 
     void handlerIsReadyForDispatch(ViridityMessageHandler *handler);
 
-    ViriditySessionManager *sessionManager() { return sessionManager_; }
+    AbstractViriditySessionManager *sessionManager() { return sessionManager_; }
     const QString id() const { return id_; }
 
     int useCount() const { return useCount_; }
@@ -64,8 +64,8 @@ private:
     Q_INVOKABLE void sendMessageToClient(const QByteArray &message, const QString &targetId);
 
 protected:
-    friend class ViriditySessionManager;
-    ViriditySessionManager *sessionManager_;
+    friend class AbstractViriditySessionManager;
+    AbstractViriditySessionManager *sessionManager_;
     QString id_;
 
     QList<ViridityMessageHandler *> messageHandlers_;
@@ -99,12 +99,12 @@ public:
     static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
 };
 
-class ViriditySessionManager : public QObject
+class AbstractViriditySessionManager : public QObject
 {
     Q_OBJECT
 public:
-    ViriditySessionManager(QObject *parent = 0);
-    virtual ~ViriditySessionManager();
+    AbstractViriditySessionManager(QObject *parent = 0);
+    virtual ~AbstractViriditySessionManager();
 
     ViriditySession *getNewSession(const QByteArray &initialPeerAddress);
 

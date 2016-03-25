@@ -36,7 +36,7 @@ GraphicsSceneDisplayLocker::GraphicsSceneDisplayLocker(GraphicsSceneDisplay *dis
 
 /* GraphicsSceneDisplay */
 
-GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, GraphicsSceneAdapter *adapter, GraphicsSceneWebControlCommandInterpreter *commandInterpreter) :
+GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, AbstractGraphicsSceneAdapter *adapter, GraphicsSceneDisplayCommandInterpreter *commandInterpreter) :
     QObject(),
     adapter_(adapter),
     commandInterpreter_(commandInterpreter),
@@ -249,7 +249,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         patch->packedAlpha = false;
     }
 
-    DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %lld kB (%lld byte)",
+    DPRINTF("rect: %d,%d,%d,%d, %s, image.size: %d kB (%d byte), compressed size: %d kB (%d byte)",
             rect.x(), rect.y(), rect.width(), rect.height(), patch->mimeType.constData(),
             image.byteCount() / 1024, image.byteCount(),
             patch->data.size() / 1024, patch->data.size()

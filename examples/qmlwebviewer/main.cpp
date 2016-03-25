@@ -22,7 +22,7 @@
 
 #include "viriditydeclarative.h"
 #include "viriditydatabridge.h"
-#include "graphicsscenedisplaysessionmanager.h"
+#include "graphicsscenedisplaymanager.h"
 #include "handlers/filerequesthandler.h"
 
 #include "kclplugin.h"
@@ -30,7 +30,7 @@
 #include "KCL/filesystemutils.h"
 #include "KCL/debug.h"
 
-class MySessionManager : public ViriditySessionManager
+class MySessionManager : public AbstractViriditySessionManager
 {
 public:
     QString qmlFileName;
@@ -78,9 +78,9 @@ protected:
         QGraphicsScene *scene = new QGraphicsScene(engine);
         scene->addItem(rootItem);
 
-        GraphicsSceneAdapter *adapter = new QtQuick1Adapter(rootItem);
+        AbstractGraphicsSceneAdapter *adapter = new QtQuick1Adapter(rootItem);
 #else
-        GraphicsSceneAdapter *adapter = 0;
+        AbstractGraphicsSceneAdapter *adapter = 0;
         QQuickItem *rootItem = qobject_cast<QQuickItem *>(instance);
         if (!rootItem)
         {
@@ -97,7 +97,7 @@ protected:
         // Install message handler for resize() commands on the item...
         new DeclarativeSceneSizeHandler(session, "main", adapter, true, rootItem);
 
-        SingleGraphicsSceneDisplaySessionManager *displaySessionManager = new SingleGraphicsSceneDisplaySessionManager(session, session, adapter);
+        SingleGraphicsSceneDisplayManager *displaySessionManager = new SingleGraphicsSceneDisplayManager(session, session, adapter);
 
         // Take care of our created instances because they are not parented and live in the main thread.
         QObject::connect(displaySessionManager, SIGNAL(destroyed()), adapter, SLOT(deleteLater()));
@@ -163,7 +163,7 @@ int main(int argc, char *argv[])
     const int dataPort = a.arguments().count() > 2 ? a.arguments().at(2).toInt() : 8080;
 
     ViridityWebServer server(&a, &sessionManager);
-    if (server.listen(QHostAddress::Any, dataPort, QThread::idealThreadCount()))
+    if (server.listen(QHostAddress::Any, dataPort))
         qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
     else
         qFatal("Could not setup server on 127.0.0.1 %d.", dataPort);
