@@ -21,7 +21,7 @@
 #endif
 #include "KCL/debug.h"
 
-// Hacker class to get access to private QEvent::spont member. Not nice, but better than pointer hackery.
+/*! /internal Hacker class to get access to private QEvent::spont member. Not nice, but better than pointer hackery. */
 class QCoreApplicationPrivate
 {
 public:
