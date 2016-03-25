@@ -123,7 +123,7 @@ void FileRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
         {
             response->writeHead(Tufao::HttpServerResponse::OK);
             response->headers().insert("Content-Type", contentType);
-            ViridityConnection::addNoCachingResponseHeaders(response);
+            ViridityWebServer::addNoCachingResponseHeaders(response);
             response->end(file.readAll());
             return;
         }

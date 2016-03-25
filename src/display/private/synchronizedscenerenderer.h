@@ -15,22 +15,19 @@ public:
         scene_(scene)
     {
         qRegisterMetaType<QPainter *>("QPainter *");
-        qRegisterMetaType<Qt::AspectRatioMode>("Qt::AspectRatioMode");
         qRegisterMetaType< QVector<QRect> >("QVector<QRect>");
 
         if (scene_->thread() != QThread::currentThread())
             this->moveToThread(scene_->thread()); // Move to scene's thread so we can invoke renderInSceneThreadContext in proper thread context...
     }
 
-    void render(QPainter *painter, const QRectF &target = QRectF(), const QRectF &source = QRectF(), Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio)
+    void render(QPainter *painter, const QRect &rect)
     {
         QMetaObject::invokeMethod(
             this, "renderInSceneThreadContext",
             scene_->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
             Q_ARG(QPainter *, painter),
-            Q_ARG(const QRectF &, target),
-            Q_ARG(const QRectF &, source),
-            Q_ARG(Qt::AspectRatioMode, aspectRatioMode)
+            Q_ARG(const QRect &, rect)
         );
     }
 
@@ -45,9 +42,9 @@ public:
     }
 
 private slots:
-    void renderInSceneThreadContext(QPainter *painter, const QRectF &target = QRectF(), const QRectF &source = QRectF(), Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio)
+    void renderInSceneThreadContext(QPainter *painter, const QRect &rect)
     {
-        scene_->render(painter, target, source, aspectRatioMode);
+        scene_->render(painter, rect, rect, Qt::IgnoreAspectRatio);
     }
 
     void renderInSceneThreadContext(QPainter *painter, const QVector<QRect> &rects)

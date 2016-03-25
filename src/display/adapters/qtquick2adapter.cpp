@@ -302,10 +302,10 @@ void QtQuick2Adapter::handleContextMenuEvent(const QPointF &scenePos, Qt::Keyboa
     postEvent(cme, true);
 }
 
-void QtQuick2Adapter::render(QPainter *painter, const QRectF &target, const QRectF &source, Qt::AspectRatioMode aspectRatioMode)
+void QtQuick2Adapter::render(QPainter *painter, const QRect &rect)
 {
     ensureBufferUpdated();
-    painter->drawImage(target, buffer_, source);
+    painter->drawImage(rect.topLeft(), buffer_, rect);
 }
 
 void QtQuick2Adapter::render(QPainter *painter, const QVector<QRect> &rects)

@@ -29,7 +29,7 @@ public:
     virtual void handleMouseWheelEvent(const QPoint delta, const QPointF &scenePos, Qt::MouseButton button, Qt::MouseButtons buttons, Qt::KeyboardModifiers modifiers) = 0;
     virtual void handleContextMenuEvent(const QPointF &scenePos, Qt::KeyboardModifiers modifiers, QContextMenuEvent::Reason reason) = 0;
 
-    virtual void render(QPainter *painter, const QRectF &target = QRectF(), const QRectF &source = QRectF(), Qt::AspectRatioMode aspectRatioMode = Qt::KeepAspectRatio) = 0;
+    virtual void render(QPainter *painter, const QRect &rect) = 0;
     virtual void render(QPainter *painter, const QVector<QRect> &rects) = 0;
 
 signals:

@@ -121,7 +121,7 @@ QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
 
         p.setCompositionMode(QPainter::CompositionMode_SourceOver);
 
-        adapter_->render(&p, workBuffer_->rect(), workBuffer_->rect(), Qt::IgnoreAspectRatio);
+        adapter_->render(&p, workBuffer_->rect());
 #endif
 
         rects = comparer_->findDifferences();

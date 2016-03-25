@@ -94,7 +94,7 @@ void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
     }
     else // start new connection
     {
-        session = server()->sessionManager()->getNewSession(ViridityConnection::getPeerAddressFromRequest(request));
+        session = server()->sessionManager()->getNewSession(ViridityWebServer::getPeerAddressFromRequest(request));
 
         DPRINTF("NEW SESSION: %s", session->id().toLatin1().constData());
 
@@ -141,7 +141,7 @@ void LongPollingHandler::pushMessageAndEnd(Tufao::HttpServerResponse *response, 
 {
     response->writeHead(Tufao::HttpServerResponse::OK);
     response->headers().insert("Content-Type", "text/plain; charset=utf8");
-    ViridityConnection::addNoCachingResponseHeaders(response);
+    ViridityWebServer::addNoCachingResponseHeaders(response);
     response->end(msg);
 }
 

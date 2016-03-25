@@ -183,10 +183,10 @@ void QGraphicsSceneAdapter::handleContextMenuEvent(const QPointF &scenePos, Qt::
     postEvent(cme, true);
 }
 
-void QGraphicsSceneAdapter::render(QPainter *painter, const QRectF &target, const QRectF &source, Qt::AspectRatioMode aspectRatioMode)
+void QGraphicsSceneAdapter::render(QPainter *painter, const QRect &rect)
 {
     SynchronizedSceneRenderer syncedSceneRenderer(scene_);
-    syncedSceneRenderer.render(painter, target, source, aspectRatioMode);
+    syncedSceneRenderer.render(painter, rect);
 }
 
 void QGraphicsSceneAdapter::render(QPainter *painter, const QVector<QRect> &rects)

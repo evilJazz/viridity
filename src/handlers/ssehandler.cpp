@@ -1,10 +1,5 @@
 #include "ssehandler.h"
 
-#include <QUrl>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QUrlQuery>
-#endif
-
 #include <QStringList>
 
 #include "viriditywebserver.h"
@@ -75,7 +70,7 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
     }
     else // start new connection
     {
-        session_ = server()->sessionManager()->getNewSession(ViridityConnection::getPeerAddressFromRequest(request));
+        session_ = server()->sessionManager()->getNewSession(ViridityWebServer::getPeerAddressFromRequest(request));
 
         DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
 
@@ -97,7 +92,7 @@ void SSEHandler::setUpResponse(Tufao::HttpServerResponse *response)
     response_ = response;
 
     response_->headers().insert("Content-Type", "text/event-stream");
-    ViridityConnection::addNoCachingResponseHeaders(response_);
+    ViridityWebServer::addNoCachingResponseHeaders(response_);
     response_->writeHead(Tufao::HttpServerResponse::OK);
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));

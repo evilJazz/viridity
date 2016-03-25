@@ -65,7 +65,7 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
                     {
                         response->writeHead(Tufao::HttpServerResponse::OK);
                         response->headers().insert("Content-Type", patch->mimeType.constData());
-                        ViridityConnection::addNoCachingResponseHeaders(response);
+                        ViridityWebServer::addNoCachingResponseHeaders(response);
                         response->end(patch->data);
 
                         delete patch;

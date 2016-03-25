@@ -28,6 +28,41 @@
 
 /* ViridityConnection */
 
+class ViridityConnection : public QObject
+{
+    Q_OBJECT
+public:
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    explicit ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor);
+#else
+    explicit ViridityConnection(ViridityWebServer *parent, int socketDescriptor);
+#endif
+
+    virtual ~ViridityConnection();
+
+    ViridityWebServer *server() { return server_; }
+
+public slots:
+    void setupConnection();
+
+private slots:
+    void onRequestReady();
+    void onUpgrade(const QByteArray &);
+
+private:
+    WebSocketHandler *webSocketHandler_;
+    SSEHandler *sseHandler_;
+    LongPollingHandler *longPollingHandler_;
+
+    ViridityWebServer *server_;
+
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    qintptr socketDescriptor_;
+#else
+    int socketDescriptor_;
+#endif
+};
+
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 ViridityConnection::ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor) :
 #else
@@ -46,25 +81,6 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDesc
 ViridityConnection::~ViridityConnection()
 {
     DGUARDMETHODTIMED;
-}
-
-void ViridityConnection::addNoCachingResponseHeaders(Tufao::HttpServerResponse *response)
-{
-    response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate");
-    response->headers().insert("Pragma", "no-cache");
-    response->headers().insert("Expires", "0");
-}
-
-QByteArray ViridityConnection::getPeerAddressFromRequest(Tufao::HttpServerRequest *request)
-{
-    if (!request || !request->socket())
-        return QByteArray();
-
-    QByteArray peerAddress = request->socket()->peerAddress().toString().toLatin1();
-    if (request->headers().contains("X-Forwarded-For"))
-        peerAddress = request->headers().value("X-Forwarded-For");
-
-    return peerAddress;
 }
 
 void ViridityConnection::setupConnection()
@@ -153,7 +169,7 @@ void ViridityConnection::onUpgrade(const QByteArray &head)
 
 
 
-/* GraphicsSceneMultiThreadedWebServer */
+/* ViridityWebServer */
 
 ViridityWebServer::ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager) :
     QTcpServer(parent),
@@ -275,3 +291,24 @@ void ViridityWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::
         if (handler->doesHandleRequest(request))
             handler->handleRequest(request, response);
 }
+
+void ViridityWebServer::addNoCachingResponseHeaders(Tufao::HttpServerResponse *response)
+{
+    response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate");
+    response->headers().insert("Pragma", "no-cache");
+    response->headers().insert("Expires", "0");
+}
+
+QByteArray ViridityWebServer::getPeerAddressFromRequest(Tufao::HttpServerRequest *request)
+{
+    if (!request || !request->socket())
+        return QByteArray();
+
+    QByteArray peerAddress = request->socket()->peerAddress().toString().toLatin1();
+    if (request->headers().contains("X-Forwarded-For"))
+        peerAddress = request->headers().value("X-Forwarded-For");
+
+    return peerAddress;
+}
+
+#include "viriditywebserver.moc"

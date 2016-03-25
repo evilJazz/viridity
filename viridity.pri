@@ -23,7 +23,6 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.h \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.h \
-    $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.h \
@@ -63,7 +62,7 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
-        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.h  \
+        $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.h  \
         $$VIRIDITY_SRC_PATH/display/graphicssceneadapter.h
 
     SOURCES += \
@@ -76,7 +75,7 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaysessionmanager.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.cpp  \
-        $$VIRIDITY_SRC_PATH/handlers/patchrequesthandler.cpp
+        $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.cpp
 
     viridity_use_improved_jpeg {
         DEFINES += USE_IMPROVED_JPEG

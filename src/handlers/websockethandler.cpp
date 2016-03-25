@@ -65,7 +65,7 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         }
         else
         {
-            session_ = server()->sessionManager()->getNewSession(ViridityConnection::getPeerAddressFromRequest(request));
+            session_ = server()->sessionManager()->getNewSession(ViridityWebServer::getPeerAddressFromRequest(request));
 
             connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
