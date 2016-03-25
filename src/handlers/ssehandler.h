@@ -3,9 +3,6 @@
 
 #include <QObject>
 
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
-
 #include "viridityrequesthandler.h"
 
 class ViriditySession;
@@ -17,10 +14,10 @@ public:
     explicit SSEHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SSEHandler();
 
-    static bool staticDoesHandleRequest(ViridityWebServer *server, Tufao::HttpServerRequest *request);
+    static bool staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request);
 
-    bool doesHandleRequest(Tufao::HttpServerRequest *request);
-    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    bool doesHandleRequest(ViridityHttpServerRequest *request);
+    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private slots:
     void handleMessagesAvailable();
@@ -29,9 +26,9 @@ private slots:
 private:
     ViriditySession *session_;
 
-    Tufao::HttpServerResponse *response_;
+    ViridityHttpServerResponse *response_;
 
-    void setUpResponse(Tufao::HttpServerResponse *response);
+    void setUpResponse(ViridityHttpServerResponse *response);
 };
 
 #endif // SSEHANDLER_H

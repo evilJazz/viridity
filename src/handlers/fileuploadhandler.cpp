@@ -14,7 +14,7 @@ class FileUploadDataHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit FileUploadDataHandler(FileUploadHandler *parent, Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, ViriditySession *session) :
+    explicit FileUploadDataHandler(FileUploadHandler *parent, ViridityHttpServerRequest *request, ViridityHttpServerResponse *response, ViriditySession *session) :
         QObject(parent),
         parent_(parent),
         request_(request),
@@ -34,7 +34,7 @@ public:
 
             if (r.indexIn(QString::fromUtf8(contentType_)) != 0)
             {
-                response_->writeHead(Tufao::HttpServerResponse::BAD_REQUEST);
+                response_->writeHead(ViridityHttpServerResponse::BAD_REQUEST);
                 response_->end();
             }
 
@@ -269,7 +269,7 @@ private slots:
 
         // handle request
         response_->headers().insert("Content-Type", "text/plain");
-        response_->writeHead(Tufao::HttpServerResponse::OK);
+        response_->writeHead(ViridityHttpServerResponse::OK);
         response_->end();
 
         emitResults();
@@ -308,8 +308,8 @@ private slots:
 
 private:
     FileUploadHandler *parent_;
-    Tufao::HttpServerRequest *request_;
-    Tufao::HttpServerResponse *response_;
+    ViridityHttpServerRequest *request_;
+    ViridityHttpServerResponse *response_;
     ViriditySession *session_;
     QByteArray analyzeBuffer_;
 
@@ -364,12 +364,12 @@ void FileUploadHandler::handleSessionDestroyed()
     session_ = NULL;
 }
 
-bool FileUploadHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool FileUploadHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     return request->url().endsWith("/upload");
 }
 
-void FileUploadHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void FileUploadHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
 

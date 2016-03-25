@@ -7,6 +7,8 @@
 #endif
 #include "KCL/debug.h"
 
+#include "Tufao/WebSocket"
+
 #include "viriditywebserver.h"
 
 WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
@@ -28,7 +30,7 @@ WebSocketHandler::~WebSocketHandler()
     DGUARDMETHODTIMED;
 }
 
-void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QByteArray &head)
+void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const QByteArray &head)
 {
     DGUARDMETHODTIMED;
 
@@ -78,13 +80,13 @@ void WebSocketHandler::handleUpgrade(Tufao::HttpServerRequest *request, const QB
         return;
     }
 
-    Tufao::HttpServerResponse response(request->socket(), request->responseOptions());
+    ViridityHttpServerResponse response(request->socket(), request->responseOptions());
     response.writeHead(404);
     response.end("Not found");
     request->socket()->close();
 }
 
-bool WebSocketHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool WebSocketHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     return request->url().endsWith("/v/ws") || request->url().endsWith("/v/wsb");
 }

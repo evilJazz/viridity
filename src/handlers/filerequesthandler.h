@@ -2,9 +2,9 @@
 #define FILEREQUESTHANDLER_H
 
 #include <QObject>
-
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
+#include <QHash>
+#include <QByteArray>
+#include <QString>
 
 #include "viridityrequesthandler.h"
 
@@ -26,8 +26,8 @@ public:
 
     static QByteArray determineMimeType(const QString &fileName);
 
-    bool doesHandleRequest(Tufao::HttpServerRequest *request);
-    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    bool doesHandleRequest(ViridityHttpServerRequest *request);
+    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private:
     QHash<QByteArray, QString> fileNames_;

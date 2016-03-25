@@ -3,7 +3,7 @@
 #include "viriditywebserver.h"
 #include "viriditysessionmanager.h"
 
-InputPostHandler::InputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, ViriditySession *session, QObject *parent) :
+InputPostHandler::InputPostHandler(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response, ViriditySession *session, QObject *parent) :
     QObject(parent),
     request_(request),
     response_(response),
@@ -27,6 +27,6 @@ void InputPostHandler::onEnd()
 
     // handle request
     response_->headers().insert("Content-Type", "text/plain");
-    response_->writeHead(Tufao::HttpServerResponse::OK);
+    response_->writeHead(ViridityHttpServerResponse::OK);
     response_->end();
 }

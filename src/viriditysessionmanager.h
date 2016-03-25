@@ -50,8 +50,8 @@ public:
     static QString parseIdFromUrl(const QByteArray &url);
 
     // ViridityRequestHandler
-    virtual bool doesHandleRequest(Tufao::HttpServerRequest *request);
-    virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
+    virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 signals:
     void newPendingMessagesAvailable();

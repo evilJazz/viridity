@@ -3,9 +3,6 @@
 
 #include <QObject>
 
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
-
 #include "viridityrequesthandler.h"
 
 class ViriditySession;
@@ -18,8 +15,8 @@ public:
     explicit FileUploadHandler(ViriditySession *session, QObject *parent = NULL);
     virtual ~FileUploadHandler();
 
-    bool doesHandleRequest(Tufao::HttpServerRequest *request);
-    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    bool doesHandleRequest(ViridityHttpServerRequest *request);
+    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 signals:
     friend class FileUploadDataHandler;

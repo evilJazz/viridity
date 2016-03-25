@@ -24,17 +24,17 @@ SSEHandler::~SSEHandler()
     DGUARDMETHODTIMED;
 }
 
-bool SSEHandler::staticDoesHandleRequest(ViridityWebServer *server, Tufao::HttpServerRequest *request)
+bool SSEHandler::staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request)
 {
     return request->url().endsWith("/v/ev");
 }
 
-bool SSEHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool SSEHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     return staticDoesHandleRequest(server(), request);
 }
 
-void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
@@ -87,13 +87,13 @@ void SSEHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpSer
     response->end("Not found");
 }
 
-void SSEHandler::setUpResponse(Tufao::HttpServerResponse *response)
+void SSEHandler::setUpResponse(ViridityHttpServerResponse *response)
 {
     response_ = response;
 
     response_->headers().insert("Content-Type", "text/event-stream");
     ViridityWebServer::addNoCachingResponseHeaders(response_);
-    response_->writeHead(Tufao::HttpServerResponse::OK);
+    response_->writeHead(ViridityHttpServerResponse::OK);
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 

@@ -16,13 +16,13 @@ PatchRequestHandler::~PatchRequestHandler()
 {
 }
 
-bool PatchRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool PatchRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
     return request->url().contains("/p/") && request->url().contains("_") && server()->sessionManager()->getSession(id) != NULL;
 }
 
-void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void PatchRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
 #ifdef VIRIDITY_DEBUG_SIMULATE_RANDOM_ERROR
     if (QDateTime::currentMSecsSinceEpoch() % 101 == 0)
@@ -63,7 +63,7 @@ void PatchRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao
 
                     if (patch)
                     {
-                        response->writeHead(Tufao::HttpServerResponse::OK);
+                        response->writeHead(ViridityHttpServerResponse::OK);
                         response->headers().insert("Content-Type", patch->mimeType.constData());
                         ViridityWebServer::addNoCachingResponseHeaders(response);
                         response->end(patch->data);

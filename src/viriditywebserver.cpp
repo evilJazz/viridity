@@ -5,18 +5,9 @@
 #endif
 #include "KCL/debug.h"
 
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
-
 #include <QByteArray>
 #include <QBuffer>
 #include <QFile>
-#include <QThread>
-
-#include <QUuid>
-#include <QCryptographicHash>
-#include <QMutexLocker>
-#include <QUrl>
 
 #include "handlers/inputposthandler.h"
 #include "handlers/websockethandler.h"
@@ -100,7 +91,7 @@ void ViridityConnection::setupConnection()
     }
 
     // Hand-off incoming connection to Tufao to parse request...
-    Tufao::HttpServerRequest *request = new Tufao::HttpServerRequest(socket, this);
+    ViridityHttpServerRequest *request = new ViridityHttpServerRequest(socket, this);
 
     DPRINTF("New connection from %s.", socket->peerAddress().toString().toLatin1().constData());
 
@@ -117,12 +108,12 @@ void ViridityConnection::onRequestReady()
 {
     //DGUARDMETHODTIMED;
 
-    Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+    ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
 
     DPRINTF("Request for %s of connection from %s ready.", request->url().constData(), ViridityConnection::getPeerAddressFromRequest(request).constData());
 
     QAbstractSocket *socket = request->socket();
-    Tufao::HttpServerResponse *response = new Tufao::HttpServerResponse(socket, request->responseOptions(), this);
+    ViridityHttpServerResponse *response = new ViridityHttpServerResponse(socket, request->responseOptions(), this);
 
     connect(socket, SIGNAL(disconnected()), response, SLOT(deleteLater()));
     connect(response, SIGNAL(finished()), response, SLOT(deleteLater()));
@@ -157,7 +148,7 @@ void ViridityConnection::onRequestReady()
 
 void ViridityConnection::onUpgrade(const QByteArray &head)
 {
-    Tufao::HttpServerRequest *request = qobject_cast<Tufao::HttpServerRequest *>(sender());
+    ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
 
     DPRINTF("Request for %s of connection from %s wants upgrade.", request->url().constData(), ViridityConnection::getPeerAddressFromRequest(request).constData());
 
@@ -272,7 +263,7 @@ void ViridityWebServer::unregisterRequestHandler(ViridityRequestHandler *handler
     requestHandlers_.removeAll(handler);
 }
 
-bool ViridityWebServer::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool ViridityWebServer::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     bool result = false;
 
@@ -285,30 +276,11 @@ bool ViridityWebServer::doesHandleRequest(Tufao::HttpServerRequest *request)
     return result;
 }
 
-void ViridityWebServer::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void ViridityWebServer::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     foreach (ViridityRequestHandler *handler, requestHandlers_)
         if (handler->doesHandleRequest(request))
             handler->handleRequest(request, response);
-}
-
-void ViridityWebServer::addNoCachingResponseHeaders(Tufao::HttpServerResponse *response)
-{
-    response->headers().insert("Cache-Control", "no-store, no-cache, must-revalidate");
-    response->headers().insert("Pragma", "no-cache");
-    response->headers().insert("Expires", "0");
-}
-
-QByteArray ViridityWebServer::getPeerAddressFromRequest(Tufao::HttpServerRequest *request)
-{
-    if (!request || !request->socket())
-        return QByteArray();
-
-    QByteArray peerAddress = request->socket()->peerAddress().toString().toLatin1();
-    if (request->headers().contains("X-Forwarded-For"))
-        peerAddress = request->headers().value("X-Forwarded-For");
-
-    return peerAddress;
 }
 
 #include "viriditywebserver.moc"

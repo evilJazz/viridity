@@ -3,9 +3,6 @@
 
 #include <QObject>
 
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
-
 #include "viridityrequesthandler.h"
 
 class ViriditySession;
@@ -17,8 +14,8 @@ public:
     explicit SessionRoutingRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SessionRoutingRequestHandler();
 
-    bool doesHandleRequest(Tufao::HttpServerRequest *request);
-    void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    bool doesHandleRequest(ViridityHttpServerRequest *request);
+    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 };
 
 #endif // SESSIONROUTINGREQUESTHANDLER_H

@@ -30,18 +30,18 @@ LongPollingHandler::~LongPollingHandler()
     DGUARDMETHODTIMED;
 }
 
-bool LongPollingHandler::staticDoesHandleRequest(ViridityWebServer *server, Tufao::HttpServerRequest *request)
+bool LongPollingHandler::staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request)
 {
     QList<QByteArray> parts = request->url().split('?');
     return parts.count() > 0 && parts[0].endsWith("/v");
 }
 
-bool LongPollingHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool LongPollingHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     return staticDoesHandleRequest(server(), request);
 }
 
-void LongPollingHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
@@ -137,9 +137,9 @@ void LongPollingHandler::handleResponseDestroyed()
     response_ = NULL;
 }
 
-void LongPollingHandler::pushMessageAndEnd(Tufao::HttpServerResponse *response, const QByteArray &msg)
+void LongPollingHandler::pushMessageAndEnd(ViridityHttpServerResponse *response, const QByteArray &msg)
 {
-    response->writeHead(Tufao::HttpServerResponse::OK);
+    response->writeHead(ViridityHttpServerResponse::OK);
     response->headers().insert("Content-Type", "text/plain; charset=utf8");
     ViridityWebServer::addNoCachingResponseHeaders(response);
     response->end(msg);

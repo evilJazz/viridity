@@ -3,30 +3,15 @@
 
 #include "viridity_global.h"
 
-#include <QTimer>
-
+#include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
-#include <Tufao/HttpServer>
-#include <Tufao/WebSocket>
-#include <QBuffer>
-#include <QMutex>
-#include <QWaitCondition>
+#include <QThread>
 
-#include <QUrl>
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    #include <QUrlQuery>
-    #define UrlQuery(...) QUrlQuery(QUrl(__VA_ARGS__))
-#else
-    #define UrlQuery(...) QUrl(__VA_ARGS__)
-#endif
-
+#include "viridityrequesthandler.h"
 #include "viriditysessionmanager.h"
 
 /*!
-    \class ViridityWebServer
-    \brief The ViridityWebServer class provides the basic multi-threaded & session-aware Viridity web server.
-
+    The ViridityWebServer class provides the basic multi-threaded & session-aware Viridity web server.
     \sa ViridityRequestHandler, ViriditySessionManager
 */
 
@@ -34,18 +19,45 @@ class ViridityWebServer : public QTcpServer, private ViridityRequestHandler
 {
     Q_OBJECT
 public:
+    /*!
+     * Constructs a Viridity web server instance with a specified session manager used for managing sessions.
+     * \param parent The parent this instance is a child to.
+     * \param sessionManager Specifies the session manager to use for handling session.
+     */
     explicit ViridityWebServer(QObject *parent, ViriditySessionManager *sessionManager);
+
+    /*! Destroys the web server instance. */
     virtual ~ViridityWebServer();
 
+    /*!
+     * Starts the web server.
+     * \param address Defines the IP address to bind to.
+     * \param port Defines the port number to listen on.
+     * \param threadsNumber Defines the number of threads to use for handling incomming connections.
+     * \return Returns true if the server was started successfully, otherwise false if the server was
+     * not able to bind the port or the address.
+     */
     bool listen(const QHostAddress &address, quint16 port, int threadsNumber);
 
+    /*!
+     * The current session manager associated with this web server instance.
+     * \return The session manager set during construction of the web server instance.
+     */
     ViriditySessionManager *sessionManager();
 
+    /*!
+     * Register a request handler.
+     * \param handler A custom instance of ViridityRequestHandler.
+     * \sa ViridityRequestHandler
+     */
     void registerRequestHandler(ViridityRequestHandler *handler);
-    void unregisterRequestHandler(ViridityRequestHandler *handler);
 
-    static void addNoCachingResponseHeaders(Tufao::HttpServerResponse *response);
-    static QByteArray getPeerAddressFromRequest(Tufao::HttpServerRequest *request);
+    /*!
+     * Unregister a request handler.
+     * \param handler A custom instance of ViridityRequestHandler.
+     * \sa ViridityRequestHandler
+     */
+    void unregisterRequestHandler(ViridityRequestHandler *handler);
 
 private slots:
     void newSessionCreated(ViriditySession *session);
@@ -58,8 +70,8 @@ private:
 #endif
 
     friend class ViridityConnection;
-    virtual bool doesHandleRequest(Tufao::HttpServerRequest *request);
-    virtual void handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response);
+    virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
+    virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private:
     ViriditySessionManager *sessionManager_;

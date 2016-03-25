@@ -4,12 +4,13 @@
 #include <QObject>
 #include <QByteArray>
 
-#include "Tufao/WebSocket"
-#include "Tufao/HttpServerRequest"
-
 #include "viridityrequesthandler.h"
 
 class ViriditySession;
+
+namespace Tufao {
+    class WebSocket;
+}
 
 class WebSocketHandler : public ViridityBaseRequestHandler
 {
@@ -18,8 +19,8 @@ public:
     explicit WebSocketHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~WebSocketHandler();
 
-    void handleUpgrade(Tufao::HttpServerRequest *request, const QByteArray &head);
-    bool doesHandleRequest(Tufao::HttpServerRequest *request);
+    void handleUpgrade(ViridityHttpServerRequest *request, const QByteArray &head);
+    bool doesHandleRequest(ViridityHttpServerRequest *request);
 
 private slots:
     void handleMessagesAvailable();

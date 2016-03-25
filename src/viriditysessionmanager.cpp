@@ -175,7 +175,7 @@ QString ViriditySession::parseIdFromUrl(const QByteArray &url)
     return id;
 }
 
-bool ViriditySession::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool ViriditySession::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     bool result = false;
 
@@ -188,7 +188,7 @@ bool ViriditySession::doesHandleRequest(Tufao::HttpServerRequest *request)
     return result;
 }
 
-void ViriditySession::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void ViriditySession::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     foreach (ViridityRequestHandler *handler, requestHandlers_)
         if (handler->doesHandleRequest(request))

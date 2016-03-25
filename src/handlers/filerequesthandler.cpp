@@ -96,13 +96,13 @@ QByteArray FileRequestHandler::determineMimeType(const QString &fileName)
         return "application/octet-stream";
 }
 
-bool FileRequestHandler::doesHandleRequest(Tufao::HttpServerRequest *request)
+bool FileRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
     QList<QByteArray> parts = request->url().split('?');
     return parts.count() > 0 && (fileNames_.contains(parts.at(0)) || globalFileNames_.contains(parts.at(0)));
 }
 
-void FileRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response)
+void FileRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     QList<QByteArray> parts = request->url().split('?');
 
@@ -121,7 +121,7 @@ void FileRequestHandler::handleRequest(Tufao::HttpServerRequest *request, Tufao:
         QFile file(localFileName);
         if (file.open(QIODevice::ReadOnly))
         {
-            response->writeHead(Tufao::HttpServerResponse::OK);
+            response->writeHead(ViridityHttpServerResponse::OK);
             response->headers().insert("Content-Type", contentType);
             ViridityWebServer::addNoCachingResponseHeaders(response);
             response->end(file.readAll());

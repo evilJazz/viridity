@@ -1,7 +1,9 @@
 #ifndef INPUTPOSTHANDLER_H
 #define INPUTPOSTHANDLER_H
 
-#include "Tufao/HttpServerRequest"
+#include <QObject>
+
+#include "viridityrequesthandler.h"
 
 class ViriditySession;
 
@@ -9,15 +11,15 @@ class InputPostHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit InputPostHandler(Tufao::HttpServerRequest *request, Tufao::HttpServerResponse *response, ViriditySession *session, QObject *parent = 0);
+    explicit InputPostHandler(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response, ViriditySession *session, QObject *parent = 0);
 
 private slots:
     void onData(const QByteArray &chunk);
     void onEnd();
 
 private:
-    Tufao::HttpServerRequest *request_;
-    Tufao::HttpServerResponse *response_;
+    ViridityHttpServerRequest *request_;
+    ViridityHttpServerResponse *response_;
     ViriditySession *session_;
     QByteArray data_;
 };
