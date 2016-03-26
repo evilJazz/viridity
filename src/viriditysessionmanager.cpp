@@ -233,7 +233,7 @@ void ViriditySession::unregisterRequestHandler(ViridityRequestHandler *handler)
 }
 
 
-/* ViriditySessionManager */
+/* AbstractViriditySessionManager */
 
 AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) :
     QObject(parent),
@@ -339,11 +339,9 @@ ViriditySession *AbstractViriditySessionManager::createSession(const QString &id
 {
     DGUARDMETHODTIMED;
     ViriditySession *session = createNewSessionInstance(id);
+
     session->setInitialPeerAddress(initialPeerAddress);
     setLogic(session);
-
-    connect(session, SIGNAL(destroyed()), session->logic(), SLOT(deleteLater()));
-
     registerHandlers(session);
 
     return session;
