@@ -56,14 +56,14 @@ public:
 
     /*!
      * Register a request handler.
-     * \param handler A custom instance of ViridityRequestHandler.
+     * \param handler An instance pointer to a class instance implementing the ViridityRequestHandler interface.
      * \sa ViridityRequestHandler
      */
     void registerRequestHandler(ViridityRequestHandler *handler);
 
     /*!
      * Unregister a request handler.
-     * \param handler A custom instance of ViridityRequestHandler.
+     * \param handler An instance pointer to a class instance implementing the ViridityRequestHandler interface.
      * \sa ViridityRequestHandler
      */
     void unregisterRequestHandler(ViridityRequestHandler *handler);

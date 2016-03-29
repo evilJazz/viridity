@@ -18,40 +18,120 @@ class ViridityMessageHandler;
     @{
 */
 
+/*!
+ * The ViriditySession class describes a session context with a remote client.
+ *
+ * \note Instances are never created directly but are always created by the AbstractViriditySessionManager class internally.
+ * Implement AbstractViriditySessionManager::setLogic in your session manager class to customize the session via a call to
+ * ViriditySession::setLogic.
+ */
+
 class ViriditySession : public QObject, public ViridityRequestHandler
 {
     Q_OBJECT
+    /*! Specifies the identifier of the current session instance. */
     Q_PROPERTY(QString id READ id CONSTANT)
+
+    /*! Specifies the initial peer address.
+     * \sa AbstractViriditySessionManager::getNewSession()
+     */
     Q_PROPERTY(QByteArray initialPeerAddress READ initialPeerAddress CONSTANT)
 public:
     explicit ViriditySession(AbstractViriditySessionManager *sessionManager, const QString &id);
     virtual ~ViriditySession();
 
+    /*!
+     * Register a message handler in the context of the current session.
+     * \param handler An instance pointer to a class instance implementing the ViridityMessageHandler interface.
+     * \sa ViridityMessageHandler
+     */
     void registerMessageHandler(ViridityMessageHandler *handler);
+
+    /*!
+     * Unregister a message handler in the context of the current session.
+     * \param handler An instance pointer to a class instance implementing the ViridityMessageHandler interface.
+     * \sa ViridityMessageHandler
+     */
     void unregisterMessageHandler(ViridityMessageHandler *handler);
 
+    /*!
+     * Register a request handler in the context of the current session.
+     * \param handler An instance pointer to a class instance implementing the ViridityRequestHandler interface.
+     * \sa ViridityRequestHandler
+     */
     void registerRequestHandler(ViridityRequestHandler *handler);
+
+    /*!
+     * Unregister a request handler in the context of the current session.
+     * \param handler An instance pointer to a class instance implementing the ViridityRequestHandler interface.
+     * \sa ViridityRequestHandler
+     */
     void unregisterRequestHandler(ViridityRequestHandler *handler);
 
+    /*!
+     * Used to dispatch a message to all message handlers in this session.
+     * \param message The raw message as QByteArray.
+     * \returns Either true if the message was delivered to a message handler or false if no message handler was able to handle the message.
+     * \sa ViridityMessageHandler
+     */
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message);
+
+    /*!
+     * Used to dispatch a message to the session's remote client in a push-fashion. Actual delivery might be deferred until the client is ready to except the message.
+     * \note This method does not wait for the message to be delivered and instead returns immediately.
+     * \param message The raw message as QByteArray.
+     * \param targetId Either the identifier of the target on the remote side or QString::null to broadcast to all targets.
+     */
     Q_INVOKABLE void dispatchMessageToClient(const QByteArray &message, const QString &targetId = QString::null);
 
+    /*!
+     * Determines if this session has pending messages available that have not yet been posted to the remote side.
+     * \note For internal use by the request handlers that provide the communication channel for Viridity, i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
+     */
     bool pendingMessagesAvailable() const;
+
+    /*!
+     * Returns a list of pending messages for dispatching to the remote side.
+     * \param returnBinary Determines that we wish to receive binary data instead of 7-bit-safe data. Depends on the capability of the request handler that provides the communication channel.
+     * \note For internal use by the request handlers that provide the communication channel for Viridity, i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
+     */
     QList<QByteArray> takePendingMessages(bool returnBinary = false);
 
+    /*!
+     * Marks the message handler in this session as having pending messages that are ready for dispatching in a pull-fashion
+     * via ViriditySession::takePendingMessages and ViriditySession::pendingMessagesAvailable
+     * \note For internal use by the request handlers that provide the communication channel for Viridity, i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
+     */
     void handlerIsReadyForDispatch(ViridityMessageHandler *handler);
 
+    /*! Returns the session manager of this session. */
     AbstractViriditySessionManager *sessionManager() { return sessionManager_; }
+
+    /*! Returns the identifier of the current session instance. */
     const QString id() const { return id_; }
 
+    /*!
+     * Returns how many active users this session has - essentially the reference count on this session used internally.
+     *
+     * \sa AbstractViriditySessionManager::getSession, AbstractViriditySessionManager::acquireSession, AbstractViriditySessionManager::releaseSession
+     */
     int useCount() const { return useCount_; }
 
+    /*! Associated a logic object as an opaque pointer with this session.
+     * \note The session instance does not take ownership of this logic object.
+     * Connect the destroyed() signal of the session to the deleteLater() method.
+     */
     void setLogic(QObject *logic) { logic_ = logic; }
+
+    /*! Returns the logic object associated with this session as an opaque pointer. */
     QObject *logic() const { return logic_; }
 
-    void setInitialPeerAddress(const QByteArray &address) { initialPeerAddress_ = address; }
+    /*! Specifies the initial peer address.
+     * \sa AbstractViriditySessionManager::getNewSession()
+     */
     QByteArray initialPeerAddress() const { return initialPeerAddress_; }
 
+    /*! Static helper method that parses the session ID from an input URL. */
     static QString parseIdFromUrl(const QByteArray &url);
 
     // ViridityRequestHandler
@@ -59,16 +139,18 @@ public:
     virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 signals:
+    /*!
+     * Signal is emitted when there are pending messages available,
+     * either pushed directly via ViriditySession::dispatchMessageToClient or
+     * marked as ready by ViriditySession::handlerIsReadyForDispatch and later pulled via ViriditySession::takePendingMessages
+     * \note For internal use by the request handlers that provide the communication channel for Viridity, i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
+     */
     void newPendingMessagesAvailable();
 
 private slots:
     void updateCheckTimerTimeout();
 
 private:
-    Q_INVOKABLE bool sendMessageToHandlers(const QByteArray &message);
-    Q_INVOKABLE void sendMessageToClient(const QByteArray &message, const QString &targetId);
-
-protected:
     friend class AbstractViriditySessionManager;
     AbstractViriditySessionManager *sessionManager_;
     QString id_;
@@ -89,18 +171,58 @@ protected:
     int useCount_;
 
     QByteArray initialPeerAddress_;
+
+    Q_INVOKABLE bool sendMessageToHandlers(const QByteArray &message);
+    Q_INVOKABLE void sendMessageToClient(const QByteArray &message, const QString &targetId);
+
+    void setInitialPeerAddress(const QByteArray &address) { initialPeerAddress_ = address; }
 };
+
+/*!
+ * The ViridityMessageHandler class defines the interface for message handlers on the Viridity communication channel.
+ * It provides methods for handling incoming messages, i.e. ViridityMessageHandler::canHandleMessage and ViridityMessageHandler::handleMessage similar to ViridityRequestHandler.
+ * It also provides means of producing messages via ViridityMessageHandler::takePendingMessages and ViriditySession::handlerIsReadyForDispatch.
+ */
 
 class ViridityMessageHandler
 {
 public:
     virtual ~ViridityMessageHandler() {}
+
+    /*!
+     * Determines whether this class can handle (or wishes to handle) the message.
+     * \param message The messsage received from the client/browser via the session.
+     * \param sessionId The identifier of the session this message originates from.
+     * \param targetId The identifier of the target this message is destined for.
+     * \return Return true if this class can handle the message, false otherwise.
+     */
     virtual bool canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
+
+    /*!
+     * Called to handle the message.
+     * \param message The messsage received from the client/browser via the session.
+     * \param sessionId The identifier of the session this message originates from.
+     * \param targetId The identifier of the target this message is destined for.
+     * \return Return true if the message was handled, false otherwise.
+     */
     virtual bool handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId) = 0;
 
+    /*!
+     * Override this method to produce outgoing messages after signaling you have pending messages via ViriditySession::handlerIsReadyForDispatch.
+     * \param returnBinary Determines that we wish to receive binary data instead of 7-bit-safe data. Depends on the capability of the request handler that provides the communication channel.
+     * \return List of message lines of QByteArray.
+     * \sa ViriditySession::takePendingMessages, ViriditySession::handlerIsReadyForDispatch
+     */
     virtual QList<QByteArray> takePendingMessages(bool returnBinary = false);
 
+    /*! Static helper method to take the target identifier from the raw input message and return it as QString. */
     static QString takeTargetFromMessage(QByteArray &message);
+
+    /*! Static helper to split the message into command and parameter list.
+     * \param message The input message.
+     * \param command The parsed command as QString.
+     * \param params The parsed parameters of the message as QStringList.
+     */
     static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
 };
 
@@ -113,22 +235,27 @@ public:
  * AbstractViriditySessionManager::releaseSession are used internally by the request handlers that provide the communication channel for Viridity,
  * i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
  *
- * Sessions in Viridity are always associated with a logic object assigned via the pure virtual method setLogic which
+ * Sessions in Viridity are always associated with a logic object assigned via the pure virtual method AbstractViriditySessionManager::setLogic which
  * needs to be implemented by a custom session manager class. Logic objects can be individual to a session or can be shared by different sessions.
  * Logic objects can be any QObject derived class and provide a generic way to attach your custom business logic to one or more sessions as opaque pointer.
- * Messages can be dispatched to sessions sharing the same logic object via the AbstractViriditySessionManager::dispatchMessageToClientMatchingLogic() method.
+ * Messages can be dispatched to sessions sharing the same logic object via the AbstractViriditySessionManager::dispatchMessageToClientMatchingLogic method.
  */
 
 class AbstractViriditySessionManager : public QObject
 {
     Q_OBJECT
 public:
+    /*!
+     * Constructs a AbstractViriditySessionManager instance with the specified parent.
+     *
+     * \param parent The parent this instance is a child to.
+     */
     AbstractViriditySessionManager(QObject *parent = 0);
     virtual ~AbstractViriditySessionManager();
 
     /*!
      * Creates a new session and sets the initial peer address that requested a new session.
-     * Internally calls AbstractViriditySessionManager::createSession() in the same thread context where this session manager instance was created, in most cases the application's main thread.
+     * Internally calls AbstractViriditySessionManager::createSession in the same thread context where this session manager instance was created, in most cases the application's main thread.
      * \param initialPeerAddress Specifies the IP address of the peer triggering the initial creation of this session.
      * \return The new session instance.
      */
@@ -167,8 +294,32 @@ public:
     /*! Returns the count of sessions currently alive and kicking in this session manager. */
     int sessionCount() const { return sessions_.count(); }
 
-    Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId = QString::null);    
+    /*! Used to dispatch a message to a specific session and its message handlers.
+     * \param message The raw message as QByteArray.
+     * \param sessionId Either the identifier of a specific session or QString::null to address all sessions known to this session manager.
+     * \returns Either true if the message was delivered to a message handler or false if no message handler handled the message or if the specified session was not found.
+     * \sa ViridityMessageHandler, ViriditySession::dispatchMessageToHandlers
+     */
+    Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId = QString::null);
+
+    /*! Used to dispatch a message to all remote clients whose sessions share the same logic.
+     * \param message The raw message as QByteArray.
+     * \param logic The opaque logic pointer used by one or more session.
+     * \param targetId Either the identifier of the target on the remote side or QString::null to broadcast to all targets.
+     * \returns True if the message was dispatched to at least one session's remote client, false if no matching session was found.
+     * \note This method does not wait for the message to be delivered and instead returns immediately.
+     * \sa ViriditySession::dispatchMessageToClient
+     */
     Q_INVOKABLE bool dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId);
+
+    /*! Used to dispatch a message to the remote client(s) of a specific session or all sessions, optionally specifying a target within the session(s).
+     * \param message The raw message as QByteArray.
+     * \param sessionId Either the identifier of a specific session or QString::null to address all sessions known to this session manager.
+     * \param targetId Either the identifier of the target on the remote side or QString::null to broadcast to all targets.
+     * \returns True if the message was dispatched to at least one session's remote client, false if no matching session was found.
+     * \note This method does not wait for the message to be delivered and instead returns immediately.
+     * \sa ViriditySession::dispatchMessageToClient
+     */
     Q_INVOKABLE bool dispatchMessageToClient(const QByteArray &message, const QString &sessionId = QString::null, const QString &targetId = QString::null);
 
     /*! Returns the ViridityWebServer instance this session manager is associated to. */
@@ -193,19 +344,19 @@ signals:
 protected:
     /*!
      * This method needs to be implemented in a custom session manager to finish the setup of a new session and associate it with a logic object.
-     * To associate your logic object with the session call the ViriditySession::setLogic() method. The session instance will not take ownership of your logic object.
+     * To associate your logic object with the session call the ViriditySession::setLogic method. The session instance will not take ownership of your logic object.
      *
-     * This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
-     * The session instance is later moved to a different thread. Be careful not to parent your logic to the session as it will be moved to this new thread as well.
+     * \note This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
+     * \warning The session instance is later moved to a different thread. Be careful not to parent your logic to the session as it will be moved to this new thread as well.
      * \param session The new session instance.
      */
     virtual void setLogic(ViriditySession *session) = 0; // Always executed in thread of session manager
 
     /*!
      * Override this method to register any request or message handlers with the session.
-     * This method is called after AbstractViriditySessionManager::setLogic() was called.
+     * This method is called after AbstractViriditySessionManager::setLogic was called.
      *
-     * This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
+     * \note This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
      * \param session The new session instance.
      */
     virtual void registerHandlers(ViriditySession *session); // Always executed in thread of session manager

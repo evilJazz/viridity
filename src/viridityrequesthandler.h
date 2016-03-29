@@ -13,7 +13,10 @@
 
 class ViridityWebServer;
 
-/*! ViridityHttpServerRequest defines an incoming request from a peer/client/browser. The current implementation is based on Tufao::HttpServerRequest and might be replaced in a compatible manner in the future. */
+/*!
+ * ViridityHttpServerRequest defines an incoming request from a peer/client/browser.
+ * The current implementation is based on Tufao::HttpServerRequest and might be replaced in a source-compatible manner in the future.
+ */
 
 class ViridityHttpServerRequest : public Tufao::HttpServerRequest
 {
@@ -25,11 +28,15 @@ public:
     /*!
      Extracts the peer's IP address from the request.
      \return The IP address as byte array.
+     \sa ViriditySession::initialPeerAddress, AbstractViriditySessionManager::getNewSession
     */
     QByteArray getPeerAddressFromRequest() const;
 };
 
-/*! ViridityHttpServerResponse defines a response to a ViridityHttpServerRequest. The current implementation is based on Tufao::HttpServerResponse and might be replaced in a compatible manner in the future. */
+/*!
+ * ViridityHttpServerResponse defines a response to a ViridityHttpServerRequest.
+ * The current implementation is based on Tufao::HttpServerResponse and might be replaced in a source-compatible manner in the future.
+ */
 
 class ViridityHttpServerResponse : public Tufao::HttpServerResponse
 {
@@ -49,7 +56,8 @@ public:
 
 /*!
     Abstract class that provides the interface for handling requests in a ViridityWebServer instance.
-    Custom request handler classes have to implement this interface. Instances of these custom classes should be registered with a running ViridityWebServer instance via ViridityWebServer::registerRequestHandler().
+    Custom request handler classes have to implement this interface. Instances of these custom classes should be registered with
+    a running ViridityWebServer instance via ViridityWebServer::registerRequestHandler.
     For a simpler starting point consider using ViridityBaseRequestHandler as base class.
     \sa ViridityWebServer, ViridityBaseRequestHandler
 */
@@ -60,7 +68,7 @@ public:
     virtual ~ViridityRequestHandler() {}
 
     /*!
-     * Determines whether this class can handle (or wants to) the request.
+     * Determines whether this class can handle (or wishes to handle) the request.
      * \param request The request instance received from the client/browser via the ViridityWebServer.
      * \return Return true if this class can handle the request, false otherwise.
      */
@@ -69,6 +77,11 @@ public:
     /*! Called to handle an incoming request and send out the response. */
     virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response) = 0;
 };
+
+/*!
+ * The ViridityBaseRequestHandler class should be used for custom classes that implement the ViridityRequestHandler interface.
+ * \sa ViridityWebServer, ViridityBaseRequestHandler
+ */
 
 class ViridityBaseRequestHandler : public QObject, public ViridityRequestHandler
 {
@@ -83,7 +96,7 @@ public:
 
     ViridityWebServer *server() const { return server_; }
 
-protected:
+private:
     ViridityWebServer *server_;
 };
 
