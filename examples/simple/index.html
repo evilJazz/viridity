@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Viridity Simple Example</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
+    <style type="text/css">
+    * {
+        margin: 0;
+    }
+
+    html, body {
+        height: 100%;
+    }
+    </style>
+
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
+
+    <script src="Viridity.js"></script>
+    <script src="DataBridge.js"></script>
+
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var channel = new Viridity({ connectionMethod: ConnectionMethod.Auto, sessionId: $.cookie("vsessionId") });
+
+            var dataBridge = new DataBridge(channel, "test");
+
+            dataBridge.onDataReceived = function(input)
+            {
+                console.dir(input);
+                console.log("Input received from server: " + JSON.stringify(input));
+                return "Client is here!";
+            }
+
+            // Attach to some HTML5 button with id "testButton"...
+            $("#testButton").click(function()
+            {
+                dataBridge.sendData({ action: "hello" }, function(response)
+                {
+                    console.dir(response);
+                    if (response.success)
+                        console.log("Response received from server: " + response.text + "\nas JSON: " + JSON.stringify(response));
+                    else
+                        console.log("Server indicated an error.");
+                });
+            });
+
+            var initSession = function(sessionId)
+            {
+                $.cookie("vsessionId", sessionId);
+            };
+
+            channel.on("sessionStart", initSession);
+            channel.on("sessionReattached", initSession);
+
+            channel.on("sessionInUse", function(sessionId)
+            {
+                alert("This session is already in use in another tab or window.");
+            });
+        });
+    </script>
+  </head>
+  <body>
+    <h1>Click the button</h1>
+    <button type="submit" id="testButton">Hit me!</button>
+  </body>
+</html>
