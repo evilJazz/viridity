@@ -36,7 +36,7 @@ public:
     QString qmlFileName;
 
 protected:
-    void setLogic(ViriditySession *session)
+    void initSession(ViriditySession *session)
     {
         DGUARDMETHODTIMED;
         // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
         FileRequestHandler::publishFileGlobally("/index.html", ":/index.html");
     }
 
-    FileRequestHandler::publishDirectoryGlobally("/", ":/Client");
+    FileRequestHandler::publishViridityFiles();
 
     MySessionManager sessionManager;
     sessionManager.qmlFileName = a.arguments().at(1);

@@ -91,7 +91,7 @@ protected slots:
 class MySessionManager : public AbstractViriditySessionManager
 {
 protected:
-    void setLogic(ViriditySession *session)
+    void initSession(ViriditySession *session)
     {
         // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
 
@@ -141,11 +141,7 @@ int main(int argc, char *argv[])
     FileRequestHandler::publishFileGlobally("/detail1.html", ":/detail1.html", "text/html; charset=utf8");
     FileRequestHandler::publishFileGlobally("/images/backtile.png", ":/images/backtile.png", "image/png");
 
-    FileRequestHandler::publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
-    FileRequestHandler::publishFileGlobally("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf8");
-
-    FileRequestHandler::publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf8");
-    FileRequestHandler::publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
+    FileRequestHandler::publishViridityFiles();
 
     MySessionManager sessionManager;
 

@@ -6,7 +6,7 @@ var DataBridge = function(viridityChannel, id)
     {
         targetId: undefined,
 
-        onNewDataReceived: undefined,
+        onDataReceived: undefined,
 
         responseId: 0,
         pendingResponseCallbacks: {},
@@ -32,9 +32,9 @@ var DataBridge = function(viridityChannel, id)
                         processed = true;
                     }
                 }
-                else if (typeof(c.onNewDataReceived) == "function")
+                else if (typeof(c.onDataReceived) == "function")
                 {
-                    var result = c.onNewDataReceived(JSON.parse(input));
+                    var result = c.onDataReceived(JSON.parse(input));
                     v.sendMessage("dataResponse(" + responseId + "):" + JSON.stringify(result), c.targetId);
                     processed = true;
                 }

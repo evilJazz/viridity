@@ -22,7 +22,7 @@
     }
     </style>
 
-    <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
 
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap-theme.min.css">
@@ -60,21 +60,21 @@
                 var dataBridge2 = new DataBridge(channel, "data2");
                 var dataBridgeScene1 = new DataBridge(channel, "sceneData1");
 
-                dataBridge1.onNewDataReceived = function (input)
+                dataBridge1.onDataReceived = function (input)
                 {
                     console.dir(input);
                     alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
                     return "TEST1";
                 }
 
-                dataBridge2.onNewDataReceived = function (input)
+                dataBridge2.onDataReceived = function (input)
                 {
                     console.dir(input);
                     alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));
                     return "TEST2";
                 }
 
-                dataBridgeScene1.onNewDataReceived = function (input)
+                dataBridgeScene1.onDataReceived = function (input)
                 {
                     console.dir(input);
                     alert("Input received: " + input + "\nas JSON: " + JSON.stringify(input));

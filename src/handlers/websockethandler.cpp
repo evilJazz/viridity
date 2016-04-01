@@ -55,15 +55,18 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
                 socket_->startServerHandshake(request, head);
 
                 msg = "reattached(" + session_->id() + ")";
+                socket_->sendMessage(msg.toUtf8().constData());
+
+                if (session_->pendingMessagesAvailable())
+                    handleMessagesAvailable();
             }
             else
             {
                 socket_->startServerHandshake(request, head);
 
                 msg = "inuse(" + session->id() + ")";
+                socket_->sendMessage(msg.toUtf8().constData());
             }
-
-            socket_->sendMessage(msg.toUtf8().constData());
         }
         else
         {

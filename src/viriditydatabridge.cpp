@@ -6,7 +6,7 @@
 #include "viriditysessionmanager.h"
 #include "viriditydatabridge.h"
 
-ViridityDataBridge::ViridityDataBridge(QObject *parent) :
+ViridityNativeDataBridge::ViridityNativeDataBridge(QObject *parent) :
     QObject(parent),
     session_(NULL),
     response_(QString::null),
@@ -14,17 +14,17 @@ ViridityDataBridge::ViridityDataBridge(QObject *parent) :
 {
 }
 
-ViridityDataBridge::~ViridityDataBridge()
+ViridityNativeDataBridge::~ViridityNativeDataBridge()
 {
     unregisterHandler();
 }
 
-void ViridityDataBridge::handleSessionDestroyed()
+void ViridityNativeDataBridge::handleSessionDestroyed()
 {
     session_ = NULL;
 }
 
-void ViridityDataBridge::setSession(ViriditySession *session)
+void ViridityNativeDataBridge::setSession(ViriditySession *session)
 {
     unregisterHandler();
     session_ = session;
@@ -32,7 +32,7 @@ void ViridityDataBridge::setSession(ViriditySession *session)
     emit sessionChanged();
 }
 
-void ViridityDataBridge::setTargetId(const QString &targetId)
+void ViridityNativeDataBridge::setTargetId(const QString &targetId)
 {
     unregisterHandler();
     targetId_ = targetId;
@@ -40,19 +40,19 @@ void ViridityDataBridge::setTargetId(const QString &targetId)
     emit targetIdChanged();
 }
 
-void ViridityDataBridge::setResponse(const QString &value)
+void ViridityNativeDataBridge::setResponse(const QString &value)
 {
     response_ = value;
     emit responseChanged();
 }
 
-int ViridityDataBridge::getNewResponseId()
+int ViridityNativeDataBridge::getNewResponseId()
 {
     ++responseId_;
     return responseId_;
 }
 
-void ViridityDataBridge::registerHandler()
+void ViridityNativeDataBridge::registerHandler()
 {
     if (session_)
     {
@@ -61,7 +61,7 @@ void ViridityDataBridge::registerHandler()
     }
 }
 
-void ViridityDataBridge::unregisterHandler()
+void ViridityNativeDataBridge::unregisterHandler()
 {
     if (session_)
     {
@@ -70,9 +70,15 @@ void ViridityDataBridge::unregisterHandler()
     }
 }
 
-QVariant ViridityDataBridge::sendData(const QString &data, const QString &destinationSessionId)
+QVariant ViridityNativeDataBridge::sendData(const QString &data, const QString &destinationSessionId)
 {
     int result = getNewResponseId();
+
+    if (!session_)
+    {
+        qWarning("No session assigned. Will not send data.");
+        return false;
+    }
 
     QString message = QString("data(%1):%2").arg(result).arg(data);
 
@@ -87,12 +93,12 @@ QVariant ViridityDataBridge::sendData(const QString &data, const QString &destin
     return dispatched ? result : false;
 }
 
-bool ViridityDataBridge::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool ViridityNativeDataBridge::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     return targetId == targetId_ && (message.startsWith("dataResponse") || message.startsWith("data"));
 }
 
-bool ViridityDataBridge::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool ViridityNativeDataBridge::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     bool result;
 
@@ -108,7 +114,7 @@ bool ViridityDataBridge::handleMessage(const QByteArray &message, const QString 
     return result;
 }
 
-bool ViridityDataBridge::localHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
+bool ViridityNativeDataBridge::localHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     if (canHandleMessage(message, sessionId, targetId))
     {

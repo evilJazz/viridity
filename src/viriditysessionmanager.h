@@ -22,7 +22,7 @@ class ViridityMessageHandler;
  * The ViriditySession class describes a session context with a remote client.
  *
  * \note Instances are never created directly but are always created by the AbstractViriditySessionManager class internally.
- * Implement AbstractViriditySessionManager::setLogic in your session manager class to customize the session via a call to
+ * Implement AbstractViriditySessionManager::initSession in your session manager class to customize the session via a call to
  * ViriditySession::setLogic.
  */
 
@@ -77,7 +77,7 @@ public:
     Q_INVOKABLE bool dispatchMessageToHandlers(const QByteArray &message);
 
     /*!
-     * Used to dispatch a message to the session's remote client in a push-fashion. Actual delivery might be deferred until the client is ready to except the message.
+     * Used to dispatch a message to the session's remote client in a push-fashion. Actual delivery might be deferred until the client is ready to accept the message.
      * \note This method does not wait for the message to be delivered and instead returns immediately.
      * \param message The raw message as QByteArray.
      * \param targetId Either the identifier of the target on the remote side or QString::null to broadcast to all targets.
@@ -147,8 +147,39 @@ signals:
      */
     void newPendingMessagesAvailable();
 
+    /*!
+     * Signal is emitted when the session was initialized and is ready for action.
+     * This signal is emitted after the initial ViriditySession::attached()
+     */
+    void initialized();
+
+    /*!
+     * Signal is emitted when the session is attached to a remote client.
+     * \note For long polling connections, i.e. connections handled by LongPollingHandler,
+     * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
+     */
+    void attached();
+
+    /*!
+     * Signal is emitted when the session is detached from a remote client.
+     * \note For long polling connections, i.e. connections handled by LongPollingHandler,
+     * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
+     */
+    void detached();
+
+    /*!
+     * Signal is emitted before tearing down the session, when no client is attached,
+     * ViriditySession::useCount() is zero and AbstractViriditySessionManager::killExpiredSessions()
+     * deems it is time to clean up this instance.
+     */
+    void deinitializing();
+
 private slots:
     void updateCheckTimerTimeout();
+    void detachDeferTimerTimeout();
+
+    void incrementUseCount();
+    void decrementUseCount();
 
 private:
     friend class AbstractViriditySessionManager;
@@ -165,6 +196,10 @@ private:
     QTimer *updateCheckTimer_;
     int updateCheckInterval_;
     void triggerUpdateCheckTimer();
+
+    QTimer *detachDeferTimer_;
+    int detachCheckInterval_;
+    bool attached_;
 
     QObject *logic_;
     QElapsedTimer lastUsed_;
@@ -235,7 +270,7 @@ public:
  * AbstractViriditySessionManager::releaseSession are used internally by the request handlers that provide the communication channel for Viridity,
  * i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
  *
- * Sessions in Viridity are always associated with a logic object assigned via the pure virtual method AbstractViriditySessionManager::setLogic which
+ * Sessions in Viridity are always associated with a logic object assigned in the pure virtual method AbstractViriditySessionManager::initSession which
  * needs to be implemented by a custom session manager class. Logic objects can be individual to a session or can be shared by different sessions.
  * Logic objects can be any QObject derived class and provide a generic way to attach your custom business logic to one or more sessions as opaque pointer.
  * Messages can be dispatched to sessions sharing the same logic object via the AbstractViriditySessionManager::dispatchMessageToClientMatchingLogic method.
@@ -255,7 +290,8 @@ public:
 
     /*!
      * Creates a new session and sets the initial peer address that requested a new session.
-     * Internally calls AbstractViriditySessionManager::createSession in the same thread context where this session manager instance was created, in most cases the application's main thread.
+     * Internally calls AbstractViriditySessionManager::initSession and AbstractViriditySessionManager::registerHandlers in the same thread context where
+     * this session manager instance was created, in most cases the application's main thread.
      * \param initialPeerAddress Specifies the IP address of the peer triggering the initial creation of this session.
      * \return The new session instance.
      */
@@ -343,25 +379,29 @@ signals:
 
 protected:
     /*!
-     * This method needs to be implemented in a custom session manager to finish the setup of a new session and associate it with a logic object.
+     * This method needs to be implemented in a custom session manager to finish the setup of a new session and associate it with you custom logic object.
      * To associate your logic object with the session call the ViriditySession::setLogic method. The session instance will not take ownership of your logic object.
      *
      * \note This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
      * \warning The session instance is later moved to a different thread. Be careful not to parent your logic to the session as it will be moved to this new thread as well.
      * \param session The new session instance.
      */
-    virtual void setLogic(ViriditySession *session) = 0; // Always executed in thread of session manager
+    virtual void initSession(ViriditySession *session) = 0; // Always executed in thread of session manager
 
     /*!
      * Override this method to register any request or message handlers with the session.
-     * This method is called after AbstractViriditySessionManager::setLogic was called.
+     * This method is called after AbstractViriditySessionManager::initSession was called.
      *
      * \note This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
      * \param session The new session instance.
      */
     virtual void registerHandlers(ViriditySession *session); // Always executed in thread of session manager
 
-private slots:
+protected slots:
+    /*!
+     * Cleans up ViriditySession instances known to this session manager that are expired, i.e.
+     * ViriditySession::useCount() is zero and the deadline is reached.
+     */
     void killExpiredSessions();
 
 private:

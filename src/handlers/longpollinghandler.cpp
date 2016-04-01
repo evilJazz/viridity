@@ -62,6 +62,8 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
                     session = server()->sessionManager()->acquireSession(id);
                     msg = "reattached(" + session->id().toLatin1() + ")";
                     server()->sessionManager()->releaseSession(session);
+
+                    // NOTE: Pending messages will be handed out with the next poll below, i.e. when url not contains ?a=init
                 }
                 else
                 {

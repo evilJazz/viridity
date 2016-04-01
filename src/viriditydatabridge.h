@@ -6,7 +6,7 @@
 
 #include "viriditysessionmanager.h"
 
-class ViridityDataBridge : public QObject, public ViridityMessageHandler
+class ViridityNativeDataBridge : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
     Q_PROPERTY(ViriditySession *session READ session WRITE setSession NOTIFY sessionChanged)
@@ -14,8 +14,8 @@ class ViridityDataBridge : public QObject, public ViridityMessageHandler
     Q_PROPERTY(QString response READ response WRITE setResponse NOTIFY responseChanged)
 
 public:
-    explicit ViridityDataBridge(QObject *parent = 0);
-    virtual ~ViridityDataBridge();
+    explicit ViridityNativeDataBridge(QObject *parent = 0);
+    virtual ~ViridityNativeDataBridge();
 
     void setSession(ViriditySession *session);
     ViriditySession *session() const { return session_; }
@@ -38,7 +38,7 @@ private:
 
 signals:
     void dataReceived(const QString &responseId, const QString &input);
-    void responseReceived(const QVariant &responseId, const QString &response, const QString &sessionId);
+    void responseReceived(const QString &responseId, const QString &response, const QString &sessionId);
 
     void sessionChanged();
     void targetIdChanged();

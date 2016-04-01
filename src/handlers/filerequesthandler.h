@@ -24,6 +24,8 @@ public:
     static void publishDirectoryGlobally(const QByteArray &baseUrl, const QString &directoryName);
     static void unpublishDirectoryGlobally(const QByteArray &baseUrl);
 
+    static void publishViridityFiles();
+
     static QByteArray determineMimeType(const QString &fileName);
 
     bool doesHandleRequest(ViridityHttpServerRequest *request);

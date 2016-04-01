@@ -79,6 +79,14 @@ void FileRequestHandler::unpublishDirectoryGlobally(const QByteArray &baseUrl)
 
 }
 
+void FileRequestHandler::publishViridityFiles()
+{
+    publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
+    publishFileGlobally("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf8");
+    publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf8");
+    publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
+}
+
 QByteArray FileRequestHandler::determineMimeType(const QString &fileName)
 {
     QByteArray ext = QFileInfo(fileName).suffix().toLower().toLatin1();

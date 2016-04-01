@@ -62,6 +62,8 @@ ViriditySession::ViriditySession(AbstractViriditySessionManager *sessionManager,
     id_(id),
     dispatchMutex_(QMutex::Recursive),
     updateCheckInterval_(10),
+    detachCheckInterval_(1000),
+    attached_(false),
     logic_(NULL),
     useCount_(0)
 {
@@ -70,6 +72,11 @@ ViriditySession::ViriditySession(AbstractViriditySessionManager *sessionManager,
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
     updateCheckTimer_->setSingleShot(false);
     updateCheckTimer_->start(updateCheckInterval_);
+
+    detachDeferTimer_ = new QTimer(this);
+    connect(detachDeferTimer_, SIGNAL(timeout()), this, SLOT(detachDeferTimerTimeout()));
+    detachDeferTimer_->setSingleShot(true);
+    detachDeferTimer_->setInterval(detachCheckInterval_);
 }
 
 ViriditySession::~ViriditySession()
@@ -105,6 +112,30 @@ void ViriditySession::sendMessageToClient(const QByteArray &message, const QStri
         messages_ += targetId.toUtf8() + ">" + message;
 
     triggerUpdateCheckTimer();
+}
+
+void ViriditySession::incrementUseCount()
+{
+    bool useCountWasZero = useCount_ == 0;
+
+    ++useCount_;
+    lastUsed_.restart();
+
+    if (useCountWasZero && !attached_)
+    {
+        attached_ = true;
+        emit attached();
+    }
+}
+
+void ViriditySession::decrementUseCount()
+{
+    --useCount_;
+    lastUsed_.restart();
+
+    // Use a deferred disconnect to debounce
+    // communication channel handler, especially LongPolling.
+    QMetaObject::invokeMethod(detachDeferTimer_, "start");
 }
 
 bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
@@ -204,6 +235,15 @@ void ViriditySession::updateCheckTimerTimeout()
         emit newPendingMessagesAvailable();
 }
 
+void ViriditySession::detachDeferTimerTimeout()
+{
+    if (useCount_ == 0)
+    {
+        attached_ = false;
+        emit detached();
+    }
+}
+
 void ViriditySession::triggerUpdateCheckTimer()
 {
     if (!updateCheckTimer_->isActive())
@@ -254,7 +294,6 @@ AbstractViriditySessionManager::~AbstractViriditySessionManager()
 ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray &initialPeerAddress)
 {
     DGUARDMETHODTIMED;
-    QMutexLocker l(&sessionMutex_);
 
     // Create new session instance in thread of session manager...
     ViriditySession *session = NULL;
@@ -269,12 +308,14 @@ ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray 
 
     if (session)
     {
+        QMutexLocker l(&sessionMutex_);
+
         sessions_.insert(session->id(), session);
 
-        session->lastUsed_.restart();
-        session->useCount_ = 1;
+        QMetaObject::invokeMethod(session, "incrementUseCount");
 
         emit newSessionCreated(session);
+        emit session->initialized();
 
         return session;
     }
@@ -284,6 +325,8 @@ ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray 
 
 void AbstractViriditySessionManager::removeSession(ViriditySession *session)
 {
+    emit session->deinitializing();
+
     QMutexLocker l(&sessionMutex_);
     sessions_.remove(session->id());
     emit sessionRemoved(session);
@@ -316,10 +359,7 @@ ViriditySession *AbstractViriditySessionManager::acquireSession(const QString &i
     ViriditySession *session = getSession(id);
 
     if (session)
-    {
-        ++session->useCount_;
-        session->lastUsed_.restart();
-    }
+        QMetaObject::invokeMethod(session, "incrementUseCount");
 
     return session;
 }
@@ -329,10 +369,7 @@ void AbstractViriditySessionManager::releaseSession(ViriditySession *session)
     QMutexLocker l(&sessionMutex_);
 
     if (session)
-    {
-        --session->useCount_;
-        session->lastUsed_.restart();
-    }
+        QMetaObject::invokeMethod(session, "decrementUseCount");
 }
 
 ViriditySession *AbstractViriditySessionManager::createSession(const QString &id, const QByteArray &initialPeerAddress)
@@ -341,7 +378,7 @@ ViriditySession *AbstractViriditySessionManager::createSession(const QString &id
     ViriditySession *session = createNewSessionInstance(id);
 
     session->setInitialPeerAddress(initialPeerAddress);
-    setLogic(session);
+    initSession(session);
     registerHandlers(session);
 
     return session;

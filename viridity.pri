@@ -20,7 +20,6 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/viriditysessionmanager.h \
     $$VIRIDITY_SRC_PATH/viriditydatabridge.h \
     $$VIRIDITY_SRC_PATH/viridityrequesthandler.h \
-    $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.h \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.h \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.h \
@@ -34,7 +33,6 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditysessionmanager.cpp \
     $$VIRIDITY_SRC_PATH/viriditydatabridge.cpp \
     $$VIRIDITY_SRC_PATH/viridityrequesthandler.cpp \
-    $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp \
     $$VIRIDITY_SRC_PATH/handlers/websockethandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/longpollinghandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/filerequesthandler.cpp \
@@ -42,6 +40,17 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp
+
+CONFIG += viridity_declarative
+
+viridity_declarative {
+    DEFINES += USE_QTQUICK2
+
+    QT += qml
+
+    HEADERS += $$VIRIDITY_SRC_PATH/viriditydeclarative.h
+    SOURCES += $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp
+}
 
 # Display related
 CONFIG += viridity_module_display viridity_use_improved_jpeg viridity_use_improved_png
@@ -130,6 +139,7 @@ viridity_module_display {
 
         QT += declarative
         DEFINES += USE_QTQUICK1
+        DEFINES -= USE_QTQUICK2
         CONFIG += viridity_module_display_qgraphicscene viridity_module_display_declarative
 
         HEADERS += \
@@ -137,8 +147,6 @@ viridity_module_display {
 
         SOURCES += \
             $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.cpp
-
-        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
     }
 
     viridity_module_display_qtquick2 {
@@ -146,6 +154,7 @@ viridity_module_display {
 
         QT += qml quick
         DEFINES += USE_QTQUICK2
+        DEFINES -= USE_QTQUICK1
         CONFIG += viridity_module_display_declarative
 
         HEADERS += \
@@ -153,9 +162,10 @@ viridity_module_display {
 
         SOURCES += \
             $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
-
-        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
     }
+
+    contains(DEFINES, USE_QTQUICK1): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
+    contains(DEFINES, USE_QTQUICK2): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
 
     viridity_module_display_declarative {
         HEADERS += \

@@ -30,9 +30,11 @@
         $(document).ready(function() {
             var channel = new Viridity({ connectionMethod: ConnectionMethod.WebSockets });
 
+            var display = $("#displayContainer").viridity(channel, "main");
+
             var initScene = function(sessionId)
             {
-                var display = $("#displayContainer").viridity(channel, "main");
+                // Add custom session code here...
             };
 
             channel.on("sessionStart", initScene);
