@@ -176,7 +176,7 @@ void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 
     dpr_ = ratio;
 
-    if (!qFuzzyCompare(ratio, 1.f))
+    if (!qFuzzyCompare(ratio, 1.))
     {
         rootItem_->setWidth(width / ratio);
         rootItem_->setHeight(height / ratio);

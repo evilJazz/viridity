@@ -46,12 +46,11 @@ int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
 
-    ViridityDeclarative::registerTypes();
-
-    FileRequestHandler::publishViridityFiles();
-
     FileRequestHandler::publishFileGlobally("/", ":/index.html");
     FileRequestHandler::publishFileGlobally("/index.html", ":/index.html");
+
+    FileRequestHandler::publishViridityFiles();
+    ViridityDeclarative::registerTypes();
 
     MySessionManager sessionManager;
     const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
@@ -60,7 +59,10 @@ int main(int argc, char *argv[])
     if (server.listen(QHostAddress::Any, dataPort))
         qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
     else
-        qFatal("Could not setup server on 127.0.0.1 %d.", dataPort);
+    {
+        qWarning("Could not setup server on 127.0.0.1 %d.", dataPort);
+        return 1;
+    }
 
     return a.exec();
 }

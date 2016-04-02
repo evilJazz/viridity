@@ -23,16 +23,19 @@ CONFIG(release, debug|release) {
 contains(QT_VERSION, ^4\\..*): CONFIG += viridity_module_display_qtquick1
 contains(QT_VERSION, ^5\\..*): CONFIG += viridity_module_display_qtquick2
 
+DEFINES += VIRIDITY_STATIC
 include(../../viridity.pri)
+
+DEFINES += TUFAO_STATIC
 include(../../3rdparty/tufao/tufao-min.pri)
+
+DEFINES += KCL_STATIC
 include(../../3rdparty/kcl/kcl.pri)
 
 linux-* {
-    target.path = /opt/bin
+    target.path = /opt/qmlwebviewer
     INSTALLS += target
 }
 
 RESOURCES += \
     resources.qrc
-
-DEFINES += VIRIDITY_DEBUG

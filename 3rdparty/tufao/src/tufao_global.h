@@ -25,10 +25,14 @@
 
 #include <QtCore/qglobal.h>
 
-#if defined(TUFAO_LIBRARY)
-#  define TUFAO_EXPORT Q_DECL_EXPORT
+#ifdef TUFAO_STATIC
+    #define TUFAO_EXPORT
 #else
-#  define TUFAO_EXPORT Q_DECL_IMPORT
+    #if defined(TUFAO_LIBRARY)
+    #  define TUFAO_EXPORT Q_DECL_EXPORT
+    #else
+    #  define TUFAO_EXPORT Q_DECL_IMPORT
+    #endif
 #endif
 
 #ifndef TUFAO_VERSION_MAJOR

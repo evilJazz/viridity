@@ -132,14 +132,15 @@ int main(int argc, char *argv[])
     a.setQuitOnLastWindowClosed(false);
 #endif
 
-    ViridityDeclarative::registerTypes();
-
     if (a.arguments().count() == 1)
-        qFatal("Usage: %s <QML-file to serve> [port] [HTML-directory to serve]", QFileInfo(a.applicationFilePath()).fileName().toUtf8().constData());
-
-    if (a.arguments().length() == 2)
     {
-        QString htmlDirName = a.arguments().at(1);
+        qWarning("Usage: %s <QML-file to serve> [port] [HTML-directory to serve]", QFileInfo(a.applicationFilePath()).fileName().toUtf8().constData());
+        return 1;
+    }
+
+    if (a.arguments().count() == 4)
+    {
+        QString htmlDirName = a.arguments().at(3);
 
         if (QDir(htmlDirName).exists())
         {
@@ -157,6 +158,7 @@ int main(int argc, char *argv[])
     }
 
     FileRequestHandler::publishViridityFiles();
+    ViridityDeclarative::registerTypes();
 
     MySessionManager sessionManager;
     sessionManager.qmlFileName = a.arguments().at(1);
@@ -166,7 +168,10 @@ int main(int argc, char *argv[])
     if (server.listen(QHostAddress::Any, dataPort))
         qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
     else
-        qFatal("Could not setup server on 127.0.0.1 %d.", dataPort);
+    {
+        qWarning("Could not setup server on 127.0.0.1 %d.", dataPort);
+        return 1;
+    }
 
     return a.exec();
 }
