@@ -9,8 +9,20 @@ ViridityDataBridge {
     {
         if (input.action == "hello")
             return { text: "Hello World!", success: true };
+        else if (input.action == "startTimer")
+            testTimer.start();
+        else if (input.action == "stopTimer")
+            testTimer.stop();
         else
             return { success: false };
+    }
+
+    Timer {
+        id: testTimer
+        interval: 2000
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: sendData("Timer triggered.")
     }
 
     Connections {
@@ -42,17 +54,10 @@ ViridityDataBridge {
             console.log("Session initialized.");
         }
 
-        onDetached:
-        {
-            console.log("Client detached.");
-        }
-
-        onDeinitializing:
-        {
-            console.log("Session deinitializing.");
-        }
+        onDetached: console.log("Client detached.")
+        onDeinitializing: console.log("Session deinitializing.")
     }
 
-    Component.onCompleted: console.log("Logic created.");
-    Component.onDestruction: console.log("Killing logic.");
+    Component.onCompleted: console.log("Logic created.")
+    Component.onDestruction: console.log("Killing logic.")
 }

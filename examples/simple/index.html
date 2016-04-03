@@ -4,15 +4,6 @@
     <title>Viridity Simple Example</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1.0, user-scalable=no">
-    <style type="text/css">
-    * {
-        margin: 0;
-    }
-
-    html, body {
-        height: 100%;
-    }
-    </style>
 
     <script src="https://code.jquery.com/jquery-1.11.2.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-cookie/1.4.1/jquery.cookie.js"></script>
@@ -21,38 +12,61 @@
     <script src="DataBridge.js"></script>
 
     <script type="text/javascript">
-        $(document).ready(function() {
+        $(document).ready(function($) {
             var channel = new Viridity({ connectionMethod: ConnectionMethod.Auto, sessionId: $.cookie("vsessionId") });
+            //channel.debugVerbosity = 4;
 
             var dataBridge = new DataBridge(channel, "test");
 
+            function addContent(text)
+            {
+                $("<p/>").text(text).appendTo("#mainContent");
+            }
+
             dataBridge.onDataReceived = function(input)
             {
-                console.dir(input);
-                console.log("Input received from server: " + JSON.stringify(input));
+                addContent("Input received from server: " + JSON.stringify(input));
                 return "Client is here!";
             }
 
-            // Attach to some HTML5 button with id "testButton"...
-            $("#testButton").click(function()
+            // Attach to some HTML5 button with id "sendHelloButton"...
+            $("#btnSendHello").click(function()
             {
                 dataBridge.sendData({ action: "hello" }, function(response)
                 {
-                    console.dir(response);
                     if (response.success)
-                        console.log("Response received from server: " + response.text + "\nas JSON: " + JSON.stringify(response));
+                        addContent("Response received from server: " + response.text + "\nas JSON: " + JSON.stringify(response));
                     else
-                        console.log("Server indicated an error.");
+                        addContent("Server indicated an error.");
                 });
             });
 
-            var initSession = function(sessionId)
+            $("#btnStartTimerOnServer").click(function()
             {
-                $.cookie("vsessionId", sessionId);
-            };
+                dataBridge.sendData({ action: "startTimer" });
+            });
 
-            channel.on("sessionStart", initSession);
-            channel.on("sessionReattached", initSession);
+            $("#btnStopTimerOnServer").click(function()
+            {
+                dataBridge.sendData({ action: "stopTimer" });
+            });
+
+            channel.on("sessionStart", function(sessionId)
+            {
+                $.cookie("vsessionId", sessionId); // Save session id in cookie so we can re-attach again...
+                addContent("Started session: " + sessionId);
+            });
+
+            channel.on("sessionReattached", function(sessionId)
+            {
+                $.cookie("vsessionId", sessionId); // Save session id to cookie in case it changed...
+                addContent("Reattached to session: " + sessionId);
+            });
+
+            channel.on("sessionDisconnected", function(sessionId)
+            {
+                addContent("Session disconnected: " + sessionId);
+            });
 
             channel.on("sessionInUse", function(sessionId)
             {
@@ -63,6 +77,9 @@
   </head>
   <body>
     <h1>Click the button</h1>
-    <button type="submit" id="testButton">Hit me!</button>
+    <p id="mainContent"></p>
+    <button type="submit" id="btnSendHello">Send hello to server</button>
+    <button type="submit" id="btnStartTimerOnServer">Start timer on server</button>
+    <button type="submit" id="btnStopTimerOnServer">Stop timer on server</button>
   </body>
 </html>
