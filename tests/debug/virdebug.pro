@@ -25,14 +25,7 @@ CONFIG(release, debug|release) {
 }
 
 CONFIG += viridity_module_display_tools viridity_module_display_qtquick1
-DEFINES += VIRIDITY_STATIC
-include(../../viridity.pri)
-
-DEFINES += TUFAO_STATIC
-include(../../3rdparty/tufao/tufao-min.pri)
-
-DEFINES += KCL_STATIC
-include(../../3rdparty/kcl/kcl.pri)
+include(../../viridity-static.pri)
 
 RESOURCES += \
     ../testdata/resources.qrc

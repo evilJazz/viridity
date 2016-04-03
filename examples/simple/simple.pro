@@ -20,14 +20,7 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
-DEFINES += VIRIDITY_STATIC
-include(../../viridity.pri)
-
-DEFINES += TUFAO_STATIC
-include(../../3rdparty/tufao/tufao-min.pri)
-
-DEFINES += KCL_STATIC
-include(../../3rdparty/kcl/kcl.pri)
+include(../../viridity-static.pri)
 
 linux-* {
     target.path = /opt/viriditysimple
