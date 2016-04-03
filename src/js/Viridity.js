@@ -140,10 +140,10 @@ String.prototype.removeTrailingSlash = function()
 
 var Viridity = function(options)
 {
-    var debugVerbosity = 0;
-
     var v =
     {
+        debugVerbosity: 0,
+
         connectionMethod: ConnectionMethod.Auto,
 
         socket: null,
@@ -225,7 +225,7 @@ var Viridity = function(options)
 
         _triggerCallback: function(eventName, params)
         {
-            if (debugVerbosity > 1)
+            if (v.debugVerbosity > 1)
                 console.log("Now triggering event: " + eventName + " params: " + JSON.stringify(params));
 
             var callbacks = v.callbacks[eventName];
@@ -241,7 +241,7 @@ var Viridity = function(options)
                 var data = v.inputEvents.join("\n");
                 v.inputEvents = [];
 
-                if (debugVerbosity > 1)
+                if (v.debugVerbosity > 1)
                     console.log("Now posting messages to server:\n" + data);
 
                 var options =
@@ -396,7 +396,7 @@ var Viridity = function(options)
                 dataIsBinary: isBinary
             }
 
-            if (debugVerbosity > 2)
+            if (v.debugVerbosity > 2)
                 console.log("t: " + JSON.stringify(t, null, " "));
 
             return t;
@@ -407,7 +407,7 @@ var Viridity = function(options)
             var t = v.parseMessage(msg);
             var processed = false;
 
-            if (debugVerbosity > 2)
+            if (v.debugVerbosity > 2)
                 console.log("Received message from server: " + msg);
 
             if (typeof(t.targetId) !== "undefined" &&
@@ -447,7 +447,7 @@ var Viridity = function(options)
             if (typeof(targetId) !== "undefined" && targetId !== "")
                 msg = targetId + ">" + msg;
 
-            if (debugVerbosity > 0)
+            if (v.debugVerbosity > 0)
                 console.log("Sending message to server: " + msg);
 
             if (v.connectionMethod === ConnectionMethod.WebSockets)
@@ -533,14 +533,14 @@ var Viridity = function(options)
 
         _handleDisconnect: function()
         {
-            if (debugVerbosity > 1)
+            if (v.debugVerbosity > 1)
                 console.log("Disconnected. Retry no. " + (v.reconnectTries + 1));
 
             if (v.reconnectTries > 0 && v.autoDowngrade && v.connectionMethod !== ConnectionMethod.LongPolling && v.reconnectTries % v.reconnectTriesBeforeDowngrade == 0)
             {
                 var newConnectionMethod = v._getDowngradedConnectionMethodFor(v.connectionMethod);
 
-                if (debugVerbosity > 1)
+                if (v.debugVerbosity > 1)
                     console.log("Downgrading connection from " + v.connectionMethod + " to " + newConnectionMethod);
 
                 v.connectionMethod = newConnectionMethod;
@@ -548,7 +548,7 @@ var Viridity = function(options)
 
             if (!v.reconnecting)
             {
-                if (debugVerbosity > 1)
+                if (v.debugVerbosity > 1)
                     console.log("Starting reconnection...");
 
                 v.reconnectTries = 0;
@@ -595,7 +595,7 @@ var Viridity = function(options)
 
         connect: function(options)
         {
-            if (debugVerbosity > 0)
+            if (v.debugVerbosity > 0)
                 console.log("Connecting to server: " + JSON.stringify(options));
 
             if (typeof(options) == "object")
@@ -636,7 +636,7 @@ var Viridity = function(options)
                 }
                 catch (e)
                 {
-                    if (debugVerbosity > 1)
+                    if (v.debugVerbosity > 1)
                         console.log("Error on connect: " + e);
 
                     v._handleDisconnect();
@@ -646,7 +646,7 @@ var Viridity = function(options)
 
         init: function(options)
         {
-            if (debugVerbosity > 0)
+            if (v.debugVerbosity > 0)
                 console.log("Initializing: " + JSON.stringify(options));
 
             v.connectionMethod = v._validateConnectionMethodFor(options.connectionMethod);
@@ -673,7 +673,7 @@ var Viridity = function(options)
             v.location = hostWithPath;
             v.fullLocation = parser.protocol + "//" + v.location;
 
-            if (debugVerbosity > 0)
+            if (v.debugVerbosity > 0)
             {
                 console.log("v.location: " + v.location);
                 console.log("v.fullLocation: " + v.fullLocation);

@@ -124,7 +124,12 @@ QtObject {
 
             onDataReceived: // responseId, input
             {
-                bridge.response = JSON.stringify(root.onDataReceived(JSON.parse(input)));
+                var response = root.onDataReceived(JSON.parse(input));
+
+                if (typeof(response) == "undefined")
+                    bridge.response = "null";
+                else
+                    bridge.response = JSON.stringify(response);
             }
 
             onResponseReceived: // responseId, response, sessionId
