@@ -24,11 +24,15 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
-include(../../3rdparty/kcl/kcl.pri)
+CONFIG += viridity_module_display_tools viridity_module_display_qtquick1
+DEFINES += VIRIDITY_STATIC
+include(../../viridity.pri)
+
+DEFINES += TUFAO_STATIC
 include(../../3rdparty/tufao/tufao-min.pri)
 
-CONFIG += viridity_module_display_tools viridity_module_display_qtquick1
-include(../../viridity.pri)
+DEFINES += KCL_STATIC
+include(../../3rdparty/kcl/kcl.pri)
 
 RESOURCES += \
     ../testdata/resources.qrc
