@@ -4,13 +4,13 @@
     {
         var containerElement = this;
 
-        var debugVerbosity = 0;
-        var debugDraw = false;
-
         var v = viridityChannel;
 
         var dr =
         {
+            debugVerbosity: 0,
+            debugDraw: false,
+
             targetId: undefined,
             params: [],
 
@@ -44,7 +44,7 @@
 
             _determineReadyState: function()
             {
-                if (debugVerbosity > 1) console.log(dr.targetId + " -> pendingPatchesCount: " + dr.pendingPatchesCount)
+                if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> pendingPatchesCount: " + dr.pendingPatchesCount)
                 if (dr.frameEndReceived && dr.pendingPatchesCount === 0)
                 {
                     if (dr.frameErrors > 0)
@@ -57,10 +57,10 @@
                     else
                     {
                         dr._flipToFront();
-                        if (debugDraw)
+                        if (dr.debugDraw)
                             dr._debugDraw();
 
-                        if (debugVerbosity > 1) console.log(dr.targetId + " -> SENDING READY!!!!");
+                        if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> SENDING READY!!!!");
 
                         v.sendMessage("ready()", dr.targetId);
                     }
@@ -262,7 +262,7 @@
 
                 if (t.command === "fullUpdate")
                 {
-                    if (debugVerbosity > 1) console.log(dr.targetId + " -> FULL UPDATE FRAME " + frame);
+                    if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> FULL UPDATE FRAME " + frame);
 
                     dr.waitingForFullUpdate = false;
                     dr.pendingPatchesCount = 0;
@@ -270,7 +270,7 @@
 
                 if (dr.lastFrame !== frame)
                 {
-                    if (debugVerbosity > 1) console.log(dr.targetId + " -> NEW FRAME: " + dr.lastFrame + " -> " + frame);
+                    if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> NEW FRAME: " + dr.lastFrame + " -> " + frame);
                     dr.lastFrame = frame;
 
                     if (dr.pendingPatchesCount != 0)
@@ -282,15 +282,15 @@
                     // This is to stop _determineReadyState() from sending ready() when image loading is quasi-synchronous, ie. base64 encoded sources.
                     dr.frameEndReceived = false;
 
-                    if (debugDraw)
+                    if (dr.debugDraw)
                     {
                         dr._flipToFront(); // overwrite debug rects...
                         dr.frameCommands = [];
                     }
                 }
 
-                if (debugVerbosity > 1) console.log(dr.targetId + " -> command: " + t.command + " params: " + JSON.stringify(inputParams));
-                if (debugDraw)
+                if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> command: " + t.command + " params: " + JSON.stringify(inputParams));
+                if (dr.debugDraw)
                 {
                     var frameCmd =
                     {
@@ -353,7 +353,7 @@
                         if (frame !== dr.lastFrame)
                             console.log(dr.targetId + " -> ASYNCHRONOUS IMAGE!!!!! " + " frame is " + frame + ", but dr.lastFrame is " + dr.lastFrame);
 
-                        if (debugVerbosity > 1) console.log(dr.targetId + " -> frame: " + frame + " img.src: " + img.src);
+                        if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> frame: " + frame + " img.src: " + img.src);
 
                         var dstX = parseInt(inputParams[1]);
                         var dstY = parseInt(inputParams[2]);
@@ -529,7 +529,7 @@
                 }
                 else if (t.command === "end")
                 {
-                    if (debugVerbosity > 1) console.log(dr.targetId + " -> Frame end " + frame + " received...");
+                    if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> Frame end " + frame + " received...");
                     dr.frameEndReceived = true;
                     dr._determineReadyState();
                 }
@@ -542,7 +542,7 @@
 
                 if (dr.canvas.width != scaledWidth || dr.canvas.height != scaledHeight || force)
                 {
-                    if (debugVerbosity > 0)
+                    if (dr.debugVerbosity > 0)
                         console.log(dr.targetId + " -> width: " + width + " height: " + height);
 
                     dr._resizeCanvas(dr.canvas, dr.ctx, scaledWidth, scaledHeight);
@@ -550,7 +550,7 @@
                     // Properly clip the canvas so it does not move outside of its container...
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
-                    if (debugVerbosity > 1) console.log(dr.targetId + " -> RESIZING TO " + scaledWidth + " x " + scaledHeight);
+                    if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> RESIZING TO " + scaledWidth + " x " + scaledHeight);
                     v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
             },
@@ -613,7 +613,7 @@
 
                 dr.ratio = devicePixelRatio / backingStoreRatio;
 
-                if (debugVerbosity > 0)
+                if (dr.debugVerbosity > 0)
                     console.log("devicePixelRatio: " + devicePixelRatio + " backingStoreRatio: " + backingStoreRatio + " dr.ratio: " + dr.ratio);
 
                 containerElement.append(dr.frontCanvas);
@@ -720,7 +720,7 @@
 
                 function sendKeyEvent(type, event, printableCharacter)
                 {
-                    if (debugVerbosity > 0)
+                    if (dr.debugVerbosity > 0)
                     {
                         console.log("Type: " + type + " event.which: " + event.which + " event.keyCode: " + event.keyCode + " event.charCode: " + event.charCode + " printableCharacter: " + printableCharacter);
                         //console.dir(event);

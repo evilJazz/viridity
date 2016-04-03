@@ -53,7 +53,11 @@
                 });
 
                 var display1 = $("#displayContainer1").viridity(channel, "display1", "test");
+                display1.debugDraw = true;
+
                 var display2 = $("#displayContainer2").viridity(channel, "display2", "preview1");
+                display2.debugVerbosity = 4;
+
                 var display3 = $("#displayContainer3").viridity(channel, "display3", "preview2");
 
                 var dataBridge1 = new DataBridge(channel, "data1");
