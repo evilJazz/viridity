@@ -161,12 +161,14 @@ var Viridity = function(options)
         inputEventsStarted: false,
 
         autoDowngrade: true,
+        reconnectFirstTry: true,
         reconnectTriesBeforeDowngrade: 10,
 
         reconnectTries: 0,
         reconnecting: false,
         reconnectTimer: null,
-        reconnectInterval: 5000,
+        reconnectInterval: 500,
+        reconnectMaxInterval: 10000,
 
         nextFreeTargetId: 0,
         targetCallbacks: {},
@@ -536,7 +538,11 @@ var Viridity = function(options)
             if (v.debugVerbosity > 1)
                 console.log("Disconnected. Retry no. " + (v.reconnectTries + 1));
 
-            if (v.reconnectTries > 0 && v.autoDowngrade && v.connectionMethod !== ConnectionMethod.LongPolling && v.reconnectTries % v.reconnectTriesBeforeDowngrade == 0)
+            if (v.autoDowngrade &&
+                (v.reconnectFirstTry ||
+                 (v.reconnectTries > 0 && v.connectionMethod !== ConnectionMethod.LongPolling && v.reconnectTries % v.reconnectTriesBeforeDowngrade == 0)
+                )
+               )
             {
                 var newConnectionMethod = v._getDowngradedConnectionMethodFor(v.connectionMethod);
 
@@ -558,7 +564,8 @@ var Viridity = function(options)
             }
 
             ++v.reconnectTries;
-            v.reconnectTimer = setTimeout(v.connect, v.reconnectInterval);
+            v.reconnectFirstTry = false;
+            v.reconnectTimer = setTimeout(v.connect, Math.min(v.reconnectTries * v.reconnectInterval, v.reconnectMaxInterval));
         },
 
         _ensureWebSocketIsClosed: function()

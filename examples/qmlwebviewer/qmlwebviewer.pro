@@ -26,7 +26,8 @@ contains(QT_VERSION, ^5\\..*): CONFIG += viridity_module_display_qtquick2
 include(../../viridity-static.pri)
 
 linux-* {
-    target.path = /opt/qmlwebviewer
+    target.path = /opt/qmlwebviewer/bin
+    QMAKE_LFLAGS += -Wl,--rpath=../lib/
     INSTALLS += target
 }
 
