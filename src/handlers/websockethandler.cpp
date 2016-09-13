@@ -13,13 +13,14 @@
 
 WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
-    session_(NULL)
+    session_(NULL),
+    socket_(NULL)
 {
     DGUARDMETHODTIMED;
-    socket_ = new Tufao::WebSocket(this);
+    websocket_ = new Tufao::WebSocket(this);
 
-    connect(socket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
-    connect(socket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
+    connect(websocket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
+    connect(websocket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
 
     pingTimer_ = new QTimer(this);
     connect(pingTimer_, SIGNAL(timeout()), this, SLOT(handlePingTimerTimeout()));
@@ -39,7 +40,7 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
 
     if (request->url().endsWith("/v/ws") || request->url().endsWith("/v/wsb"))
     {
-        socket_->setMessagesType(request->url().endsWith("/v/ws") ? Tufao::WebSocket::TEXT_MESSAGE : Tufao::WebSocket::BINARY_MESSAGE);
+        websocket_->setMessagesType(request->url().endsWith("/v/ws") ? Tufao::WebSocket::TEXT_MESSAGE : Tufao::WebSocket::BINARY_MESSAGE);
 
         QString id = ViriditySession::parseIdFromUrl(request->url());
 
@@ -55,20 +56,20 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
 
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
-                socket_->startServerHandshake(request, head);
+                websocket_->startServerHandshake(request, head);
 
                 msg = "reattached(" + session_->id() + ")";
-                socket_->sendMessage(msg.toUtf8().constData());
+                websocket_->sendMessage(msg.toUtf8().constData());
 
                 if (session_->pendingMessagesAvailable())
                     handleMessagesAvailable();
             }
             else
             {
-                socket_->startServerHandshake(request, head);
+                websocket_->startServerHandshake(request, head);
 
                 msg = "inuse(" + session->id() + ")";
-                socket_->sendMessage(msg.toUtf8().constData());
+                websocket_->sendMessage(msg.toUtf8().constData());
             }
         }
         else
@@ -77,12 +78,13 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
 
             connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
-            socket_->startServerHandshake(request, head);
+            websocket_->startServerHandshake(request, head);
 
             QString info = "info(" + session_->id() + ")";
-            socket_->sendMessage(info.toUtf8().constData());
+            websocket_->sendMessage(info.toUtf8().constData());
         }
 
+        socket_ = request->socket();
         pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
         pingTimer_->start();
 
@@ -104,24 +106,25 @@ void WebSocketHandler::handleMessagesAvailable()
 {
     if (session_ && session_->pendingMessagesAvailable())
     {
-        QList<QByteArray> messages = session_->takePendingMessages(socket_->messagesType() == Tufao::WebSocket::BINARY_MESSAGE);
+        QList<QByteArray> messages = session_->takePendingMessages(websocket_->messagesType() == Tufao::WebSocket::BINARY_MESSAGE);
 
         foreach (const QByteArray &message, messages)
-            socket_->sendMessage(message);
+            websocket_->sendMessage(message);
     }
 }
 
 void WebSocketHandler::handlePingTimerTimeout()
 {
-    if (socket_)
+    if (socket_ && websocket_)
     {
         if (session_ && session_->lastUsed() > pingTimer_->interval())
         {
+            websocket_->close();
             socket_->close();
             return;
         }
 
-        socket_->sendMessage("ping()");
+        websocket_->sendMessage("ping()");
     }
 }
 
@@ -133,4 +136,5 @@ void WebSocketHandler::clientMessageReceived(QByteArray data)
 
 void WebSocketHandler::clientDisconnected()
 {
+    socket_ = NULL;
 }

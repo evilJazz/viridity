@@ -122,7 +122,12 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
 void LongPollingHandler::handlePingTimerTimeout()
 {
     if (response_)
+    {
+        if (session_)
+            server()->sessionManager()->releaseSession(session_);
+
         pushMessageAndEnd(response_, "ping()");
+    }
 }
 
 void LongPollingHandler::handleMessagesAvailable()

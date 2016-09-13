@@ -52,7 +52,7 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
             session_ = server()->sessionManager()->acquireSession(id);
             QString msg = "data: reattached(" + session_->id() + ")\n\n";
 
-            setUpResponse(response);
+            setUpResponse(request, response);
             response_->write(msg.toUtf8());
             response_->flush();
 
@@ -64,7 +64,7 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
             session_ = NULL;
             QString info = "data: inuse(" + session->id() + ")\n\n";
 
-            setUpResponse(response);
+            setUpResponse(request, response);
             response_->write(info.toUtf8());
             response_->flush();
         }
@@ -79,7 +79,7 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
 
         QString info = "data: info(" + session_->id() + ")\n\n";
 
-        setUpResponse(response);
+        setUpResponse(request, response);
         response_->write(info.toUtf8());
         response_->flush();
 
@@ -92,11 +92,11 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
 
 void SSEHandler::handlePingTimerTimeout()
 {
-    if (response_)
+    if (response_ && socket_)
     {
         if (session_ && session_->lastUsed() > pingTimer_->interval())
         {
-            response_->end("Timeout.");
+            socket_->close();
             return;
         }
 
@@ -105,7 +105,7 @@ void SSEHandler::handlePingTimerTimeout()
     }
 }
 
-void SSEHandler::setUpResponse(ViridityHttpServerResponse *response)
+void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     response_ = response;
 
@@ -117,6 +117,8 @@ void SSEHandler::setUpResponse(ViridityHttpServerResponse *response)
 
     if (session_)
         connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+
+    socket_ = request->socket();
 
     pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
     pingTimer_->start();
@@ -144,4 +146,5 @@ void SSEHandler::handleResponseDestroyed()
     DGUARDMETHODTIMED;
 
     response_ = NULL;
+    socket_ = NULL;
 }

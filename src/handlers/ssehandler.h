@@ -30,9 +30,10 @@ private:
 
     ViridityHttpServerResponse *response_;
 
+    QAbstractSocket *socket_;
     QTimer *pingTimer_;
 
-    void setUpResponse(ViridityHttpServerResponse *response);
+    void setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 };
 
 #endif // SSEHANDLER_H

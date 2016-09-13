@@ -33,7 +33,8 @@ private slots:
 private:
     ViriditySession *session_;
 
-    Tufao::WebSocket *socket_;
+    QAbstractSocket *socket_;
+    Tufao::WebSocket *websocket_;
 
     QTimer *pingTimer_;
 };

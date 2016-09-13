@@ -437,7 +437,7 @@ var Viridity = function(options)
             }
             else if (t.command === "ping")
             {
-                v.sendMessage("pong");
+                v.sendMessage("pong()");
             }
 
             if (v.reconnecting)
