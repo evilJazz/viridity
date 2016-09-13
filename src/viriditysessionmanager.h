@@ -114,8 +114,24 @@ public:
      * Returns how many active users this session has - essentially the reference count on this session used internally.
      *
      * \sa AbstractViriditySessionManager::getSession, AbstractViriditySessionManager::acquireSession, AbstractViriditySessionManager::releaseSession
+     * \sa ViriditySession::lastUsed
      */
     int useCount() const { return useCount_; }
+
+    /*!
+     * Returns whether this session is attached to a remote client.
+     *
+     * \sa ViriditySession::attached, ViriditySession::detached
+     */
+    bool isAttached() const { return attached_; }
+
+    /*!
+     * Returns how many milliseconds ago this session was last used - essentially the period used to determine if a session is disposable.
+     *
+     * \sa AbstractViriditySessionManager::getSession, AbstractViriditySessionManager::acquireSession, AbstractViriditySessionManager::releaseSession
+     * \sa ViriditySession::useCount
+     */
+    qint64 lastUsed() const { return lastUsed_.elapsed(); }
 
     /*! Associated a logic object as an opaque pointer with this session.
      * \note The session instance does not take ownership of this logic object.
@@ -157,6 +173,8 @@ signals:
      * Signal is emitted when the session is attached to a remote client.
      * \note For long polling connections, i.e. connections handled by LongPollingHandler,
      * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
+     *
+     * \sa ViriditySession::isAttached
      */
     void attached();
 
@@ -164,6 +182,8 @@ signals:
      * Signal is emitted when the session is detached from a remote client.
      * \note For long polling connections, i.e. connections handled by LongPollingHandler,
      * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
+     *
+     * \sa ViriditySession::isAttached
      */
     void detached();
 
@@ -383,7 +403,7 @@ protected:
      * To associate your logic object with the session call the ViriditySession::setLogic method. The session instance will not take ownership of your logic object.
      *
      * \note This method is always run in the same thread context in which the session manager was created. In most cases this is the application's main thread.
-     * \warning The session instance is later moved to a different thread. Be careful not to parent your logic to the session as it will be moved to this new thread as well.
+     * \warning The session instance is later moved to a different thread. Be careful not to parent your logic to the session as it will be moved to this new thread as well - except this is what you want.
      * \param session The new session instance.
      */
     virtual void initSession(ViriditySession *session) = 0; // Always executed in thread of session manager

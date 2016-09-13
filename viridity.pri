@@ -26,7 +26,8 @@ HEADERS += \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.h \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.h \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.h \
-    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.h
+    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.h \
+    $$VIRIDITY_SRC_PATH/handlers/debugrequesthandler.h
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
@@ -39,7 +40,8 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/inputposthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/ssehandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/fileuploadhandler.cpp \
-    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp
+    $$VIRIDITY_SRC_PATH/handlers/sessionroutingrequesthandler.cpp \
+    $$VIRIDITY_SRC_PATH/handlers/debugrequesthandler.cpp
 
 CONFIG += viridity_declarative
 

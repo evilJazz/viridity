@@ -325,6 +325,8 @@ ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray 
 
 void AbstractViriditySessionManager::removeSession(ViriditySession *session)
 {
+    DGUARDMETHODTIMED;
+
     emit session->deinitializing();
 
     QMutexLocker l(&sessionMutex_);

@@ -25,6 +25,10 @@
 #include "graphicsscenedisplaymanager.h"
 #include "handlers/filerequesthandler.h"
 
+#ifdef VIRIDITY_DEBUG
+#include "handlers/debugrequesthandler.h"
+#endif
+
 #include "kclplugin.h"
 
 #include "KCL/filesystemutils.h"
@@ -165,6 +169,12 @@ int main(int argc, char *argv[])
     const int dataPort = a.arguments().count() > 2 ? a.arguments().at(2).toInt() : 8080;
 
     ViridityWebServer server(&a, &sessionManager);
+
+#ifdef VIRIDITY_DEBUG
+    DebugRequestHandler debugRequestHandler(&server);
+    server.registerRequestHandler(&debugRequestHandler);
+#endif
+
     if (server.listen(QHostAddress::Any, dataPort))
         qDebug("Server is now listening on 127.0.0.1 port %d", dataPort);
     else
