@@ -142,6 +142,8 @@ bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
 {
     DGUARDMETHODTIMED;
 
+    lastUsed_.restart();
+
     bool result = false;
 
     QMetaObject::invokeMethod(
@@ -278,7 +280,8 @@ void ViriditySession::unregisterRequestHandler(ViridityRequestHandler *handler)
 AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) :
     QObject(parent),
     server_(NULL),
-    sessionMutex_(QMutex::Recursive)
+    sessionMutex_(QMutex::Recursive),
+    sessionTimeout_(10000)
 {
     DGUARDMETHODTIMED;
     cleanupTimer_ = new QTimer(this);
@@ -500,7 +503,7 @@ void AbstractViriditySessionManager::killExpiredSessions()
         QMutexLocker l(&sessionMutex_);
 
         foreach (ViriditySession *session, sessions_.values())
-            if (session->useCount() == 0 && session->lastUsed_.elapsed() > 6000)
+            if (session->useCount() == 0 && session->lastUsed_.elapsed() > sessionTimeout_)
                 removeSession(session);
 
         if (sessions_.count() == 0)

@@ -20,6 +20,9 @@ LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *paren
     session_(NULL)
 {
     DGUARDMETHODTIMED;
+
+    pingTimer_ = new QTimer(this);
+    connect(pingTimer_, SIGNAL(timeout()), this, SLOT(handlePingTimerTimeout()));
 }
 
 LongPollingHandler::~LongPollingHandler()
@@ -85,6 +88,9 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
                     handleMessagesAvailable();
             }
 
+            pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
+            pingTimer_->start();
+
             return;
         }
         else if (request->method() == "POST") // long polling input
@@ -111,6 +117,12 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
 
     response->writeHead(404);
     response->end("Not found");
+}
+
+void LongPollingHandler::handlePingTimerTimeout()
+{
+    if (response_)
+        pushMessageAndEnd(response_, "ping()");
 }
 
 void LongPollingHandler::handleMessagesAvailable()

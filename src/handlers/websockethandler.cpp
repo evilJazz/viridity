@@ -20,6 +20,9 @@ WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
 
     connect(socket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
     connect(socket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
+
+    pingTimer_ = new QTimer(this);
+    connect(pingTimer_, SIGNAL(timeout()), this, SLOT(handlePingTimerTimeout()));
 }
 
 WebSocketHandler::~WebSocketHandler()
@@ -80,6 +83,9 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
             socket_->sendMessage(info.toUtf8().constData());
         }
 
+        pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
+        pingTimer_->start();
+
         return;
     }
 
@@ -102,6 +108,20 @@ void WebSocketHandler::handleMessagesAvailable()
 
         foreach (const QByteArray &message, messages)
             socket_->sendMessage(message);
+    }
+}
+
+void WebSocketHandler::handlePingTimerTimeout()
+{
+    if (socket_)
+    {
+        if (session_ && session_->lastUsed() > pingTimer_->interval())
+        {
+            socket_->close();
+            return;
+        }
+
+        socket_->sendMessage("ping()");
     }
 }
 

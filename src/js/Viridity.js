@@ -435,6 +435,10 @@ var Viridity = function(options)
                 v.sessionId = inputParams[0];
                 v._triggerCallback("sessionInUse", v.sessionId);
             }
+            else if (t.command === "ping")
+            {
+                v.sendMessage("pong");
+            }
 
             if (v.reconnecting)
             {

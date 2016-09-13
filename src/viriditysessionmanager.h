@@ -381,6 +381,11 @@ public:
     /*! Returns the ViridityWebServer instance this session manager is associated to. */
     ViridityWebServer *server() const { return server_; }
 
+    /*!
+     * Returns how many milliseconds to wait for activity until a session is deemed disposable
+     */
+    int sessionTimeout() const { return sessionTimeout_; }
+
 signals:
     /*!
      * Emitted when a new session instance was successfully created.
@@ -430,6 +435,8 @@ private:
     QMutex sessionMutex_;
     QHash<QString, ViriditySession *> sessions_;
     QTimer *cleanupTimer_;
+
+    int sessionTimeout_;
 
     Q_INVOKABLE ViriditySession *createSession(const QString &id, const QByteArray &initialPeerAddress); // Always executed in thread of session manager
     ViriditySession *createNewSessionInstance(const QString &id); // Always executed in thread of session manager
