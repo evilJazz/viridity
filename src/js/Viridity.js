@@ -535,6 +535,8 @@ var Viridity = function(options)
 
         _handleDisconnect: function()
         {
+            clearTimeout(v.reconnectTimer);
+
             if (v.debugVerbosity > 1)
                 console.log("Disconnected. Retry no. " + (v.reconnectTries + 1));
 
@@ -565,7 +567,13 @@ var Viridity = function(options)
 
             ++v.reconnectTries;
             v.reconnectFirstTry = false;
-            v.reconnectTimer = setTimeout(v.connect, Math.min(v.reconnectTries * v.reconnectInterval, v.reconnectMaxInterval));
+
+            var newTimeout = Math.min(v.reconnectTries * v.reconnectInterval, v.reconnectMaxInterval);
+
+            if (v.debugVerbosity > 1)
+                console.log("Setting new reconnection time out to " + newTimeout + " ms.");
+
+            v.reconnectTimer = setTimeout(v.connect, newTimeout);
         },
 
         _ensureWebSocketIsClosed: function()
@@ -580,6 +588,8 @@ var Viridity = function(options)
             }
             catch (e)
             {
+                if (v.debugVerbosity > 1)
+                    console.log("_ensureWebSocketIsClosed: " + e);
             }
 
             v.socket = null;
@@ -595,6 +605,8 @@ var Viridity = function(options)
             }
             catch (e)
             {
+                if (v.debugVerbosity > 1)
+                    console.log("_ensureEventSourceIsClosed: " + e);
             }
 
             v.eventSource = null;
@@ -614,6 +626,8 @@ var Viridity = function(options)
             }
             else if (v.connectionMethod === ConnectionMethod.ServerSentEvents)
             {
+                v._ensureEventSourceIsClosed();
+
                 v.eventSource = new EventSource(v.fullLocation + "/" + v.sessionId + "/v/ev");
                 v.eventSource.onmessage = v._serverSentEventsMessageReceived;
                 v.eventSource.onerror = function() { v._ensureEventSourceIsClosed(); v._handleDisconnect(); };
