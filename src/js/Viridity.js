@@ -653,6 +653,12 @@ var Viridity = function(options)
 
         init: function(options)
         {
+            if (typeof(options.autoDowngrade) !== "undefined")
+                v.autoDowngrade = options.autoDowngrade;
+
+            if (typeof(options.debugVerbosity) !== "undefined")
+                v.debugVerbosity = options.debugVerbosity;
+
             if (v.debugVerbosity > 0)
                 console.log("Initializing: " + JSON.stringify(options));
 
