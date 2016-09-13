@@ -119,8 +119,13 @@ QtQuick2Adapter::~QtQuick2Adapter()
 
     detachFromRootItem();
 
-    delete quickWindow_;
-    delete fbo_;
+    if (quickWindow_)
+    {
+        delete quickWindow_;
+        quickWindow_ = NULL;
+    }
+
+    destroyFbo();
 
     context_->doneCurrent();
     delete offscreenSurface_;
@@ -157,22 +162,27 @@ void QtQuick2Adapter::detachFromRootItem()
     {
         delete renderControl_;
         renderControl_ = NULL;
+
+        quickWindow_ = NULL; // since quickWindow_ is parented to renderControl_
     }
 }
 
 int QtQuick2Adapter::width() const
 {
-    return quickWindow_->width();
+    return quickWindow_ ? quickWindow_->width() : 0;
 }
 
 int QtQuick2Adapter::height() const
 {
-    return quickWindow_->height();
+    return quickWindow_ ? quickWindow_->height() : 0;
 }
 
 void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 {
     DGUARDMETHODTIMED;
+
+    if (!rootItem_ || !quickWindow_)
+        return;
 
     dpr_ = ratio;
 
@@ -194,7 +204,7 @@ void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 
     if (context_->makeCurrent(offscreenSurface_))
     {
-        if (fbo_) delete fbo_;
+        destroyFbo();
         createFbo();
         context_->doneCurrent();
     }
@@ -205,6 +215,9 @@ void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 
 void QtQuick2Adapter::postEvent(QEvent *event, bool spontaneous)
 {
+    if (!quickWindow_)
+        return;
+
     if (spontaneous)
         QCoreApplicationPrivate::setEventSpontaneous(event);
 
@@ -319,6 +332,9 @@ void QtQuick2Adapter::render(QPainter *painter, const QVector<QRect> &rects)
 void QtQuick2Adapter::createFbo()
 {
     DGUARDMETHODTIMED;
+    if (!quickWindow_)
+        return;
+
     fbo_ = new QOpenGLFramebufferObject(quickWindow_->width(), quickWindow_->height(), QOpenGLFramebufferObject::CombinedDepthStencil);
     quickWindow_->setRenderTarget(fbo_);
 }
@@ -326,13 +342,16 @@ void QtQuick2Adapter::createFbo()
 void QtQuick2Adapter::destroyFbo()
 {
     DGUARDMETHODTIMED;
-    delete fbo_;
-    fbo_ = 0;
+    if (fbo_)
+    {
+        delete fbo_;
+        fbo_ = 0;
+    }
 }
 
 void QtQuick2Adapter::handleSceneChanged()
 {
-    if (rootItem_)
+    if (quickWindow_ && rootItem_)
     {
         updateRequired_ = true;
 
@@ -346,7 +365,7 @@ void QtQuick2Adapter::updateBuffer()
 {
     DGUARDMETHODTIMED;
 
-    if (!context_->makeCurrent(offscreenSurface_) || !renderControl_)
+    if (!context_->makeCurrent(offscreenSurface_) || !renderControl_ || !quickWindow_)
         return;
 
     // Polish, synchronize and render the next frame (into our fbo).  In this example
