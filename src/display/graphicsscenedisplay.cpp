@@ -57,6 +57,7 @@ GraphicsSceneDisplay::GraphicsSceneDisplay(const QString &id, AbstractGraphicsSc
     connect(renderer_, SIGNAL(damagedRegionAvailable()), this, SLOT(sceneDamagedRegionsAvailable()));
 
     updateCheckTimer_ = new QTimer(this);
+    DOP(updateCheckTimer_->setObjectName("GraphicsSceneDisplayUpdateCheckTimer"));
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
     updateCheckTimer_->setSingleShot(false);
     updateCheckTimer_->start(updateCheckInterval_);

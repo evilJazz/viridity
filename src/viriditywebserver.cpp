@@ -179,6 +179,8 @@ ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionMan
 
 ViridityWebServer::~ViridityWebServer()
 {
+    requestHandlers_.clear();
+
     foreach (QThread *t, connectionThreads_)
         t->quit();
 
@@ -196,24 +198,33 @@ ViridityWebServer::~ViridityWebServer()
         t->wait();
         delete t;
     }
+
+    connectionThreads_.clear();
+    sessionThreads_.clear();
 }
 
 bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
 {
     threadsNumber = qMax(1, threadsNumber / 2);
 
+    QThread *newThread;
+
     connectionThreads_.reserve(threadsNumber);
     for (int i = 0; i < threadsNumber; ++i)
     {
-        connectionThreads_.append(new QThread(this));
-        connectionThreads_.at(i)->start();
+        newThread = new QThread(this);
+        newThread->setObjectName("VConnThread" + QString::number(i));
+        newThread->start();
+        connectionThreads_.append(newThread);
     }
 
     sessionThreads_.reserve(threadsNumber);
     for (int i = 0; i < threadsNumber; ++i)
     {
-        sessionThreads_.append(new QThread(this));
-        sessionThreads_.at(i)->start();
+        newThread = new QThread(this);
+        newThread->setObjectName("VSessionThread" + QString::number(i));
+        newThread->start();
+        sessionThreads_.append(newThread);
     }
 
     return QTcpServer::listen(address, port);

@@ -14,9 +14,6 @@ SSEHandler::SSEHandler(ViridityWebServer *server, QObject *parent) :
     session_(NULL)
 {
     DGUARDMETHODTIMED;
-
-    pingTimer_ = new QTimer(this);
-    connect(pingTimer_, SIGNAL(timeout()), this, SLOT(handlePingTimerTimeout()));
 }
 
 SSEHandler::~SSEHandler()
@@ -90,11 +87,13 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
     response->end("Not found");
 }
 
-void SSEHandler::handlePingTimerTimeout()
+void SSEHandler::handleSessionInteractionDormant()
 {
+    DGUARDMETHODTIMED;
+
     if (response_ && socket_)
     {
-        if (session_ && session_->lastUsed() > pingTimer_->interval())
+        if (session_ && session_->lastUsed() > 1.5 * session_->interactionCheckInterval())
         {
             socket_->close();
             return;
@@ -116,12 +115,12 @@ void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpS
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
     if (session_)
+    {
         connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+        connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+    }
 
     socket_ = request->socket();
-
-    pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
-    pingTimer_->start();
 }
 
 void SSEHandler::handleMessagesAvailable()

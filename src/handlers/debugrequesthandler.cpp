@@ -3,6 +3,9 @@
 #include "viriditywebserver.h"
 #include "viriditysessionmanager.h"
 
+#include <QCoreApplication>
+#include <QStringList>
+
 DebugRequestHandler::DebugRequestHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent)
 {
@@ -14,7 +17,7 @@ DebugRequestHandler::~DebugRequestHandler()
 
 bool DebugRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
-    return request->url().endsWith("/debug");
+    return request->url().endsWith("/debug") || request->url().endsWith("/quit");
 }
 
 void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
@@ -23,28 +26,36 @@ void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, Viri
     response->headers().insert("Content-Type", "text/plain");
     response->addNoCachingResponseHeaders();
 
-    if (server()->sessionManager()->sessionCount() > 0)
+    if (request->url().endsWith("/debug"))
     {
-        response->write("Running sessions:\n\n");
-
-        foreach (const QString &sessionId, server()->sessionManager()->sessionIds())
+        if (server()->sessionManager()->sessionCount() > 0)
         {
-            ViriditySession *session = server()->sessionManager()->getSession(sessionId);
-            response->write(
-                QString().sprintf(
-                    "%s (%s) attached: %s, use count: %d, last used %ld ms ago.\n",
-                    sessionId.toUtf8().constData(),
-                    session->initialPeerAddress().constData(),
-                    session->isAttached() ? "true" : "false",
-                    session->useCount(),
-                    session->lastUsed()
-                ).toUtf8()
-            );
+            response->write("Running sessions:\n\n");
+
+            foreach (const QString &sessionId, server()->sessionManager()->sessionIds())
+            {
+                ViriditySession *session = server()->sessionManager()->getSession(sessionId);
+                response->write(
+                    QString().sprintf(
+                        "%s (%s) attached: %s, use count: %d, last used %ld ms ago.\n",
+                        sessionId.toUtf8().constData(),
+                        session->initialPeerAddress().constData(),
+                        session->isAttached() ? "true" : "false",
+                        session->useCount(),
+                        session->lastUsed()
+                    ).toUtf8()
+                );
+            }
+        }
+        else
+        {
+            response->write("No running session.\n");
         }
     }
-    else
+    else if (request->url().endsWith("/quit"))
     {
-        response->write("No running session.\n");
+        response->write("Sent message to quit server.\n");
+        QMetaObject::invokeMethod(qApp, "quit");
     }
 
     response->end();

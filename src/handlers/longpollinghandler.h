@@ -2,7 +2,6 @@
 #define LONGPOLLINGHANDLER_H
 
 #include <QObject>
-#include <QTimer>
 
 #include "viridityrequesthandler.h"
 
@@ -21,7 +20,7 @@ public:
     void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private slots:
-    void handlePingTimerTimeout();
+    void handleSessionInteractionDormant();
     void handleMessagesAvailable();
     void handleResponseDestroyed();
 
@@ -29,8 +28,6 @@ private:
     ViriditySession *session_;
 
     ViridityHttpServerResponse *response_;
-
-    QTimer *pingTimer_;
 
     void pushMessageAndEnd(ViridityHttpServerResponse *response, const QByteArray &msg);
 };

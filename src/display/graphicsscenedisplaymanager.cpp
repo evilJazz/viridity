@@ -47,6 +47,7 @@ AbstractGraphicsSceneDisplayManager::AbstractGraphicsSceneDisplayManager(Viridit
 {
     DGUARDMETHODTIMED;
     cleanupTimer_ = new QTimer(this);
+    DOP(cleanupTimer_->setObjectName("AbstractGraphicsSceneDisplayManagerCleanupTimer"));
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
     cleanupTimer_->start(10000);
 
@@ -67,6 +68,8 @@ AbstractGraphicsSceneDisplayManager::~AbstractGraphicsSceneDisplayManager()
 {
     DGUARDMETHODTIMED;
     QMutexLocker l(&displayMutex_);
+
+    cleanupTimer_->stop();
 
     if (session_)
     {
@@ -135,6 +138,7 @@ void AbstractGraphicsSceneDisplayManager::removeDisplay(GraphicsSceneDisplay *di
 
 void AbstractGraphicsSceneDisplayManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
 {
+    DGUARDMETHODTIMED;
 }
 
 bool AbstractGraphicsSceneDisplayManager::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -311,6 +315,7 @@ AbstractMultiGraphicsSceneDisplayManager::~AbstractMultiGraphicsSceneDisplayMana
 
 GraphicsSceneDisplay *AbstractMultiGraphicsSceneDisplayManager::createDisplayInstance(const QString &id, const QStringList &params)
 {
+    DGUARDMETHODTIMED;
     AbstractGraphicsSceneAdapter *adapter = getAdapter(id, params);
 
     if (adapter)
@@ -327,11 +332,13 @@ GraphicsSceneDisplay *AbstractMultiGraphicsSceneDisplayManager::createDisplayIns
 
 void AbstractMultiGraphicsSceneDisplayManager::tearDownDisplayInstance(GraphicsSceneDisplay *display)
 {
+    DGUARDMETHODTIMED;
     tearDownAdapter(display->id(), display->adapter());
 }
 
 void AbstractMultiGraphicsSceneDisplayManager::tearDownAdapter(const QString &id, AbstractGraphicsSceneAdapter *adapter)
 {
+    DGUARDMETHODTIMED;
     delete adapter;
 }
 

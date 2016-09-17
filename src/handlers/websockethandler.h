@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QByteArray>
-#include <QTimer>
 
 #include "viridityrequesthandler.h"
 
@@ -25,7 +24,7 @@ public:
 
 private slots:
     void handleMessagesAvailable();
-    void handlePingTimerTimeout();
+    void handleSessionInteractionDormant();
 
     void clientMessageReceived(QByteArray data);
     void clientDisconnected();
@@ -35,8 +34,6 @@ private:
 
     QAbstractSocket *socket_;
     Tufao::WebSocket *websocket_;
-
-    QTimer *pingTimer_;
 };
 
 #endif // WEBSOCKETHANDLER_H

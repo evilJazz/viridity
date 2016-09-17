@@ -21,15 +21,15 @@ WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
 
     connect(websocket_, SIGNAL(disconnected()), this, SLOT(clientDisconnected()));
     connect(websocket_, SIGNAL(newMessage(QByteArray)), this, SLOT(clientMessageReceived(QByteArray)));
-
-    pingTimer_ = new QTimer(this);
-    connect(pingTimer_, SIGNAL(timeout()), this, SLOT(handlePingTimerTimeout()));
 }
 
 WebSocketHandler::~WebSocketHandler()
 {
     if (session_)
+    {
+        disconnect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()));
         server()->sessionManager()->releaseSession(session_);
+    }
 
     DGUARDMETHODTIMED;
 }
@@ -60,9 +60,6 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
 
                 msg = "reattached(" + session_->id() + ")";
                 websocket_->sendMessage(msg.toUtf8().constData());
-
-                if (session_->pendingMessagesAvailable())
-                    handleMessagesAvailable();
             }
             else
             {
@@ -76,18 +73,22 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
         {
             session_ = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
-            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
-
             websocket_->startServerHandshake(request, head);
 
             QString info = "info(" + session_->id() + ")";
             websocket_->sendMessage(info.toUtf8().constData());
         }
 
-        socket_ = request->socket();
-        pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
-        pingTimer_->start();
+        if (session_)
+        {
+            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+            connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
+            if (session_->pendingMessagesAvailable())
+                handleMessagesAvailable();
+        }
+
+        socket_ = request->socket();
         return;
     }
 
@@ -113,11 +114,13 @@ void WebSocketHandler::handleMessagesAvailable()
     }
 }
 
-void WebSocketHandler::handlePingTimerTimeout()
+void WebSocketHandler::handleSessionInteractionDormant()
 {
+    DGUARDMETHODTIMED;
+
     if (socket_ && websocket_)
     {
-        if (session_ && session_->lastUsed() > pingTimer_->interval())
+        if (session_ && session_->lastUsed() > 1.5 * session_->interactionCheckInterval())
         {
             websocket_->close();
             socket_->close();

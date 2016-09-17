@@ -126,12 +126,19 @@ public:
     bool isAttached() const { return attached_; }
 
     /*!
-     * Returns how many milliseconds ago this session was last used - essentially the period used to determine if a session is disposable.
+     * Returns how many milliseconds ago this session was last used or interacted with - essentially the period used to determine if a session is disposable.
      *
      * \sa AbstractViriditySessionManager::getSession, AbstractViriditySessionManager::acquireSession, AbstractViriditySessionManager::releaseSession
-     * \sa ViriditySession::useCount
+     * \sa ViriditySession::useCount, ViriditySession::interactionCheckInterval
      */
     qint64 lastUsed() const { return lastUsed_.elapsed(); }
+
+    /*!
+     * Determines after how many milliseconds a session is deemed disposable because no interaction happened.
+     *
+     * \sa ViriditySession::lastUsed
+     */
+    int interactionCheckInterval() const { return interactionCheckInterval_; }
 
     /*! Associated a logic object as an opaque pointer with this session.
      * \note The session instance does not take ownership of this logic object.
@@ -153,6 +160,8 @@ public:
     // ViridityRequestHandler
     virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
     virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+
+    virtual bool event(QEvent *);
 
 signals:
     /*!
@@ -179,6 +188,14 @@ signals:
     void attached();
 
     /*!
+     * Signal is emitted when the session has not received any message from a client for some time.
+     * Currently this interval is defined by AbstractViriditySessionManager::sessionTimeout()
+     *
+     * \sa ViriditySession::interactionCheckInterval, ViriditySession::lastUsed
+     */
+    void interactionDormant();
+
+    /*!
      * Signal is emitted when the session is detached from a remote client.
      * \note For long polling connections, i.e. connections handled by LongPollingHandler,
      * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
@@ -197,6 +214,7 @@ signals:
 private slots:
     void updateCheckTimerTimeout();
     void detachDeferTimerTimeout();
+    void interactionCheckTimerTimeout();
 
     void incrementUseCount();
     void decrementUseCount();
@@ -220,6 +238,9 @@ private:
     QTimer *detachDeferTimer_;
     int detachCheckInterval_;
     bool attached_;
+
+    QTimer *interactionCheckTimer_;
+    int interactionCheckInterval_;
 
     QObject *logic_;
     QElapsedTimer lastUsed_;

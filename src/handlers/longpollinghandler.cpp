@@ -20,9 +20,6 @@ LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *paren
     session_(NULL)
 {
     DGUARDMETHODTIMED;
-
-    pingTimer_ = new QTimer(this);
-    connect(pingTimer_, SIGNAL(timeout()), this, SLOT(handlePingTimerTimeout()));
 }
 
 LongPollingHandler::~LongPollingHandler()
@@ -83,13 +80,11 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+                connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
                 if (session_->pendingMessagesAvailable())
                     handleMessagesAvailable();
             }
-
-            pingTimer_->setInterval(server()->sessionManager()->sessionTimeout());
-            pingTimer_->start();
 
             return;
         }
@@ -119,8 +114,10 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
     response->end("Not found");
 }
 
-void LongPollingHandler::handlePingTimerTimeout()
+void LongPollingHandler::handleSessionInteractionDormant()
 {
+    DGUARDMETHODTIMED;
+
     if (response_)
     {
         if (session_)

@@ -2,7 +2,6 @@
 #define SSEHANDLER_H
 
 #include <QObject>
-#include <QTimer>
 
 #include "viridityrequesthandler.h"
 
@@ -21,7 +20,7 @@ public:
     void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private slots:
-    void handlePingTimerTimeout();
+    void handleSessionInteractionDormant();
     void handleMessagesAvailable();
     void handleResponseDestroyed();
 
@@ -31,7 +30,6 @@ private:
     ViridityHttpServerResponse *response_;
 
     QAbstractSocket *socket_;
-    QTimer *pingTimer_;
 
     void setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 };

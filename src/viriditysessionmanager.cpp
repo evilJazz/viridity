@@ -4,6 +4,7 @@
 
 #include <QUuid>
 #include <QCryptographicHash>
+#include <QEvent>
 
 #include <QThread>
 
@@ -63,30 +64,53 @@ ViriditySession::ViriditySession(AbstractViriditySessionManager *sessionManager,
     dispatchMutex_(QMutex::Recursive),
     updateCheckInterval_(10),
     detachCheckInterval_(1000),
+    interactionCheckInterval_(sessionManager->sessionTimeout()),
     attached_(false),
     logic_(NULL),
     useCount_(0)
 {
     DGUARDMETHODTIMED;
     updateCheckTimer_ = new QTimer(this);
+    DOP(updateCheckTimer_->setObjectName("ViriditySessionUpdateCheckTimer"));
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
     updateCheckTimer_->setSingleShot(false);
     updateCheckTimer_->start(updateCheckInterval_);
 
     detachDeferTimer_ = new QTimer(this);
+    DOP(detachDeferTimer_->setObjectName("ViriditySessionDetachDeferTimer"));
     connect(detachDeferTimer_, SIGNAL(timeout()), this, SLOT(detachDeferTimerTimeout()));
     detachDeferTimer_->setSingleShot(true);
     detachDeferTimer_->setInterval(detachCheckInterval_);
+
+    interactionCheckTimer_ = new QTimer(this);
+    DOP(interactionCheckTimer_->setObjectName("ViriditySessionInteractionCheckTimer"));
+    connect(interactionCheckTimer_, SIGNAL(timeout()), this, SLOT(interactionCheckTimerTimeout()));
+    interactionCheckTimer_->setSingleShot(false);
+    interactionCheckTimer_->setInterval(interactionCheckInterval_);
 }
 
 ViriditySession::~ViriditySession()
 {
     DGUARDMETHODTIMED;
+    updateCheckTimer_->stop();
+    detachDeferTimer_->stop();
+    interactionCheckTimer_->stop();
+
+    delete updateCheckTimer_;
+    delete detachDeferTimer_;
+    delete interactionCheckTimer_;
+
+    updateCheckTimer_ = NULL;
+    detachDeferTimer_ = NULL;
+    interactionCheckTimer_ = NULL;
 }
 
 bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
 {
     DGUARDMETHODTIMED;
+
+    lastUsed_.restart();
+    interactionCheckTimer_->start();
 
     QByteArray modMsg = message;
     QString targetId = ViridityMessageHandler::takeTargetFromMessage(modMsg);
@@ -116,33 +140,49 @@ void ViriditySession::sendMessageToClient(const QByteArray &message, const QStri
 
 void ViriditySession::incrementUseCount()
 {
-    bool useCountWasZero = useCount_ == 0;
+    DGUARDMETHODTIMED;
 
-    ++useCount_;
-    lastUsed_.restart();
+    // Note: Has to run in the same thread this session is running.
 
-    if (useCountWasZero && !attached_)
+    if (interactionCheckTimer_)
     {
-        attached_ = true;
-        emit attached();
+        bool useCountWasZero = useCount_ == 0;
+
+        ++useCount_;
+        lastUsed_.restart();
+
+        interactionCheckTimer_->start();
+
+        if (useCountWasZero && !attached_)
+        {
+            attached_ = true;
+            emit attached();
+        }
     }
 }
 
 void ViriditySession::decrementUseCount()
 {
-    --useCount_;
-    lastUsed_.restart();
+    DGUARDMETHODTIMED;
 
-    // Use a deferred disconnect to debounce
-    // communication channel handler, especially LongPolling.
-    QMetaObject::invokeMethod(detachDeferTimer_, "start");
+    // Note: Has to run in the same thread this session is running.
+
+    if (interactionCheckTimer_ && detachDeferTimer_)
+    {
+        --useCount_;
+        lastUsed_.restart();
+
+        interactionCheckTimer_->start();
+
+        // Use a deferred disconnect to debounce
+        // communication channel handler, especially LongPolling.
+        detachDeferTimer_->start();
+    }
 }
 
 bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
 {
     DGUARDMETHODTIMED;
-
-    lastUsed_.restart();
 
     bool result = false;
 
@@ -228,6 +268,25 @@ void ViriditySession::handleRequest(ViridityHttpServerRequest *request, Viridity
             handler->handleRequest(request, response);
 }
 
+bool ViriditySession::event(QEvent *ev)
+{
+    if (ev->type() == QEvent::ThreadChange)
+    {
+        // Make sure to stop all timers before switching to new thread.
+        // This fixes a potential bug in Qt where a timer started in one thread
+        // is not stopped when moving to the new thread and causes double triggers.
+        // Since it is no longer under control (can't be stopped with stop()),
+        // it will emit the timeout() signal long after this object is killed,
+        // leading to a crash.
+        // TODO: Create reproducable example project and create QTBUG report.
+        interactionCheckTimer_->stop();
+        updateCheckTimer_->stop();
+        detachDeferTimer_->stop();
+    }
+
+    return QObject::event(ev);
+}
+
 void ViriditySession::updateCheckTimerTimeout()
 {
     DGUARDMETHODTIMED;
@@ -244,6 +303,11 @@ void ViriditySession::detachDeferTimerTimeout()
         attached_ = false;
         emit detached();
     }
+}
+
+void ViriditySession::interactionCheckTimerTimeout()
+{
+    emit interactionDormant();
 }
 
 void ViriditySession::triggerUpdateCheckTimer()
@@ -285,6 +349,7 @@ AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) 
 {
     DGUARDMETHODTIMED;
     cleanupTimer_ = new QTimer(this);
+    DOP(cleanupTimer_->setObjectName("AbstractViriditySessionManagerCleanupTimer"));
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
     cleanupTimer_->start(5000);
 }
@@ -292,6 +357,7 @@ AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) 
 AbstractViriditySessionManager::~AbstractViriditySessionManager()
 {
     DGUARDMETHODTIMED;
+    cleanupTimer_->stop();
 }
 
 ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray &initialPeerAddress)
@@ -312,13 +378,8 @@ ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray 
     if (session)
     {
         QMutexLocker l(&sessionMutex_);
-
         sessions_.insert(session->id(), session);
-
         QMetaObject::invokeMethod(session, "incrementUseCount");
-
-        emit newSessionCreated(session);
-        emit session->initialized();
 
         return session;
     }
@@ -385,6 +446,10 @@ ViriditySession *AbstractViriditySessionManager::createSession(const QString &id
     session->setInitialPeerAddress(initialPeerAddress);
     initSession(session);
     registerHandlers(session);
+
+    emit newSessionCreated(session);
+
+    emit session->initialized();
 
     return session;
 }
