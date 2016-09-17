@@ -15,7 +15,8 @@ class SynchronizedSceneChangedHandler : public QObject
 {
     Q_OBJECT
 public:
-    SynchronizedSceneChangedHandler(QGraphicsScene *scene) :
+    SynchronizedSceneChangedHandler(QGraphicsScene *scene, QObject *parent) :
+        QObject(parent),
         scene_(scene)
     {
         DGUARDMETHODTIMED;

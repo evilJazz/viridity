@@ -55,10 +55,6 @@ public:
     UpdateOperationList findUpdateOperations(const QRect &searchArea, QVector<QRect> *additionalSearchAreas = NULL);
     void swap();
 
-protected:
-    friend struct MapProcessRect;
-    bool processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas = NULL, bool useMinifiedTile = true);
-
 private:
     friend class ImageComparerTest;
     QImage *imageBefore_;
@@ -69,6 +65,9 @@ private:
     MoveAnalyzer *moveAnalyzer_;
 
     ComparerSettings settings_;
+
+    friend struct MapProcessRect;
+    bool processRect(const QRect &rect, UpdateOperation &op, QVector<QRect> *additionalSearchAreas = NULL, bool useMinifiedTile = true);
 };
 
 #endif // IMAGECOMPARER_H

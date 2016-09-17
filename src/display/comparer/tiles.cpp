@@ -46,8 +46,7 @@ QList<QRect> TileOperations::splitRectIntoTiles(const QRect &rect, int tileWidth
     int leftX = rect.width() % tileWidth;
     int leftY = rect.height() % tileHeight;
 
-    int y = rect.top();
-    int x;
+    int y, x;
 
     int bottomLimit = rect.bottom() + 1 - tileHeight + 1;
     int rightLimit = rect.right() + 1 - tileWidth + 1;

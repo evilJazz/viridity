@@ -27,7 +27,7 @@ QGraphicsSceneAdapter::QGraphicsSceneAdapter(QGraphicsScene *scene) :
     scene_(scene),
     buttonDown_(false)
 {
-    sceneChangedHandler_ = new SynchronizedSceneChangedHandler(scene_);
+    sceneChangedHandler_ = new SynchronizedSceneChangedHandler(scene_, this);
     connect(sceneChangedHandler_, SIGNAL(newUpdateAvailable(QList<QRectF>)), this, SIGNAL(sceneChanged(QList<QRectF>)));
 }
 

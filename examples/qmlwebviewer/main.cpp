@@ -53,7 +53,8 @@ protected:
 #endif
 
         // Initialize addons...
-        KCLPlugin *kcl = new KCLPlugin;
+        KCLPlugin *kcl = new KCLPlugin();
+        kcl->setParent(engine);
         kcl->initializeEngine(engine, "KCL");
         kcl->registerTypes("KCL");
 
