@@ -156,6 +156,7 @@ var Viridity = function(options)
         timeout: 120000,
         pause: 1000 / 30 /*fps*/, // Sets frequency for GET and POST when long polling
         sessionId: "",
+        connected: false,
 
         inputEvents: [],
         inputEventsStarted: false,
@@ -238,6 +239,9 @@ var Viridity = function(options)
 
         _longPollingSendInputEvents: function()
         {
+            if (!v.connected)
+                return;
+
             if (v.inputEvents.length > 0)
             {
                 var data = v.inputEvents.join("\n");
@@ -290,7 +294,7 @@ var Viridity = function(options)
 
         _longPollingReceiveOutputMessages: function()
         {
-            var param = !v.inputEventsStarted ? "?a=init" : "";
+            var param = !v.inputEventsStarted || !v.connected ? "?a=init" : "";
 
             var options =
             {
@@ -313,12 +317,15 @@ var Viridity = function(options)
                         v.processMessage(lines[i]);
                     }
 
-                    setTimeout(function() { v._longPollingReceiveOutputMessages() }, v.pause);
-                    v._longPollingCheckInputEventsStarted();
+                    if (v.connected)
+                    {
+                        setTimeout(function() { v._longPollingReceiveOutputMessages() }, v.pause);
+                        v._longPollingCheckInputEventsStarted();
+                    }
                 },
                 error: function(xhr, status, exception)
                 {
-                    console.log("error receiving display data:\n" + status + " - " + exception + "\n");
+                    console.log("error receiving data:\n" + status + " - " + exception + "\n");
 
                     if (status != "timeout")
                         v._handleDisconnect();
@@ -423,16 +430,19 @@ var Viridity = function(options)
             if (t.command === "info")
             {
                 v.sessionId = inputParams[0];
+                v.connected = true;
                 v._triggerCallback("sessionStart", v.sessionId);
             }
             else if (t.command === "reattached")
             {
                 v.sessionId = inputParams[0];
+                v.connected = true;
                 v._triggerCallback("sessionReattached", v.sessionId);
             }
             else if (t.command === "inuse")
             {
                 v.sessionId = inputParams[0];
+                v.connected = false;
                 v._triggerCallback("sessionInUse", v.sessionId);
             }
             else if (t.command === "ping")
@@ -470,7 +480,7 @@ var Viridity = function(options)
                 v.inputEvents.push(msg);
         },
 
-        _sendQueuedMessages: function()
+        _webSocketsSendQueuedMessages: function()
         {
             if (v.socket && v.socket.readyState === WebSocket.OPEN)
             {
@@ -566,6 +576,7 @@ var Viridity = function(options)
                 v.reconnectTries = 0;
                 v.inputEventsStarted = false;
                 v._triggerCallback("sessionDisconnected", v.sessionId);
+                v.connected = false;
                 v.reconnecting = true;
             }
 
@@ -655,7 +666,7 @@ var Viridity = function(options)
                         v.socket = new WebSocket(add);
 
                     v.socket.onmessage = function(msg) { v.processMessage(msg.data) };
-                    v.socket.onopen = v._sendQueuedMessages;
+                    v.socket.onopen = v._webSocketsSendQueuedMessages;
                     v.socket.onerror = function() { v._ensureWebSocketIsClosed(); v._handleDisconnect(); }
                     v.socket.onclose = function() { v._ensureWebSocketIsClosed(); v._handleDisconnect(); }
                 }

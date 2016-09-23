@@ -95,9 +95,16 @@ public:
     virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
     ViridityWebServer *server() const { return server_; }
+    bool handlingRequest() const { return handlingRequest_; }
+
+protected:
+    virtual void beginHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    virtual void doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    virtual void endHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private:
     ViridityWebServer *server_;
+    bool handlingRequest_;
 };
 
 /*! @}*/

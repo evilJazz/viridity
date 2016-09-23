@@ -47,7 +47,8 @@ void ViridityHttpServerResponse::addNoCachingResponseHeaders()
 
 ViridityBaseRequestHandler::ViridityBaseRequestHandler(ViridityWebServer *server, QObject *parent) :
     QObject(parent),
-    server_(server)
+    server_(server),
+    handlingRequest_(false)
 {
 }
 
@@ -62,4 +63,21 @@ bool ViridityBaseRequestHandler::doesHandleRequest(ViridityHttpServerRequest *re
 
 void ViridityBaseRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
+    beginHandleRequest(request, response);
+    doHandleRequest(request, response);
+    endHandleRequest(request, response);
+}
+
+void ViridityBaseRequestHandler::beginHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+{
+    handlingRequest_ = true;
+}
+
+void ViridityBaseRequestHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+{
+}
+
+void ViridityBaseRequestHandler::endHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+{
+    handlingRequest_ = false;
 }

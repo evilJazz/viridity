@@ -17,10 +17,11 @@ public:
     static bool staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request);
 
     bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    void doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private slots:
     void handleSessionInteractionDormant();
+    void handleSessionReleaseRequired();
     void handleMessagesAvailable();
     void handleResponseDestroyed();
 
@@ -30,6 +31,7 @@ private:
     ViridityHttpServerResponse *response_;
 
     void pushMessageAndEnd(ViridityHttpServerResponse *response, const QByteArray &msg);
+    void releaseSession();
 };
 
 #endif // LONGPOLLINGHANDLER_H

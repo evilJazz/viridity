@@ -10,6 +10,8 @@
 #include "viridityrequesthandler.h"
 #include "viriditysessionmanager.h"
 
+class ViridityConnection;
+
 /*!
  * \defgroup virid Viridity Base
  * The base classes provide support for bi-directional communication between the server and the client, for instance a web browser.
@@ -68,6 +70,8 @@ public:
      */
     void unregisterRequestHandler(ViridityRequestHandler *handler);
 
+    QVariant stats() const;
+
 private slots:
     void handleNewSessionCreated(ViriditySession *session);
 
@@ -79,11 +83,16 @@ private:
 #endif
 
     friend class ViridityConnection;
+    void removeConnection(ViridityConnection *connection);
+
     virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
     virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private:
     AbstractViriditySessionManager *sessionManager_;
+
+    mutable QMutex connectionMutex_;
+    QList<ViridityConnection *> connections_;
 
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;

@@ -17,10 +17,11 @@ public:
     static bool staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request);
 
     bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    void doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
 
 private slots:
     void handleSessionInteractionDormant();
+    void handleSessionReleaseRequired();
     void handleMessagesAvailable();
     void handleResponseDestroyed();
 
@@ -32,6 +33,7 @@ private:
     QAbstractSocket *socket_;
 
     void setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    void releaseSessionAndCloseConnection();
 };
 
 #endif // SSEHANDLER_H

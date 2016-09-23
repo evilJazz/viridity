@@ -6,6 +6,10 @@
 #include <QCoreApplication>
 #include <QStringList>
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+#include <QJsonDocument>
+#endif
+
 DebugRequestHandler::DebugRequestHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent)
 {
@@ -28,29 +32,12 @@ void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, Viri
 
     if (request->url().endsWith("/debug"))
     {
-        if (server()->sessionManager()->sessionCount() > 0)
-        {
-            response->write("Running sessions:\n\n");
-
-            foreach (const QString &sessionId, server()->sessionManager()->sessionIds())
-            {
-                ViriditySession *session = server()->sessionManager()->getSession(sessionId);
-                response->write(
-                    QString().sprintf(
-                        "%s (%s) attached: %s, use count: %d, last used %ld ms ago.\n",
-                        sessionId.toUtf8().constData(),
-                        session->initialPeerAddress().constData(),
-                        session->isAttached() ? "true" : "false",
-                        session->useCount(),
-                        session->lastUsed()
-                    ).toUtf8()
-                );
-            }
-        }
-        else
-        {
-            response->write("No running session.\n");
-        }
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+        QVariant stats = server()->stats();
+        response->write(QJsonDocument::fromVariant(stats).toJson(QJsonDocument::Indented) + "\n");
+#else
+        response->write("JSON output not supported on Qt 4.x\n");
+#endif
     }
     else if (request->url().endsWith("/quit"))
     {

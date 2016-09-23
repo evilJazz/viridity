@@ -18,9 +18,7 @@ SSEHandler::SSEHandler(ViridityWebServer *server, QObject *parent) :
 
 SSEHandler::~SSEHandler()
 {
-    if (session_)
-        server()->sessionManager()->releaseSession(session_);
-
+    releaseSessionAndCloseConnection();
     DGUARDMETHODTIMED;
 }
 
@@ -34,7 +32,7 @@ bool SSEHandler::doesHandleRequest(ViridityHttpServerRequest *request)
     return staticDoesHandleRequest(server(), request);
 }
 
-void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
@@ -44,6 +42,8 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
 
     if (session)
     {
+        session->testForInteractivity(5000, true);
+
         if (session->useCount() == 0)
         {
             session_ = server()->sessionManager()->acquireSession(id);
@@ -63,7 +63,7 @@ void SSEHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpS
 
             setUpResponse(request, response);
             response_->write(info.toUtf8());
-            response_->flush();
+            response_->end();
         }
 
         return;
@@ -95,13 +95,33 @@ void SSEHandler::handleSessionInteractionDormant()
     {
         if (session_ && session_->lastUsed() > 1.5 * session_->interactionCheckInterval())
         {
-            socket_->close();
+            releaseSessionAndCloseConnection();
             return;
         }
 
         response_->write("data: ping()\n\n");
         response_->flush();
     }
+}
+
+void SSEHandler::releaseSessionAndCloseConnection()
+{
+    DGUARDMETHODTIMED;
+
+    if (session_)
+    {
+        server()->sessionManager()->releaseSession(session_);
+        session_ = NULL;
+    }
+
+    if (!handlingRequest() && socket_)
+        socket_->close();
+}
+
+void SSEHandler::handleSessionReleaseRequired()
+{
+    DGUARDMETHODTIMED;
+    releaseSessionAndCloseConnection();
 }
 
 void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
@@ -118,6 +138,7 @@ void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpS
     {
         connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
         connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+        connect(session_, SIGNAL(releaseRequired()), this, SLOT(handleSessionReleaseRequired()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
     }
 
     socket_ = request->socket();

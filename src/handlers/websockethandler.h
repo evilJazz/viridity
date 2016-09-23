@@ -19,8 +19,8 @@ public:
     explicit WebSocketHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~WebSocketHandler();
 
-    void handleUpgrade(ViridityHttpServerRequest *request, const QByteArray &head);
     bool doesHandleRequest(ViridityHttpServerRequest *request);
+    void handleUpgrade(ViridityHttpServerRequest *request, const QByteArray &head);
 
 private slots:
     void handleMessagesAvailable();

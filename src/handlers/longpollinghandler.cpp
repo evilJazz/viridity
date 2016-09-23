@@ -1,9 +1,6 @@
 #include "longpollinghandler.h"
 
 #include <QUrl>
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-#include <QUrlQuery>
-#endif
 
 #include <QStringList>
 
@@ -24,9 +21,7 @@ LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *paren
 
 LongPollingHandler::~LongPollingHandler()
 {
-    if (session_)
-        server()->sessionManager()->releaseSession(session_);
-
+    releaseSession();
     DGUARDMETHODTIMED;
 }
 
@@ -41,7 +36,7 @@ bool LongPollingHandler::doesHandleRequest(ViridityHttpServerRequest *request)
     return staticDoesHandleRequest(server(), request);
 }
 
-void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void LongPollingHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
     DGUARDMETHODTIMED;
 
@@ -57,13 +52,15 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
             {
                 QByteArray msg;
 
+                session->testForInteractivity(5000, true);
+
                 if (session->useCount() == 0)
                 {
                     session = server()->sessionManager()->acquireSession(id);
                     msg = "reattached(" + session->id().toLatin1() + ")";
                     server()->sessionManager()->releaseSession(session);
 
-                    // NOTE: Pending messages will be handed out with the next poll below, i.e. when url not contains ?a=init
+                    // NOTE: Pending messages will be handed out with the next poll below, i.e. when url does not contain ?a=init
                 }
                 else
                 {
@@ -81,6 +78,7 @@ void LongPollingHandler::handleRequest(ViridityHttpServerRequest *request, Virid
 
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
                 connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+                connect(session_, SIGNAL(releaseRequired()), this, SLOT(handleSessionReleaseRequired()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
                 if (session_->pendingMessagesAvailable())
                     handleMessagesAvailable();
@@ -120,11 +118,27 @@ void LongPollingHandler::handleSessionInteractionDormant()
 
     if (response_)
     {
-        if (session_)
-            server()->sessionManager()->releaseSession(session_);
+        releaseSession();
 
         pushMessageAndEnd(response_, "ping()");
     }
+}
+
+void LongPollingHandler::releaseSession()
+{
+    DGUARDMETHODTIMED;
+
+    if (session_)
+    {
+        server()->sessionManager()->releaseSession(session_);
+        session_ = NULL;
+    }
+}
+
+void LongPollingHandler::handleSessionReleaseRequired()
+{
+    DGUARDMETHODTIMED;
+    releaseSession();
 }
 
 void LongPollingHandler::handleMessagesAvailable()

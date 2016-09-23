@@ -5,6 +5,7 @@
 #include <QUuid>
 #include <QCryptographicHash>
 #include <QEvent>
+#include <QEventLoop>
 
 #include <QThread>
 
@@ -67,9 +68,14 @@ ViriditySession::ViriditySession(AbstractViriditySessionManager *sessionManager,
     interactionCheckInterval_(sessionManager->sessionTimeout()),
     attached_(false),
     logic_(NULL),
-    useCount_(0)
+    useCount_(0),
+    testingState_(0)
 {
     DGUARDMETHODTIMED;
+
+    created_.start();
+    lastUsed_.start();
+
     updateCheckTimer_ = new QTimer(this);
     DOP(updateCheckTimer_->setObjectName("ViriditySessionUpdateCheckTimer"));
     connect(updateCheckTimer_, SIGNAL(timeout()), this, SLOT(updateCheckTimerTimeout()));
@@ -109,8 +115,7 @@ bool ViriditySession::sendMessageToHandlers(const QByteArray &message)
 {
     DGUARDMETHODTIMED;
 
-    lastUsed_.restart();
-    interactionCheckTimer_->start();
+    resetLastUsed();
 
     QByteArray modMsg = message;
     QString targetId = ViridityMessageHandler::takeTargetFromMessage(modMsg);
@@ -149,9 +154,8 @@ void ViriditySession::incrementUseCount()
         bool useCountWasZero = useCount_ == 0;
 
         ++useCount_;
-        lastUsed_.restart();
 
-        interactionCheckTimer_->start();
+        resetLastUsed();
 
         if (useCountWasZero && !attached_)
         {
@@ -170,14 +174,20 @@ void ViriditySession::decrementUseCount()
     if (interactionCheckTimer_ && detachDeferTimer_)
     {
         --useCount_;
-        lastUsed_.restart();
 
-        interactionCheckTimer_->start();
+        //resetLastUsed();
 
         // Use a deferred disconnect to debounce
         // communication channel handler, especially LongPolling.
         detachDeferTimer_->start();
     }
+}
+
+void ViriditySession::resetLastUsed()
+{
+    DGUARDMETHODTIMED;
+    lastUsed_.restart();
+    interactionCheckTimer_->start();
 }
 
 bool ViriditySession::dispatchMessageToHandlers(const QByteArray &message)
@@ -285,6 +295,88 @@ bool ViriditySession::event(QEvent *ev)
     }
 
     return QObject::event(ev);
+}
+
+bool ViriditySession::testForInteractivity(const int timeout, bool cleanup)
+{
+    DGUARDMETHODTIMED;
+
+    DPRINTF("useCount: %d", useCount());
+
+    if (useCount() > 0)
+    {
+        ++testingState_;
+
+        QElapsedTimer testTime;
+        testTime.start();
+
+        QTime comparisonLastUsed = lastUsed_;
+
+        emit interactionDormant();
+
+        QEventLoop el;
+        bool timedOut;
+        bool noInteraction;
+        do
+        {
+            el.processEvents(QEventLoop::AllEvents, 100);
+            timedOut = testTime.elapsed() > timeout;
+            noInteraction = lastUsed_ == comparisonLastUsed;
+            DPRINTF("compareLastUsed: %s, lastUsed: %s",
+                comparisonLastUsed.toString("hh:mm:ss.zzz").toUtf8().constData(),
+                lastUsed_.toString("hh:mm:ss.zzz").toUtf8().constData()
+            );
+        }
+        while (!timedOut && noInteraction);
+
+        DPRINTF("timedOut: %s, noInteraction: %s", timedOut ? "true" : "false", noInteraction ? "true" : "false");
+
+        if (cleanup && timedOut && noInteraction)
+            requestReleaseAndWait(timeout);
+
+        --testingState_;
+        bool result = useCount() > 0;
+        return result;
+    }
+    else
+        return false;
+}
+
+bool ViriditySession::requestReleaseAndWait(const int timeout)
+{
+    DGUARDMETHODTIMED;
+    if (useCount() > 0)
+    {
+        ++testingState_;
+
+        QElapsedTimer testTime;
+        testTime.start();
+
+        emit releaseRequired();
+
+        QEventLoop el;
+        while (testTime.elapsed() < timeout && useCount() != 0)
+            el.processEvents(QEventLoop::AllEvents, 100);
+
+        --testingState_;
+        bool result = useCount() == 0;
+        return result;
+    }
+    else
+        return true;
+}
+
+QVariant ViriditySession::stats() const
+{
+    QVariantMap result;
+    result.insert("id", id());
+    result.insert("initialPeerAddress", initialPeerAddress());
+    result.insert("lastUsed", lastUsed());
+    result.insert("age", created_.elapsed());
+    result.insert("useCount", useCount());
+    result.insert("isAttached", isAttached());
+    result.insert("livingInThread", thread()->objectName());
+    return result;
 }
 
 void ViriditySession::updateCheckTimerTimeout()
@@ -413,7 +505,12 @@ ViriditySession *AbstractViriditySessionManager::getSession(const QString &id)
 {
     QMutexLocker l(&sessionMutex_);
     if (sessions_.contains(id))
+    {
+        if (!sessionInKillGracePeriod_.contains(id))
+            sessionInKillGracePeriod_.insert(id);
+
         return sessions_[id];
+    }
 
     return NULL;
 }
@@ -560,18 +657,51 @@ bool AbstractViriditySessionManager::dispatchMessageToClient(const QByteArray &m
     return dispatched > 0;
 }
 
+QVariant AbstractViriditySessionManager::stats() const
+{
+    QVariantMap result;
+
+    QMutexLocker l(&sessionMutex_);
+    QVariantList sessionArray;
+
+    foreach (ViriditySession *session, sessions_.values())
+        sessionArray.append(session->stats());
+
+    result.insert("sessions", sessionArray);
+
+    return result;
+}
+
 void AbstractViriditySessionManager::killExpiredSessions()
 {
+    DGUARDMETHODTIMED;
     if (sessionMutex_.tryLock())
     {
+        cleanupTimer_->stop();
+
         sessionMutex_.unlock();
         QMutexLocker l(&sessionMutex_);
 
         foreach (ViriditySession *session, sessions_.values())
-            if (session->useCount() == 0 && session->lastUsed_.elapsed() > sessionTimeout_)
-                removeSession(session);
+        {
+            if (session->canBeDisposed() && session->lastUsed_.elapsed() > sessionTimeout_)
+            {
+                if (sessionInKillGracePeriod_.contains(session->id()))
+                {
+                    DPRINTF("Session %s is still in grace period. Only removing from list.", session->id().toUtf8().constData());
+                    sessionInKillGracePeriod_.remove(session->id());
+                }
+                else
+                {
+                    DPRINTF("Removing session %s due to expiration.", session->id().toUtf8().constData());
+                    removeSession(session);
+                }
+            }
+        }
 
         if (sessions_.count() == 0)
             emit noSessions();
+
+        cleanupTimer_->start();
     }
 }

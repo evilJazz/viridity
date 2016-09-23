@@ -6,6 +6,8 @@
 #include <QElapsedTimer>
 #include <QTimer>
 #include <QHash>
+#include <QSet>
+#include <QVariant>
 
 #include "viridityrequesthandler.h"
 
@@ -134,11 +136,35 @@ public:
     qint64 lastUsed() const { return lastUsed_.elapsed(); }
 
     /*!
+     * Determines whether this session can be disposed.
+     */
+    bool canBeDisposed() const { useCount_ == 0 && testingState_ == 0; }
+
+    /*!
      * Determines after how many milliseconds a session is deemed disposable because no interaction happened.
      *
      * \sa ViriditySession::lastUsed
      */
     int interactionCheckInterval() const { return interactionCheckInterval_; }
+
+    /*!
+     * Tests if a handler holding this session is still interactive. It triggers the interactionDormant() signal once and
+     * waits for any input to arrive in this session for up to the period defined by timeout and returns whether this session
+     * is still interactive or not, i.e. whether a remote client is still reacting to our outgoing messages.
+     *
+     * \sa ViriditySession::lastUsed, ViriditySession::interactionDormant
+     */
+    bool testForInteractivity(const int timeout = 5000, bool cleanup = false);
+
+    /*!
+     * Requests a release of this session from all currently attached remote clients.
+     */
+    bool requestReleaseAndWait(const int timeout = 5000);
+
+    /*!
+     * Returns debug statistics and details.
+     */
+    QVariant stats() const;
 
     /*! Associated a logic object as an opaque pointer with this session.
      * \note The session instance does not take ownership of this logic object.
@@ -196,6 +222,11 @@ signals:
     void interactionDormant();
 
     /*!
+     * Signal is emitted when the session requests all users to release this session.
+     */
+    void releaseRequired();
+
+    /*!
      * Signal is emitted when the session is detached from a remote client.
      * \note For long polling connections, i.e. connections handled by LongPollingHandler,
      * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
@@ -218,6 +249,7 @@ private slots:
 
     void incrementUseCount();
     void decrementUseCount();
+    void resetLastUsed();
 
 private:
     friend class AbstractViriditySessionManager;
@@ -243,8 +275,10 @@ private:
     int interactionCheckInterval_;
 
     QObject *logic_;
-    QElapsedTimer lastUsed_;
+    QTime created_;
+    QTime lastUsed_;
     int useCount_;
+    int testingState_;
 
     QByteArray initialPeerAddress_;
 
@@ -407,6 +441,11 @@ public:
      */
     int sessionTimeout() const { return sessionTimeout_; }
 
+    /*!
+     * Returns debug statistics and details.
+     */
+    virtual QVariant stats() const;
+
 signals:
     /*!
      * Emitted when a new session instance was successfully created.
@@ -453,8 +492,9 @@ protected slots:
 private:
     ViridityWebServer *server_;
 
-    QMutex sessionMutex_;
+    mutable QMutex sessionMutex_;
     QHash<QString, ViriditySession *> sessions_;
+    QSet<QString> sessionInKillGracePeriod_;
     QTimer *cleanupTimer_;
 
     int sessionTimeout_;

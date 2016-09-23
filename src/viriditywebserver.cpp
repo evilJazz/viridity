@@ -19,6 +19,12 @@
 
 /* ViridityConnection */
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
+    typedef qintptr ViriditySocketDescriptor;
+#else
+    typedef int ViriditySocketDescriptor;
+#endif
+
 class ViridityConnection : public QObject
 {
     Q_OBJECT
@@ -31,7 +37,11 @@ public:
 
     virtual ~ViridityConnection();
 
+    ViriditySocketDescriptor socketDescriptor() const { return socketDescriptor_; }
+
     ViridityWebServer *server() { return server_; }
+
+    QVariant stats() const;
 
 public slots:
     void setupConnection();
@@ -47,11 +57,13 @@ private:
 
     ViridityWebServer *server_;
 
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    qintptr socketDescriptor_;
-#else
-    int socketDescriptor_;
-#endif
+    QTcpSocket *socket_;
+    ViridityHttpServerRequest *request_;
+    ViriditySocketDescriptor socketDescriptor_;
+
+    QTime created_;
+    QTime lastUsed_;
+    int reUseCount_;
 };
 
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -64,14 +76,35 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDesc
     sseHandler_(NULL),
     longPollingHandler_(NULL),
     server_(parent),
-    socketDescriptor_(socketDescriptor)
+    socket_(NULL),
+    request_(NULL),
+    socketDescriptor_(socketDescriptor),
+    reUseCount_(0)
 {
     DGUARDMETHODTIMED;
+    created_.start();
 }
 
 ViridityConnection::~ViridityConnection()
 {
     DGUARDMETHODTIMED;
+    server_->removeConnection(this);
+}
+
+QVariant ViridityConnection::stats() const
+{
+    QVariantMap result;
+
+    result.insert("request.url", request_->url());
+    result.insert("request.method", request_->method());
+    result.insert("socket.peerAddress", socket_->peerAddress().toString());
+    result.insert("socketDescriptor", socketDescriptor());
+    result.insert("age", created_.elapsed());
+    result.insert("lastUsed", lastUsed_.elapsed());
+    result.insert("reUseCount", reUseCount_);
+    result.insert("livingInThread", thread()->objectName());
+
+    return result;
 }
 
 void ViridityConnection::setupConnection()
@@ -79,34 +112,37 @@ void ViridityConnection::setupConnection()
     DGUARDMETHODTIMED;
 
     // Open socket
-    QTcpSocket *socket = new QTcpSocket(this);
+    socket_ = new QTcpSocket(this);
 
     // Attach incomming connection to socket
-    if (!socket->setSocketDescriptor(socketDescriptor_))
+    if (!socket_->setSocketDescriptor(socketDescriptor_))
     {
-        delete socket;
+        delete socket_;
         this->deleteLater();
         // TODO: Cleanup!
         return;
     }
 
     // Hand-off incoming connection to Tufao to parse request...
-    ViridityHttpServerRequest *request = new ViridityHttpServerRequest(socket, this);
+    request_ = new ViridityHttpServerRequest(socket_, this);
 
-    DPRINTF("New connection from %s.", socket->peerAddress().toString().toLatin1().constData());
+    DPRINTF("New connection from %s.", socket_->peerAddress().toString().toLatin1().constData());
 
-    connect(request, SIGNAL(ready()), this, SLOT(onRequestReady()));
-    connect(request, SIGNAL(upgrade(QByteArray)), this, SLOT(onUpgrade(QByteArray)));
+    connect(request_, SIGNAL(ready()), this, SLOT(onRequestReady()));
+    connect(request_, SIGNAL(upgrade(QByteArray)), this, SLOT(onUpgrade(QByteArray)));
 
-    connect(socket, SIGNAL(disconnected()), request, SLOT(deleteLater()));
-    connect(socket, SIGNAL(disconnected()), socket, SLOT(deleteLater()));
+    connect(socket_, SIGNAL(disconnected()), request_, SLOT(deleteLater()));
+    connect(socket_, SIGNAL(disconnected()), socket_, SLOT(deleteLater()));
 
-    connect(socket, SIGNAL(disconnected()), this, SLOT(deleteLater()));
+    connect(socket_, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 }
 
 void ViridityConnection::onRequestReady()
 {
     //DGUARDMETHODTIMED;
+
+    lastUsed_.restart();
+    ++reUseCount_;
 
     ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
 
@@ -148,6 +184,9 @@ void ViridityConnection::onRequestReady()
 
 void ViridityConnection::onUpgrade(const QByteArray &head)
 {
+    lastUsed_.restart();
+    ++reUseCount_;
+
     ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
 
     DPRINTF("Request for %s of connection from %s wants upgrade.", request->url().constData(), request->getPeerAddressFromRequest().constData());
@@ -165,6 +204,7 @@ void ViridityConnection::onUpgrade(const QByteArray &head)
 ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionManager *sessionManager) :
     QTcpServer(parent),
     sessionManager_(sessionManager),
+    connectionMutex_(QMutex::Recursive),
     incomingConnectionCount_(0)
 {
     sessionManager_->setServer(this);
@@ -258,9 +298,17 @@ void ViridityWebServer::incomingConnection(int handle)
     int threadIndex = incomingConnectionCount_ % connectionThreads_.count();
 
     ViridityConnection *connection = new ViridityConnection(this, handle);
+    QMutexLocker l(&connectionMutex_);
+    connections_.append(connection);
     connection->moveToThread(connectionThreads_.at(threadIndex)); // Move connection to thread's event loop
 
     QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
+}
+
+void ViridityWebServer::removeConnection(ViridityConnection *connection)
+{
+    QMutexLocker l(&connectionMutex_);
+    connections_.removeAll(connection);
 }
 
 void ViridityWebServer::registerRequestHandler(ViridityRequestHandler *handler)
@@ -292,6 +340,22 @@ void ViridityWebServer::handleRequest(ViridityHttpServerRequest *request, Viridi
     foreach (ViridityRequestHandler *handler, requestHandlers_)
         if (handler->doesHandleRequest(request))
             handler->handleRequest(request, response);
+}
+
+QVariant ViridityWebServer::stats() const
+{
+    QVariantMap result;
+
+    result.insert("sessionManager", sessionManager_->stats());
+
+    QMutexLocker l(&connectionMutex_);
+    QVariantList connectionArray;
+    foreach (ViridityConnection *connection, connections_)
+        connectionArray.append(connection->stats());
+
+    result.insert("connections", connectionArray);
+
+    return result;
 }
 
 #include "viriditywebserver.moc"

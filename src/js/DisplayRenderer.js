@@ -92,6 +92,9 @@
 
             requestFullUpdate: function(forced)
             {
+                if (!v.connected)
+                    return;
+
                 if (typeof(forced) === "undefined") forced = false;
                 dr.waitingForFullUpdate = true;
                 v.sendMessage("requestFullUpdate(" + (forced ? "1" : "0") + ")", dr.targetId);
@@ -99,7 +102,8 @@
 
             _sendKeepAlive: function()
             {
-                v.sendMessage("keepAlive()", dr.targetId);
+                if (v.connected)
+                    v.sendMessage("keepAlive()", dr.targetId);
             },
 
             createDebugOverlay: function()
@@ -551,7 +555,9 @@
                     $(dr.frontCanvas).css("clip", "rect(0px," + width + "px," + height + "px,0px)");
 
                     if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> RESIZING TO " + scaledWidth + " x " + scaledHeight);
-                    v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
+
+                    if (v.connected)
+                        v.sendMessage("resize(" + scaledWidth + "," + scaledHeight + "," + dr.ratio + ")", dr.targetId);
                 }
             },
 
@@ -578,8 +584,11 @@
 
             _requestNewDisplay: function()
             {
-                var joinedParams = typeof(params) === "array" ? params.join() : params;
-                v.sendMessage("newDisplay(" + joinedParams + ")", dr.targetId);
+                if (v.connected)
+                {
+                    var joinedParams = typeof(dr.params) === "array" ? dr.params.join() : dr.params;
+                    v.sendMessage("newDisplay(" + joinedParams + ")", dr.targetId);
+                }
             },
 
             _reconnectDisplay: function()
@@ -689,6 +698,9 @@
 
                 function sendMouseEvent(type, event, other)
                 {
+                    if (!v.connected)
+                        return;
+
                     var pos = getCanvasPos(event);
 
                     // Round coordinates, because IE is sending floats...
@@ -720,6 +732,9 @@
 
                 function sendKeyEvent(type, event, printableCharacter)
                 {
+                    if (!v.connected)
+                        return;
+
                     if (dr.debugVerbosity > 0)
                     {
                         console.log("Type: " + type + " event.which: " + event.which + " event.keyCode: " + event.keyCode + " event.charCode: " + event.charCode + " printableCharacter: " + printableCharacter);
