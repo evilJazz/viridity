@@ -1,0 +1,95 @@
+Viridity
+
+Copyright (C) 2012-2016 Andre Beckedorf, Meteora Softworks
+
+Viridity and its sourcecode residing in the sub-directories "src" and "include"
+are licensed under either a separately available commercial license or the
+GNU Affero General Public License Version 3.0, published 19 November 2007,
+unless otherwise indicated in the preamble of each sourcecode file.
+
+See https://www.gnu.org/licenses/agpl-3.0.html or LICENSE-agpl-3.0.txt for
+details.
+
+If you wish to use and distribute the Viridity library in your commercial
+product without making your sourcecode available to the public, please contact
+us for a commercial license at info@meteorasoftworks.com
+
+
+Licenses of sourcecode residing in the sub-directory "3rdparty"
+---------------------------------------------------------------
+
+Viridity uses the Katastrophos.net Component Library, which is triple-licensed
+under the terms of either the LGPL 2.1, the LGPL 3.0 or the MPL 1.1:
+
+    Copyright (C) 2011-2016 Andre Beckedorf, Katastrophos.net & Meteora Softworks
+
+    GNU Lesser General Public License Usage
+    This library is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Lesser General Public License version
+    2.1 or 3.0 as published by the Free Software Foundation.
+
+    This library is distributed in the hope that it will be useful, but
+    WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details:
+    https://www.gnu.org/licenses/lgpl-2.1.html
+    https://www.gnu.org/licenses/lgpl-3.0.html
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
+    02110-1301  USA
+
+    Mozilla Public License Usage
+    Alternatively, this file is available under the Mozilla Public
+    License Version 1.1.  You may obtain a copy of the License at
+    http://www.mozilla.org/MPL/
+
+
+Viridity uses parts of the Tufão project, which is licensed under the terms
+of the LGPL 2.1 or any later version.
+
+    Copyright (C) 2012 Vinícius dos Santos Oliveira <vini.ipsmaker@gmail.com>
+
+    This library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2.1 of the License, or (at your option) any
+    later version.
+
+    This library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this library.  If not, see <http://www.gnu.org/licenses/>.
+
+Note: Files that are required for Viridity are explicitly defined
+in the file 3rdparty/tufao/tufao-min.pri
+
+
+The Tufão project uses code based on the Nginx and Node codebase:
+
+    Copyright Igor Sysoev
+
+    Additional changes are licensed under the same terms as NGINX and
+    copyright Joyent, Inc. and other Node contributors. All rights reserved.
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy
+    of this software and associated documentation files (the "Software"), to
+    deal in the Software without restriction, including without limitation the
+    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+    sell copies of the Software, and to permit persons to whom the Software is
+    furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in
+    all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+    AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+    IN THE SOFTWARE.
