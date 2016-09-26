@@ -162,7 +162,7 @@ public:
     /*!
      * Determines whether this session can be disposed.
      */
-    bool canBeDisposed() const { useCount_ == 0 && testingState_ == 0; }
+    bool canBeDisposed() const { return useCount_ == 0 && testingState_ == 0; }
 
     /*!
      * Determines after how many milliseconds a session is deemed disposable because no interaction happened.

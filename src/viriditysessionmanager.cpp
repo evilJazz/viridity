@@ -398,6 +398,7 @@ QVariant ViriditySession::stats() const
     result.insert("lastUsed", lastUsed());
     result.insert("age", created_.elapsed());
     result.insert("useCount", useCount());
+    result.insert("canBeDisposed", canBeDisposed());
     result.insert("isAttached", isAttached());
     result.insert("livingInThread", thread()->objectName());
     return result;
