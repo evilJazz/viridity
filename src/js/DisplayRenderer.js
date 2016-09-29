@@ -65,6 +65,8 @@
             resizeCanvas: 0,
             resizeCtx: 0,
 
+            textInterceptor: 0,
+
             ratio: 1,
 
             _imageDone: function()
@@ -849,6 +851,145 @@
                 $(dr.frontCanvas).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
                 $(dr.frontCanvas).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
                 $(dr.frontCanvas).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
+
+                var isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                var isAndroid = /Android/.test(navigator.userAgent) && !window.MSStream;
+
+                if (isiOS || isAndroid)
+                {
+                    // Why does this code exist?
+                    // Key events on mobile browsers are a mess. A real stinking mess.
+                    // In order to offer rudimentary support for mobile browsers
+                    // we inject a textarea and use it to intercept typed text
+                    // and by differential analysis we send new single-char or multi-char
+                    // text changes to the server. This code does its best to prevent multiple
+                    // prefix insertions caused by autocompletion et al. Firefox on Android
+                    // is a master in making stuff exceptionally complicated.
+
+                    dr.textInterceptor = document.createElement("textarea");
+                    $(dr.textInterceptor)
+                        .addClass("viridity")
+                        .css({
+                            "min-width": 0,
+                            "min-height": 0,
+                            "width": 20,
+                            "height": 20,
+                            "z-index": -1000,
+                            "opacity": "0.001",
+                            "position": "fixed",
+                            "visibility": "hidden"
+                        })
+                        .attr({
+                            "autocapitalize": "off",
+                            "autocomplete": "off",
+                            "autocorrect": "off",
+                            "spellcheck": "false"
+                        })
+
+                    containerElement.append(dr.textInterceptor);
+
+                    /*
+                    $(dr.textInterceptor).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
+                    $(dr.textInterceptor).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
+                    $(dr.textInterceptor).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
+                    */
+
+                    var changingText = false;
+                    var comparisonText = "--";
+                    var lastText = "";
+
+                    function moveCursorToEnd()
+                    {
+                        if (dr.textInterceptor.setSelectionRange)
+                        {
+                            var len = comparisonText.length * 2;
+                            dr.textInterceptor.setSelectionRange(len, len);
+                        }
+                    }
+
+                    $(dr.textInterceptor).val(comparisonText);
+                    moveCursorToEnd();
+
+                    $(dr.textInterceptor).bind('input propertychange', function() {
+                        if (changingText) return;
+
+                        changingText = true;
+                        try
+                        {
+                            var newTextRaw = $(dr.textInterceptor).val();
+                            var newText = newTextRaw.substr(comparisonText.length);
+
+                            if (newTextRaw == comparisonText)
+                            {
+                                if (dr.debugVerbosity > 0)
+                                    console.log("No change in text.");
+                            }
+                            else if (newTextRaw.length < comparisonText.length)
+                            {
+                                if (dr.debugVerbosity > 0)
+                                    console.log("Text length reduced by " + (comparisonText.length - newTextRaw.length) + ", possibly backspace.");
+
+                                var event = {
+                                    which: 8, // backspace key
+                                    shiftKey: false,
+                                    ctrlKey: false,
+                                    altKey: false,
+                                    metaKey: false
+                                };
+
+                                sendKeyEvent("keyDown", event, false);
+                                sendKeyEvent("keyPress", event, false);
+                                sendKeyEvent("keyUp", event, false);
+                            }
+                            else
+                            {
+                                if (dr.debugVerbosity > 0)
+                                    console.log("Text change: >" + newText + "<");
+
+                                function encodeUtf8(s)
+                                {
+                                    return unescape(encodeURIComponent(s));
+                                }
+
+                                var textToSend = newText;
+
+                                // Check for prefix text insertion...
+                                // Note: Firefox Android does this for words in between spaces as long as autocompletion is still available.
+                                var prefix = newText.substr(0, lastText.length);
+                                if (lastText.length > 0 && newText.length > lastText.length && prefix == lastText)
+                                    // ... and skip first already sent part and only send new part...
+                                    textToSend = newText.substr(lastText.length);
+
+                                lastText = newText;
+
+                                if (dr.debugVerbosity > 0)
+                                    console.log("Text to send: >" + textToSend + "<");
+
+                                var textToSendBase64 = btoa(encodeUtf8(textToSend));
+                                v.sendMessage("text(" + textToSendBase64 + ")", dr.targetId);
+                            }
+
+                            $(dr.textInterceptor).val(comparisonText);
+                        }
+                        finally
+                        {
+                            changingText = false;
+                        }
+                    });
+
+                    //$(dr.textInterceptor).on("input", function(event)      { sendKeyEvent("keyUp", event, false); });
+
+                    function focusTextInterceptor(event)
+                    {
+                        dr.textInterceptor.style.visibility = "visible";
+                        dr.textInterceptor.focus();
+
+                        //dr.textInterceptor.style.visibility = "hidden"; // Chrome obviously does not like hiding the textarea...
+                    }
+
+                    $(dr.frontCanvas).on("touchstart", focusTextInterceptor);
+                    $(dr.frontCanvas).click(focusTextInterceptor);
+                }
 
                 // Finally set up keep alive...
                 setInterval(dr._sendKeepAlive, dr.keepAliveInterval);

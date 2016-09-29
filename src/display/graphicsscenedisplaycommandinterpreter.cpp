@@ -266,10 +266,27 @@ bool GraphicsSceneDisplayCommandInterpreter::handleKeyEvent(const QString &comma
     return true;
 }
 
+bool GraphicsSceneDisplayCommandInterpreter::handleTextEvent(const QString &command, const QStringList &params)
+{
+    QString textBase64 = params[0];
+
+    QString text = QString::fromUtf8(QByteArray::fromBase64(textBase64.toUtf8()));
+
+    int key = 0;
+
+    if (text == "\n")
+        key = Qt::Key_Return;
+
+    qDebug("Received text from client: >%s<", text.toUtf8().constData());
+
+    adapter_->handleKeyEvent(QEvent::KeyPress, key, 0, text);
+}
+
 bool GraphicsSceneDisplayCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
     return message.startsWith("mouse") ||
            message.startsWith("key") ||
+           message.startsWith("text") ||
            message.startsWith("contextMenu");
 }
 
@@ -287,6 +304,8 @@ bool GraphicsSceneDisplayCommandInterpreter::handleMessage(const QByteArray &mes
         return handleMouseEvent(command, params);
     else if (message.startsWith("key") && params.count() >= 1)
         return handleKeyEvent(command, params);
+    else if (message.startsWith("text") && params.count() >= 1)
+        return handleTextEvent(command, params);
 
     return false;
 }

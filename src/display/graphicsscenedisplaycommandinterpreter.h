@@ -62,6 +62,7 @@ private:
 
     bool handleMouseEvent(const QString &command, const QStringList &params);
     bool handleKeyEvent(const QString &command, const QStringList &params);
+    bool handleTextEvent(const QString &command, const QStringList &params);
     QString textForKey(int key, Qt::KeyboardModifier modifiers);
 };
 
