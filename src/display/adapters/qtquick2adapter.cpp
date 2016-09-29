@@ -59,6 +59,7 @@ public:
 
 QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
     AbstractGraphicsSceneAdapter(NULL),
+    rootItemPreviousParent_(rootItem->parentItem()),
     rootItem_(rootItem),
     window_(NULL),
     fbo_(0),
@@ -87,6 +88,7 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
         qFatal("Window is not assigned.");
 
     rootItem_ = window_->contentItem();
+    rootItemPreviousParent_ = rootItem_->parentItem();
     window_->hide();
 
     init();
@@ -117,6 +119,7 @@ void QtQuick2Adapter::init()
     // window never gets created or shown, meaning that it will never get an underlying
     // native (platform) window.
     quickWindow_ = new QQuickWindow(renderControl_);
+    quickWindow_->setObjectName("RenderControlWindow");
 
     // Now hook up the signals. For simplicy we don't differentiate between
     // renderRequested (only render is needed, no sync) and sceneChanged (polish and sync is needed too).
@@ -143,12 +146,6 @@ QtQuick2Adapter::~QtQuick2Adapter()
 
     detachFromRootItem();
 
-    if (quickWindow_)
-    {
-        delete quickWindow_;
-        quickWindow_ = NULL;
-    }
-
     destroyFbo();
 
     context_->doneCurrent();
@@ -165,10 +162,7 @@ void QtQuick2Adapter::detachFromRootItem()
     {
         disconnect(rootItem_, &QQuickItem::destroyed, this, &QtQuick2Adapter::detachFromRootItem);
 
-        if (window_)
-            rootItem_->setParentItem(window_->contentItem());
-        else
-            rootItem_->setParentItem(NULL);
+        rootItem_->setParentItem(rootItemPreviousParent_);
 
         rootItem_ = NULL;
         window_ = NULL;
@@ -186,8 +180,12 @@ void QtQuick2Adapter::detachFromRootItem()
     {
         delete renderControl_;
         renderControl_ = NULL;
+    }
 
-        quickWindow_ = NULL; // since quickWindow_ is parented to renderControl_
+    if (quickWindow_)
+    {
+        delete quickWindow_;
+        quickWindow_ = NULL;
     }
 }
 
@@ -358,6 +356,8 @@ void QtQuick2Adapter::createFbo()
     DGUARDMETHODTIMED;
     if (!quickWindow_)
         return;
+
+    destroyFbo();
 
     fbo_ = new QOpenGLFramebufferObject(quickWindow_->width(), quickWindow_->height(), QOpenGLFramebufferObject::CombinedDepthStencil);
     quickWindow_->setRenderTarget(fbo_);

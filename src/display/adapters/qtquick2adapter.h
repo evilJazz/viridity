@@ -71,6 +71,7 @@ private slots:
     void updateBuffer();
 
 private:
+    QQuickItem *rootItemPreviousParent_;
     QQuickItem *rootItem_;
     QQuickWindow *window_;
     QOpenGLContext *context_;
