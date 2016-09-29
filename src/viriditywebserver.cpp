@@ -71,10 +71,13 @@ public slots:
     void setupConnection();
 
 private slots:
-    void onRequestReady();
-    void onUpgrade(const QByteArray &);
+    void handleRequestReady();
+    void handleRequestUpgrade(const QByteArray &);
+    void handleSocketDisconnected();
 
 private:
+    mutable QMutex mutex_;
+
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
     LongPollingHandler *longPollingHandler_;
@@ -96,6 +99,7 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, qintptr socket
 ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDescriptor) :
 #endif
     QObject(),
+    mutex_(QMutex::Recursive),
     webSocketHandler_(NULL),
     sseHandler_(NULL),
     longPollingHandler_(NULL),
@@ -117,6 +121,8 @@ ViridityConnection::~ViridityConnection()
 
 QVariant ViridityConnection::stats() const
 {
+    QMutexLocker l(&mutex_);
+
     QVariantMap result;
 
     result.insert("request.url", request_->url());
@@ -135,33 +141,50 @@ void ViridityConnection::setupConnection()
 {
     DGUARDMETHODTIMED;
 
+    QMutexLocker l(&mutex_);
+
     // Open socket
     socket_ = new QTcpSocket(this);
+    connect(socket_, SIGNAL(disconnected()), this, SLOT(handleSocketDisconnected()));
 
     // Attach incomming connection to socket
     if (!socket_->setSocketDescriptor(socketDescriptor_))
     {
         delete socket_;
         this->deleteLater();
-        // TODO: Cleanup!
         return;
     }
 
     // Hand-off incoming connection to Tufao to parse request...
     request_ = new ViridityHttpServerRequest(socket_, this);
+    connect(request_, SIGNAL(ready()), this, SLOT(handleRequestReady()));
+    connect(request_, SIGNAL(upgrade(QByteArray)), this, SLOT(handleRequestUpgrade(QByteArray)));
 
     DPRINTF("New connection from %s.", socket_->peerAddress().toString().toLatin1().constData());
-
-    connect(request_, SIGNAL(ready()), this, SLOT(onRequestReady()));
-    connect(request_, SIGNAL(upgrade(QByteArray)), this, SLOT(onUpgrade(QByteArray)));
-
-    connect(socket_, SIGNAL(disconnected()), request_, SLOT(deleteLater()));
-    connect(socket_, SIGNAL(disconnected()), socket_, SLOT(deleteLater()));
-
-    connect(socket_, SIGNAL(disconnected()), this, SLOT(deleteLater()));
 }
 
-void ViridityConnection::onRequestReady()
+void ViridityConnection::handleSocketDisconnected()
+{
+    DGUARDMETHODTIMED;
+
+    QMutexLocker l(&mutex_);
+
+    if (request_)
+    {
+        request_->deleteLater();
+        request_ = NULL;
+    }
+
+    if (socket_)
+    {
+        socket_->deleteLater();
+        socket_ = NULL;
+    }
+
+    this->deleteLater();
+}
+
+void ViridityConnection::handleRequestReady()
 {
     //DGUARDMETHODTIMED;
 
@@ -206,7 +229,7 @@ void ViridityConnection::onRequestReady()
     }
 }
 
-void ViridityConnection::onUpgrade(const QByteArray &head)
+void ViridityConnection::handleRequestUpgrade(const QByteArray &head)
 {
     lastUsed_.restart();
     ++reUseCount_;
