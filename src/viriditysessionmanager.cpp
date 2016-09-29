@@ -687,6 +687,9 @@ QVariant AbstractViriditySessionManager::stats() const
     QVariantMap result;
 
     QMutexLocker l(&sessionMutex_);
+
+    result.insert("sessionCount", sessions_.count());
+
     QVariantList sessionArray;
 
     foreach (ViriditySession *session, sessions_.values())
