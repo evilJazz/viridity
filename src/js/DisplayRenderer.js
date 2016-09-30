@@ -859,75 +859,97 @@
                 {
                     // Why does this code exist?
                     // Key events on mobile browsers are a mess. A real stinking mess.
-                    // In order to offer rudimentary support for mobile browsers
+                    // In order to offer rudimentary support for text input on mobile browsers
                     // we inject a textarea and use it to intercept typed text
                     // and by differential analysis we send new single-char or multi-char
                     // text changes to the server. This code does its best to prevent multiple
-                    // prefix insertions caused by autocompletion et al. Firefox on Android
-                    // is a master in making stuff exceptionally complicated.
+                    // prefix insertions caused by autocompletion et al.
 
-                    dr.textInterceptor = document.createElement("textarea");
-                    $(dr.textInterceptor)
-                        .addClass("viridity")
-                        .css({
-                            "min-width": 0,
-                            "min-height": 0,
-                            "width": 20,
-                            "height": 20,
-                            "z-index": -1000,
-                            "opacity": "0.001",
-                            "position": "fixed",
-                            "visibility": "hidden"
-                        })
-                        .attr({
-                            "autocapitalize": "off",
-                            "autocomplete": "off",
-                            "autocorrect": "off",
-                            "spellcheck": "false"
-                        })
+                    function createTextInterceptor()
+                    {
+                        var textInterceptor = document.createElement("textarea");
+                        $(textInterceptor)
+                            .addClass("viridity")
+                            .css({
+                                "min-width": 0,
+                                "min-height": 0,
+                                "margin-top": 100,
+                                "margin-left": -4000,
+                                "width": 20,
+                                "height": 20,
+                                "z-index": -1000,
+                                "opacity": "0.001",
+                                "position": "fixed",
+                                "visibility": "hidden"
+                            })
 
-                    containerElement.append(dr.textInterceptor);
-
-                    /*
-                    $(dr.textInterceptor).keydown(function(event)    { sendKeyEvent("keyDown", event, false); });
-                    $(dr.textInterceptor).keypress(function(event)   { sendKeyEvent("keyPress", event, true); });
-                    $(dr.textInterceptor).keyup(function(event)      { sendKeyEvent("keyUp", event, false); });
-                    */
+                        containerElement.append(textInterceptor);
+                        return textInterceptor;
+                    }
 
                     var changingText = false;
-                    var comparisonText = "--";
+                    var sentinelTextForBackspace = "- ";
                     var lastText = "";
+                    var lastTextRaw = sentinelTextForBackspace;
 
-                    function moveCursorToEnd()
+                    function moveCursorToEnd(textInterceptor)
                     {
-                        if (dr.textInterceptor.setSelectionRange)
+                        if (textInterceptor.setSelectionRange)
                         {
-                            var len = comparisonText.length * 2;
-                            dr.textInterceptor.setSelectionRange(len, len);
+                            var len = sentinelTextForBackspace.length * 2;
+                            textInterceptor.setSelectionRange(len, len);
                         }
                     }
 
-                    $(dr.textInterceptor).val(comparisonText);
-                    moveCursorToEnd();
+                    function focusTextInterceptor()
+                    {
+                        dr.textInterceptor.style.visibility = "visible";
+                        dr.textInterceptor.focus();
+                        //dr.textInterceptor.style.visibility = "hidden"; // Chrome obviously does not like hiding the textarea...
+                    }
 
-                    $(dr.textInterceptor).bind('input propertychange', function() {
+                    function handleTextInterceptorChange()
+                    {
                         if (changingText) return;
 
                         changingText = true;
                         try
                         {
-                            var newTextRaw = $(dr.textInterceptor).val();
-                            var newText = newTextRaw.substr(comparisonText.length);
+                            var newTextRaw = dr.textInterceptor.value;
 
-                            if (newTextRaw == comparisonText)
+                            if (dr.debugVerbosity > 0)
+                                console.log("newTextRaw: >" + newTextRaw + "<  lastTextRaw: >" + lastTextRaw + "<");
+
+                            if (newTextRaw == lastTextRaw)
                             {
                                 if (dr.debugVerbosity > 0)
                                     console.log("No change in text.");
+
+                                return;
                             }
-                            else if (newTextRaw.length < comparisonText.length)
+
+                            var maxCompareLength = Math.min(lastTextRaw.length, newTextRaw.length);
+                            var firstChangeIndex = maxCompareLength;
+
+                            for (var i = 0; i < maxCompareLength; ++i)
+                            {
+                                if (lastTextRaw[i] != newTextRaw[i])
+                                {
+                                    firstChangeIndex = i;
+                                    break;
+                                }
+                            }
+
+                            var backspacesRequired = lastTextRaw.length - firstChangeIndex;
+                            var appendsRequired = newTextRaw.length - firstChangeIndex;
+
+                            if (dr.debugVerbosity > 0)
+                                console.log("backspacesRequired: " + backspacesRequired + " appendsRequired: " + appendsRequired);
+
+                            if (backspacesRequired > 0)
                             {
                                 if (dr.debugVerbosity > 0)
-                                    console.log("Text length reduced by " + (comparisonText.length - newTextRaw.length) + ", possibly backspace.");
+                                    console.log("Text length reduced by " + backspacesRequired + ", sending backspace key events.");
 
                                 var event = {
                                     which: 8, // backspace key
@@ -937,55 +959,60 @@
                                     metaKey: false
                                 };
 
-                                sendKeyEvent("keyDown", event, false);
-                                sendKeyEvent("keyPress", event, false);
-                                sendKeyEvent("keyUp", event, false);
+                                for (var i = 0; i < backspacesRequired; ++i)
+                                {
+                                    sendKeyEvent("keyDown", event, false);
+                                    sendKeyEvent("keyPress", event, false);
+                                    sendKeyEvent("keyUp", event, false);
+                                }
                             }
-                            else
+
+                            if (appendsRequired)
                             {
+                                var newText = newTextRaw.substr(firstChangeIndex);
+
                                 if (dr.debugVerbosity > 0)
                                     console.log("Text change: >" + newText + "<");
 
+                                // as per https://ecmanaut.blogspot.de/2006/07/encoding-decoding-utf8-in-javascript.html
                                 function encodeUtf8(s)
                                 {
                                     return unescape(encodeURIComponent(s));
                                 }
 
-                                var textToSend = newText;
-
-                                // Check for prefix text insertion...
-                                // Note: Firefox Android does this for words in between spaces as long as autocompletion is still available.
-                                var prefix = newText.substr(0, lastText.length);
-                                if (lastText.length > 0 && newText.length > lastText.length && prefix == lastText)
-                                    // ... and skip first already sent part and only send new part...
-                                    textToSend = newText.substr(lastText.length);
-
-                                lastText = newText;
-
-                                if (dr.debugVerbosity > 0)
-                                    console.log("Text to send: >" + textToSend + "<");
-
-                                var textToSendBase64 = btoa(encodeUtf8(textToSend));
-                                v.sendMessage("text(" + textToSendBase64 + ")", dr.targetId);
+                                var newTextBase64 = btoa(encodeUtf8(newText));
+                                v.sendMessage("text(" + newTextBase64 + ")", dr.targetId);
                             }
 
-                            $(dr.textInterceptor).val(comparisonText);
+                            var prefixRaw = lastTextRaw.substr(0, newTextRaw.length);
+
+                            if (newTextRaw.length < sentinelTextForBackspace.length)
+                            {
+                                $(dr.textInterceptor).val(sentinelTextForBackspace);
+                                lastTextRaw = sentinelTextForBackspace;
+                                lastText = "";
+                            }
+                            else
+                            {
+                                lastTextRaw = newTextRaw;
+                                lastText = newText;
+                            }
                         }
                         finally
                         {
                             changingText = false;
                         }
-                    });
-
-                    //$(dr.textInterceptor).on("input", function(event)      { sendKeyEvent("keyUp", event, false); });
-
-                    function focusTextInterceptor(event)
-                    {
-                        dr.textInterceptor.style.visibility = "visible";
-                        dr.textInterceptor.focus();
-
-                        //dr.textInterceptor.style.visibility = "hidden"; // Chrome obviously does not like hiding the textarea...
                     }
+
+                    function initializeTextInterceptor(textInterceptor)
+                    {
+                        textInterceptor.value = sentinelTextForBackspace;
+                        moveCursorToEnd(textInterceptor);
+                        $(textInterceptor).bind('input propertychange', handleTextInterceptorChange);
+                    }
+
+                    dr.textInterceptor = createTextInterceptor();
+                    initializeTextInterceptor(dr.textInterceptor);
 
                     $(dr.frontCanvas).on("touchstart", focusTextInterceptor);
                     $(dr.frontCanvas).click(focusTextInterceptor);

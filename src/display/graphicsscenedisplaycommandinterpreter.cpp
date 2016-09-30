@@ -272,14 +272,28 @@ bool GraphicsSceneDisplayCommandInterpreter::handleTextEvent(const QString &comm
 
     QString text = QString::fromUtf8(QByteArray::fromBase64(textBase64.toUtf8()));
 
+    Qt::KeyboardModifier modifiers = Qt::NoModifier;
     int key = 0;
 
     if (text == "\n")
         key = Qt::Key_Return;
+    else if (text.length() == 1)
+    {
+        QChar c = text[0];
 
-    qDebug("Received text from client: >%s<", text.toUtf8().constData());
+        if (c.isUpper())
+            modifiers = Qt::ShiftModifier;
+        else
+            c = c.toUpper();
 
-    adapter_->handleKeyEvent(QEvent::KeyPress, key, 0, text);
+        key = c.unicode();
+    }
+
+    qDebug("Received text from client: >%s<  key: 0x%x, modifiers: 0x%x", text.toUtf8().constData(), key, modifiers);
+
+    adapter_->handleKeyEvent(QEvent::KeyPress, key, modifiers, text);
+    adapter_->handleKeyEvent(QEvent::KeyRelease, key, modifiers, text);
+    return true;
 }
 
 bool GraphicsSceneDisplayCommandInterpreter::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
