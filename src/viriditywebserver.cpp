@@ -358,10 +358,15 @@ void ViridityWebServer::removeConnection(ViridityConnection *connection)
     connections_.removeAll(connection);
 }
 
-void ViridityWebServer::registerRequestHandler(ViridityRequestHandler *handler)
+void ViridityWebServer::registerRequestHandler(ViridityRequestHandler *handler, bool prepend)
 {
     if (requestHandlers_.indexOf(handler) == -1)
-        requestHandlers_.append(handler);
+    {
+        if (prepend)
+            requestHandlers_.prepend(handler);
+        else
+            requestHandlers_.append(handler);
+    }
 }
 
 void ViridityWebServer::unregisterRequestHandler(ViridityRequestHandler *handler)

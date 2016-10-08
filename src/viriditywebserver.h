@@ -83,9 +83,11 @@ public:
     /*!
      * Register a request handler.
      * \param handler An instance pointer to a class instance implementing the ViridityRequestHandler interface.
+     * \param prepend The new request handler will be placed at the top of the request handler list, thus
+     * gets a higher priority.
      * \sa ViridityRequestHandler
      */
-    void registerRequestHandler(ViridityRequestHandler *handler);
+    void registerRequestHandler(ViridityRequestHandler *handler, bool prepend = false);
 
     /*!
      * Unregister a request handler.

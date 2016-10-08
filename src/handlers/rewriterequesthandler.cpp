@@ -1,5 +1,7 @@
 #include "rewriterequesthandler.h"
 
+#include "KCL/debug.h"
+
 RewriteRequestHandler::RewriteRequestHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent)
 {
@@ -47,12 +49,14 @@ bool RewriteRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request
                     ruleRewrite.replace("$" + QString::number(i), cap);
                 }
 
-                qDebug("Rewriting url %s to %s", request->url().constData(), ruleRewrite.toLatin1().constData());
+                DPRINTF("Rewriting url %s to %s", request->url().constData(), ruleRewrite.toLatin1().constData());
 
                 request->rewriteUrl(ruleRewrite.toLatin1());
             }
         }
     }
+
+    return false;
 }
 
 void RewriteRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
