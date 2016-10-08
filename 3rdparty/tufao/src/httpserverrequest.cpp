@@ -53,6 +53,11 @@ QByteArray HttpServerRequest::url() const
     return priv->url;
 }
 
+void HttpServerRequest::rewriteUrl(const QByteArray &newUrl)
+{
+    priv->url = newUrl;
+}
+
 Headers HttpServerRequest::headers() const
 {
     return priv->headers;

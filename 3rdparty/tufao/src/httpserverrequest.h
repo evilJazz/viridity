@@ -119,6 +119,8 @@ Accept: text/plain\r\n
       */
     QByteArray url() const;
 
+    void rewriteUrl(const QByteArray &newUrl);
+
     /*!
       The HTTP headers sent by the client. These headers are fully populated
       when the signal Tufao::HttpServerRequest::ready signal is emitted.
@@ -266,7 +268,7 @@ private slots:
     void onReadyRead();
     void onTimeout();
 
-private:
+protected:
     void clearBuffer();
     void clearRequest();
 
