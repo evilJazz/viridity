@@ -68,6 +68,8 @@ private slots:
     void createFbo();
     void destroyFbo();
     void handleSceneChanged();
+    void handleRootItemDestroyed();
+
     void updateBuffer();
 
 private:
@@ -92,6 +94,8 @@ private:
 
     QPointF lastScenePos_;
     QPoint lastScreenPos_;
+
+    bool killedAlready_;
 
     void init();
 

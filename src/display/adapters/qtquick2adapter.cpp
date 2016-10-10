@@ -64,7 +64,8 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
     window_(NULL),
     fbo_(0),
     updateRequired_(true),
-    buttonDown_(false)
+    buttonDown_(false),
+    killedAlready_(false)
 {
     DGUARDMETHODTIMED;
 
@@ -123,14 +124,14 @@ void QtQuick2Adapter::init()
 
     // Now hook up the signals. For simplicy we don't differentiate between
     // renderRequested (only render is needed, no sync) and sceneChanged (polish and sync is needed too).
-    connect(quickWindow_, &QQuickWindow::sceneGraphInitialized, this, &QtQuick2Adapter::createFbo);
-    connect(quickWindow_, &QQuickWindow::sceneGraphInvalidated, this, &QtQuick2Adapter::destroyFbo);
-    connect(renderControl_, &QQuickRenderControl::renderRequested, this, &QtQuick2Adapter::handleSceneChanged);
-    connect(renderControl_, &QQuickRenderControl::sceneChanged, this, &QtQuick2Adapter::handleSceneChanged);
+    connect(quickWindow_, SIGNAL(sceneGraphInitialized()), this, SLOT(createFbo()));
+    connect(quickWindow_, SIGNAL(sceneGraphInvalidated()), this, SLOT(destroyFbo()));
+    connect(renderControl_, SIGNAL(renderRequested()), this, SLOT(handleSceneChanged()));
+    connect(renderControl_, SIGNAL(sceneChanged()), this, SLOT(handleSceneChanged()));
 
     // Parent the root item to the window's content item.
     rootItem_->setParentItem(quickWindow_->contentItem());
-    connect(rootItem_, &QQuickItem::destroyed, this, &QtQuick2Adapter::detachFromRootItem);
+    connect(rootItem_, SIGNAL(destroyed()), this, SLOT(handleRootItemDestroyed()));
 
     // Update item and rendering related geometries.
     setSize(rootItem_->width(), rootItem_->height(), 1.f);
@@ -152,6 +153,20 @@ QtQuick2Adapter::~QtQuick2Adapter()
     delete offscreenSurface_;
 
     delete context_;
+
+    killedAlready_ = true;
+}
+
+void QtQuick2Adapter::handleRootItemDestroyed()
+{
+    DGUARDMETHODTIMED;
+
+    if (rootItem_)
+    {
+        rootItem_ = NULL;
+        rootItemPreviousParent_ = NULL;
+        window_ = NULL;
+    }
 }
 
 void QtQuick2Adapter::detachFromRootItem()
@@ -160,11 +175,12 @@ void QtQuick2Adapter::detachFromRootItem()
 
     if (rootItem_)
     {
-        disconnect(rootItem_, &QQuickItem::destroyed, this, &QtQuick2Adapter::detachFromRootItem);
+        disconnect(rootItem_, SIGNAL(destroyed()), this, SLOT(handleRootItemDestroyed()));
 
         rootItem_->setParentItem(rootItemPreviousParent_);
 
         rootItem_ = NULL;
+        rootItemPreviousParent_ = NULL;
         window_ = NULL;
     }
 
@@ -178,12 +194,18 @@ void QtQuick2Adapter::detachFromRootItem()
     // Destroy the QQuickWindow only afterwards.
     if (renderControl_)
     {
+        disconnect(renderControl_, SIGNAL(renderRequested()), this, SLOT(handleSceneChanged()));
+        disconnect(renderControl_, SIGNAL(sceneChanged()), this, SLOT(handleSceneChanged()));
+
         delete renderControl_;
         renderControl_ = NULL;
     }
 
     if (quickWindow_)
     {
+        disconnect(quickWindow_, SIGNAL(sceneGraphInitialized()), this, SLOT(createFbo()));
+        disconnect(quickWindow_, SIGNAL(sceneGraphInvalidated()), this, SLOT(destroyFbo()));
+
         delete quickWindow_;
         quickWindow_ = NULL;
     }
