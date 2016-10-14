@@ -32,8 +32,16 @@
     #include <QtDeclarative>
 #endif
 
+#ifdef VIRIDITY_MODULE_DISPLAY
+    #include "display/viridityqtquickdisplay.h"
+#endif
+
 void ViridityDeclarative::registerTypes()
 {
     qmlRegisterType<ViridityNativeDataBridge>("Viridity", 1, 0, "ViridityNativeDataBridge");
     qmlRegisterUncreatableType<ViriditySession>("Viridity", 1, 0, "ViriditySession", "Can't create a session out of thin air.");
+
+#ifdef VIRIDITY_MODULE_DISPLAY
+    qmlRegisterType<ViridityQtQuickDisplay>("Viridity", 1, 0, "ViridityDisplay");
+#endif
 }

@@ -1,5 +1,5 @@
 # Enable if you want to debug Viridity...
-#DEFINES += VIRIDITY_DEBUG
+DEFINES += VIRIDITY_DEBUG
 
 QT += core network concurrent
 
@@ -52,8 +52,13 @@ viridity_declarative {
 
     QT += qml
 
-    HEADERS += $$VIRIDITY_SRC_PATH/viriditydeclarative.h
-    SOURCES += $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp
+    HEADERS += \
+        $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
+        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.h
+
+    SOURCES += \
+        $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp \
+        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.cpp
 }
 
 # Display related
@@ -61,6 +66,8 @@ CONFIG += viridity_module_display
 !win32: CONFIG += viridity_use_improved_jpeg viridity_use_improved_png
 
 viridity_module_display {
+    DEFINES += VIRIDITY_MODULE_DISPLAY
+
     QT += gui
 
     INCLUDEPATH += \
@@ -77,7 +84,8 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaymanager.h \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.h \
         $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.h  \
-        $$VIRIDITY_SRC_PATH/display/graphicssceneadapter.h
+        $$VIRIDITY_SRC_PATH/display/graphicssceneadapter.h \
+        $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.h
 
     SOURCES += \
         $$VIRIDITY_SRC_PATH/display/comparer/imageaux.cpp \
@@ -89,7 +97,8 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/graphicsscenebufferrenderer.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplaymanager.cpp \
         $$VIRIDITY_SRC_PATH/display/graphicsscenedisplay.cpp  \
-        $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.cpp
+        $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.cpp \
+        $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.cpp
 
     viridity_use_improved_jpeg {
         DEFINES += USE_IMPROVED_JPEG
