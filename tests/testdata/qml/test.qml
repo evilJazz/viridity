@@ -22,7 +22,7 @@ FocusScope {
         }
     }
 
-    Component.onDestruction: Debug.print("Instance of test.qml destroyed!")
+    Component.onDestruction: console.log("Instance of test.qml destroyed!")
 
     Rectangle {
         anchors.fill: parent
@@ -148,13 +148,13 @@ FocusScope {
         var diffX = 0;
         var diffY = 0;
 
-        if (event.key == Qt.Key_Up)
+        if (event.key == Qt.Key_Up || event.key == Qt.Key_W)
             diffY -= 10;
-        else if (event.key == Qt.Key_Down)
+        else if (event.key == Qt.Key_Down || event.key == Qt.Key_S)
             diffY += 10;
-        else if (event.key == Qt.Key_Left)
+        else if (event.key == Qt.Key_Left || event.key == Qt.Key_A)
             diffX -= 10;
-        else if (event.key == Qt.Key_Right)
+        else if (event.key == Qt.Key_Right || event.key == Qt.Key_D)
             diffX += 10;
 
         var multiplier = 1;
@@ -225,6 +225,8 @@ FocusScope {
 
                 anchors.fill: parent
                 anchors.margins: 2
+
+                wrapMode: TextEdit.Wrap
 
                 focus: true
                 selectByMouse: true
