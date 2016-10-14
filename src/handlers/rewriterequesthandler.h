@@ -26,6 +26,7 @@
 #define REWRITEREQUESTHANDLER_H
 
 #include <QObject>
+#include <QStringList>
 
 #include "viridityrequesthandler.h"
 
