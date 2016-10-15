@@ -60,6 +60,20 @@ protected slots:
 
         ObjectUtils::dumpObjectTree(item);
 
+        /*
+        // Try to resolve Loader->item...
+        if (QString(item->metaObject()->className()).endsWith("Loader"))
+        {
+            QObject *obj = ObjectUtils::objectify(item->property("item"));
+
+            if (obj)
+            {
+                ObjectUtils::dumpObjectTree(obj);
+                item = obj;
+            }
+        }
+        */
+
 #ifdef USE_QTQUICK1
         QDeclarativeItem *rootItem = qobject_cast<QDeclarativeItem *>(item);
 
@@ -80,12 +94,12 @@ protected slots:
         {
             QQuickWindow *window = qobject_cast<QQuickWindow *>(item);
             if (window)
-                adapter = NULL;
-            else
             {
                 adapter = new QtQuick2Adapter(window);
                 objectToWatch = window;
             }
+            else
+                adapter = NULL;
         }
         else
         {
