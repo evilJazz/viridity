@@ -31,7 +31,7 @@
 
 (function($)
 {
-    $.fn.viridity = function(viridityChannel, targetId, params)
+    $.fn.viridity = function(viridityChannel, targetId, params, options)
     {
         var containerElement = this;
 
@@ -66,6 +66,7 @@
             resizeCtx: 0,
 
             textInterceptor: 0,
+            useTextInterceptor: false,
 
             ratio: 1,
 
@@ -630,10 +631,22 @@
                 dr.updateSize(true);
             },
 
+            focus: function()
+            {
+                $(document).focus();
+                $(dr.frontCanvas).focus();
+            },
+
             init: function()
             {
                 dr.targetId = v.registerCallback(dr._messageCallback, targetId);
                 dr.params = params;
+
+                if (typeof(options) == "object")
+                {
+                    if (typeof(options.useTextInterceptor) == "boolean")
+                        dr.useTextInterceptor = options.useTextInterceptor;
+                }
 
                 dr._requestNewDisplay();
 
@@ -658,8 +671,6 @@
                 if (dr.debugVerbosity > 0)
                     console.log("devicePixelRatio: " + devicePixelRatio + " backingStoreRatio: " + backingStoreRatio + " dr.ratio: " + dr.ratio);
 
-                containerElement.append(dr.frontCanvas);
-
                 containerElement.css({
                     "margin": 0,
                     "padding": 0
@@ -673,6 +684,11 @@
                         "position": "absolute",
                         "outline": "none"
                     });
+
+                $(dr.frontCanvas).attr("contentEditable", "true");
+                $(dr.frontCanvas).attr("tabindex", 1); // Make canvas focusable!
+
+                containerElement.append(dr.frontCanvas);
 
                 // Set up default sizes...
                 if (containerElement.height() === 0)
@@ -784,17 +800,9 @@
                         event.stopPropagation();
                         event.preventDefault();
                     }
-                }
+                }               
 
-                function focusCanvas()
-                {
-                    $(document).focus();
-                    $(dr.frontCanvas).focus();
-                }
-
-                $(dr.frontCanvas).attr("tabindex", 0); // Make canvas focusable!
-
-                $(dr.frontCanvas).mousedown(function(event)  { focusCanvas(); sendMouseEvent("mouseDown", event); });
+                $(dr.frontCanvas).mousedown(function(event)  { dr.focus(); sendMouseEvent("mouseDown", event); });
                 $(dr.frontCanvas).mouseup(function(event)    { sendMouseEvent("mouseUp", event); });
                 $(dr.frontCanvas).mousemove(function(event)  { sendMouseEvent("mouseMove", event); });
                 $(dr.frontCanvas).mouseover(function(event)  { sendMouseEvent("mouseEnter", event); });
@@ -855,7 +863,7 @@
                 var isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
                 var isAndroid = /Android/.test(navigator.userAgent) && !window.MSStream;
 
-                if (isiOS || isAndroid)
+                if (isiOS || isAndroid || dr.useTextInterceptor)
                 {
                     // Why does this code exist?
                     // Key events on mobile browsers are a mess. A real stinking mess.
