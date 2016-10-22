@@ -45,7 +45,10 @@ DebugRequestHandler::~DebugRequestHandler()
 
 bool DebugRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
-    return request->url().endsWith("/debug") || request->url().endsWith("/quit");
+    return request->url().endsWith("/debug") ||
+           request->url().endsWith("/killsessions") ||
+           request->url().endsWith("/closeconnections") ||
+           request->url().endsWith("/quit");
 }
 
 void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
@@ -62,6 +65,16 @@ void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, Viri
 #else
         response->write("JSON output not supported on Qt 4.x\n");
 #endif
+    }
+    else if (request->url().endsWith("/killsessions"))
+    {
+        response->write("Sent message to kill all sessions.\n");
+        QMetaObject::invokeMethod(server()->sessionManager(), "killAllSessions");
+    }
+    else if (request->url().endsWith("/closeconnections"))
+    {
+        response->write("Sent message to close all connections.\n");
+        QMetaObject::invokeMethod(server(), "closeAllConnections");
     }
     else if (request->url().endsWith("/quit"))
     {

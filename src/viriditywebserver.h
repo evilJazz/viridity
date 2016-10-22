@@ -30,6 +30,7 @@
 #include <QtNetwork/QTcpServer>
 #include <QtNetwork/QTcpSocket>
 #include <QThread>
+#include <QPointer>
 
 #include "viridityrequesthandler.h"
 #include "viriditysessionmanager.h"
@@ -100,6 +101,8 @@ public:
 
 private slots:
     void handleNewSessionCreated(ViriditySession *session);
+    void closeAllConnections();
+    void removeConnection(ViridityConnection *connection);
 
 private:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -109,7 +112,6 @@ private:
 #endif
 
     friend class ViridityConnection;
-    void removeConnection(ViridityConnection *connection);
 
     virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
     virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
@@ -118,7 +120,8 @@ private:
     AbstractViriditySessionManager *sessionManager_;
 
     mutable QMutex connectionMutex_;
-    QList<ViridityConnection *> connections_;
+    bool clearingConnections_;
+    QList< QPointer<ViridityConnection> > connections_;
 
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;

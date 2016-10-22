@@ -38,6 +38,7 @@
 
 LongPollingHandler::LongPollingHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
+    sessionMutex_(QMutex::Recursive),
     session_(NULL)
 {
     DGUARDMETHODTIMED;
@@ -95,11 +96,13 @@ void LongPollingHandler::doHandleRequest(ViridityHttpServerRequest *request, Vir
             }
             else
             {
+                QMutexLocker m(&sessionMutex_);
                 session_ = server()->sessionManager()->acquireSession(id);
 
                 response_ = response;
                 connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
+                connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
                 connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
                 connect(session_, SIGNAL(releaseRequired()), this, SLOT(handleSessionReleaseRequired()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
@@ -151,6 +154,7 @@ void LongPollingHandler::handleSessionInteractionDormant()
 void LongPollingHandler::releaseSession()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker m(&sessionMutex_);
 
     if (session_)
     {
@@ -168,6 +172,7 @@ void LongPollingHandler::handleSessionReleaseRequired()
 void LongPollingHandler::handleMessagesAvailable()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker m(&sessionMutex_);
 
     if (response_ && session_ && session_->pendingMessagesAvailable())
     {
@@ -189,6 +194,13 @@ void LongPollingHandler::handleResponseDestroyed()
     DGUARDMETHODTIMED;
 
     response_ = NULL;
+}
+
+void LongPollingHandler::handleSessionDestroyed()
+{
+    QMutexLocker m(&sessionMutex_);
+    session_ = NULL;
+    QMetaObject::invokeMethod(this, "handleSessionInteractionDormant");
 }
 
 void LongPollingHandler::pushMessageAndEnd(ViridityHttpServerResponse *response, const QByteArray &msg)

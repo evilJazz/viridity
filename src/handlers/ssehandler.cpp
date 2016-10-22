@@ -35,6 +35,7 @@
 
 SSEHandler::SSEHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
+    sessionMutex_(QMutex::Recursive),
     session_(NULL)
 {
     DGUARDMETHODTIMED;
@@ -70,6 +71,8 @@ void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHtt
 
         if (session->useCount() == 0)
         {
+            QMutexLocker m(&sessionMutex_);
+
             session_ = server()->sessionManager()->acquireSession(id);
             QString msg = "data: reattached(" + session_->id() + ")\n\n";
 
@@ -82,6 +85,8 @@ void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHtt
         }
         else
         {
+            QMutexLocker m(&sessionMutex_);
+
             session_ = NULL;
             QString info = "data: inuse(" + session->id() + ")\n\n";
 
@@ -94,6 +99,8 @@ void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHtt
     }
     else // start new connection
     {
+        QMutexLocker m(&sessionMutex_);
+
         session_ = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
         DPRINTF("NEW SESSION: %s", session_->id().toLatin1().constData());
@@ -114,6 +121,7 @@ void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHtt
 void SSEHandler::handleSessionInteractionDormant()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker m(&sessionMutex_);
 
     if (response_ && socket_)
     {
@@ -131,6 +139,7 @@ void SSEHandler::handleSessionInteractionDormant()
 void SSEHandler::releaseSessionAndCloseConnection()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker m(&sessionMutex_);
 
     if (session_)
     {
@@ -158,11 +167,15 @@ void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpS
 
     connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
-    if (session_)
     {
-        connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
-        connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
-        connect(session_, SIGNAL(releaseRequired()), this, SLOT(handleSessionReleaseRequired()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+        QMutexLocker m(&sessionMutex_);
+        if (session_)
+        {
+            connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
+            connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+            connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+            connect(session_, SIGNAL(releaseRequired()), this, SLOT(handleSessionReleaseRequired()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
+        }
     }
 
     socket_ = request->socket();
@@ -171,6 +184,7 @@ void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpS
 void SSEHandler::handleMessagesAvailable()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker m(&sessionMutex_);
 
     if (response_ && session_ && session_->pendingMessagesAvailable())
     {
@@ -191,4 +205,16 @@ void SSEHandler::handleResponseDestroyed()
 
     response_ = NULL;
     socket_ = NULL;
+}
+
+void SSEHandler::handleSessionDestroyed()
+{
+    QMutexLocker m(&sessionMutex_);
+    session_ = NULL;
+    QMetaObject::invokeMethod(this, "close");
+}
+
+void SSEHandler::close()
+{
+    releaseSessionAndCloseConnection();
 }

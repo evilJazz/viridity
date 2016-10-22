@@ -32,6 +32,7 @@
 #include <QByteArray>
 #include <QBuffer>
 #include <QFile>
+#include <QEventLoop>
 
 #include "handlers/inputposthandler.h"
 #include "handlers/websockethandler.h"
@@ -69,6 +70,7 @@ public:
 
 public slots:
     void setupConnection();
+    void close();
 
 private slots:
     void handleRequestReady();
@@ -116,6 +118,7 @@ ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDesc
 ViridityConnection::~ViridityConnection()
 {
     DGUARDMETHODTIMED;
+    close();
     server_->removeConnection(this);
 }
 
@@ -135,6 +138,12 @@ QVariant ViridityConnection::stats() const
     result.insert("livingInThread", thread()->objectName());
 
     return result;
+}
+
+void ViridityConnection::close()
+{
+    if (socket_)
+        socket_->close();
 }
 
 void ViridityConnection::setupConnection()
@@ -252,8 +261,11 @@ ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionMan
     QTcpServer(parent),
     sessionManager_(sessionManager),
     connectionMutex_(QMutex::Recursive),
+    clearingConnections_(false),
     incomingConnectionCount_(0)
 {
+    DGUARDMETHODTIMED;
+
     sessionManager_->setServer(this);
     connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(handleNewSessionCreated(ViriditySession*)));
 
@@ -266,6 +278,13 @@ ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionMan
 
 ViridityWebServer::~ViridityWebServer()
 {
+    DGUARDMETHODTIMED;
+    QMutexLocker l(&connectionMutex_);
+
+    close();
+
+    closeAllConnections();
+
     requestHandlers_.clear();
 
     foreach (QThread *t, connectionThreads_)
@@ -340,12 +359,12 @@ void ViridityWebServer::incomingConnection(int handle)
 #endif
 {
     DGUARDMETHODTIMED;
+    QMutexLocker l(&connectionMutex_);
 
     ++incomingConnectionCount_;
     int threadIndex = incomingConnectionCount_ % connectionThreads_.count();
 
-    ViridityConnection *connection = new ViridityConnection(this, handle);
-    QMutexLocker l(&connectionMutex_);
+    QPointer<ViridityConnection> connection = new ViridityConnection(this, handle);
     connections_.append(connection);
     connection->moveToThread(connectionThreads_.at(threadIndex)); // Move connection to thread's event loop
 
@@ -354,8 +373,29 @@ void ViridityWebServer::incomingConnection(int handle)
 
 void ViridityWebServer::removeConnection(ViridityConnection *connection)
 {
-    QMutexLocker l(&connectionMutex_);
+    DGUARDMETHODTIMED;
     connections_.removeAll(connection);
+}
+
+void ViridityWebServer::closeAllConnections()
+{
+    DGUARDMETHODTIMED;
+    QMutexLocker l(&connectionMutex_);
+    clearingConnections_ = true;
+
+    foreach (QPointer<ViridityConnection> connection, connections_)
+    {
+        if (!connection.isNull())
+            QMetaObject::invokeMethod(connection, "close");
+    }
+
+    QEventLoop lo;
+    while (connections_.count() > 0)
+    {
+        lo.processEvents(QEventLoop::AllEvents, 500);
+    }
+
+    clearingConnections_ = false;
 }
 
 void ViridityWebServer::registerRequestHandler(ViridityRequestHandler *handler, bool prepend)
@@ -402,8 +442,10 @@ QVariant ViridityWebServer::stats() const
 
     QMutexLocker l(&connectionMutex_);
     QVariantList connectionArray;
-    foreach (ViridityConnection *connection, connections_)
-        connectionArray.append(connection->stats());
+
+    foreach (QPointer<ViridityConnection> connection, connections_)
+        if (!connection.isNull())
+            connectionArray.append(connection->stats());
 
     result.insert("connections", connectionArray);
 
