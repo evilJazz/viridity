@@ -513,6 +513,11 @@ protected slots:
      */
     void killExpiredSessions();
 
+    /*!
+     * Cleans up all ViriditySession instances known to this session manager.
+     */
+    void killAllSessions();
+
 private:
     ViridityWebServer *server_;
 

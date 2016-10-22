@@ -474,6 +474,7 @@ AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) 
 AbstractViriditySessionManager::~AbstractViriditySessionManager()
 {
     DGUARDMETHODTIMED;
+    killAllSessions();
     cleanupTimer_->stop();
 }
 
@@ -732,4 +733,27 @@ void AbstractViriditySessionManager::killExpiredSessions()
 
         cleanupTimer_->start();
     }
+}
+
+void AbstractViriditySessionManager::killAllSessions()
+{
+    QMutexLocker l(&sessionMutex_);
+
+    cleanupTimer_->stop();
+
+    foreach (ViriditySession *session, sessions_.values())
+    {
+        removeSession(session);
+    }
+
+    QEventLoop lo;
+    while (sessions_.count() > 0)
+    {
+        lo.processEvents(QEventLoop::AllEvents, 500);
+    }
+
+    if (sessions_.count() == 0)
+        emit noSessions();
+
+    cleanupTimer_->start();
 }

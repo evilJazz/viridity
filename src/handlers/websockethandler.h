@@ -27,6 +27,8 @@
 
 #include <QObject>
 #include <QByteArray>
+#include <QPointer>
+#include <QMutex>
 
 #include "viridityrequesthandler.h"
 
@@ -49,12 +51,15 @@ public:
 private slots:
     void handleMessagesAvailable();
     void handleSessionInteractionDormant();
+    void handleSessionDestroyed();
 
     void clientMessageReceived(QByteArray data);
     void clientDisconnected();
+    void close();
 
 private:
-    ViriditySession *session_;
+    QMutex sessionMutex_;
+    QPointer<ViriditySession> session_;
 
     QAbstractSocket *socket_;
     Tufao::WebSocket *websocket_;

@@ -26,6 +26,8 @@
 #define SSEHANDLER_H
 
 #include <QObject>
+#include <QPointer>
+#include <QMutex>
 
 #include "viridityrequesthandler.h"
 
@@ -48,9 +50,12 @@ private slots:
     void handleSessionReleaseRequired();
     void handleMessagesAvailable();
     void handleResponseDestroyed();
+    void handleSessionDestroyed();
+    void close();
 
 private:
-    ViriditySession *session_;
+    QMutex sessionMutex_;
+    QPointer<ViriditySession> session_;
 
     ViridityHttpServerResponse *response_;
 

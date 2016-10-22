@@ -37,6 +37,7 @@
 
 WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
+    sessionMutex_(QMutex::Recursive),
     session_(NULL),
     socket_(NULL)
 {
@@ -49,10 +50,13 @@ WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
 
 WebSocketHandler::~WebSocketHandler()
 {
+    QMutexLocker m(&sessionMutex_);
+
     if (session_)
     {
         disconnect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()));
         server()->sessionManager()->releaseSession(session_);
+        session_ = NULL;
     }
 
     DGUARDMETHODTIMED;
@@ -76,6 +80,7 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
 
             if (session->useCount() == 0)
             {
+                QMutexLocker m(&sessionMutex_);
                 session_ = server()->sessionManager()->acquireSession(id);
 
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
@@ -95,6 +100,7 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
         }
         else
         {
+            QMutexLocker m(&sessionMutex_);
             session_ = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
             websocket_->startServerHandshake(request, head);
@@ -103,8 +109,10 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
             websocket_->sendMessage(info.toUtf8().constData());
         }
 
+        QMutexLocker m(&sessionMutex_);
         if (session_)
         {
+            connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
             connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
             connect(session_, SIGNAL(interactionDormant()), this, SLOT(handleSessionInteractionDormant()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
 
@@ -129,6 +137,8 @@ bool WebSocketHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 
 void WebSocketHandler::handleMessagesAvailable()
 {
+    QMutexLocker m(&sessionMutex_);
+
     if (session_ && session_->pendingMessagesAvailable())
     {
         QList<QByteArray> messages = session_->takePendingMessages(websocket_->messagesType() == Tufao::WebSocket::BINARY_MESSAGE);
@@ -141,13 +151,13 @@ void WebSocketHandler::handleMessagesAvailable()
 void WebSocketHandler::handleSessionInteractionDormant()
 {
     DGUARDMETHODTIMED;
+    QMutexLocker m(&sessionMutex_);
 
     if (socket_ && websocket_)
     {
         if (session_ && session_->lastUsed() > 1.5 * session_->interactionCheckInterval())
         {
-            websocket_->close();
-            socket_->close();
+            close();
             return;
         }
 
@@ -155,8 +165,26 @@ void WebSocketHandler::handleSessionInteractionDormant()
     }
 }
 
+void WebSocketHandler::close()
+{
+    if (socket_ && websocket_)
+    {
+        websocket_->close();
+        socket_->close();
+    }
+}
+
+void WebSocketHandler::handleSessionDestroyed()
+{
+    QMutexLocker m(&sessionMutex_);
+    session_ = NULL;
+    QMetaObject::invokeMethod(this, "close");
+}
+
 void WebSocketHandler::clientMessageReceived(QByteArray data)
 {
+    QMutexLocker m(&sessionMutex_);
+
     if (session_)
         session_->dispatchMessageToHandlers(data);
 }
