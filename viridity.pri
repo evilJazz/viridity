@@ -1,5 +1,5 @@
 # Enable if you want to debug Viridity...
-DEFINES += VIRIDITY_DEBUG
+#DEFINES += VIRIDITY_DEBUG
 
 QT += core network concurrent
 

@@ -29,7 +29,6 @@
 #include "display/declarativescenesizehandler.h"
 #include "display/graphicsscenedisplaymanager.h"
 
-#include "KCL/objectutils.h"
 #include "KCL/debug.h"
 
 /* PrivateQtQuickDisplayManager */
@@ -57,8 +56,6 @@ protected slots:
 
         AbstractGraphicsSceneAdapter *adapter = NULL;
         QObject *objectToWatch = NULL;
-
-        ObjectUtils::dumpObjectTree(item);
 
         /*
         // Try to resolve Loader->item...
@@ -145,7 +142,7 @@ private:
 /* ViridityQtQuickDisplay */
 
 ViridityQtQuickDisplay::ViridityQtQuickDisplay(QObject *parent) :
-    QObject(parent),
+    ViridityDeclarativeBaseObject(parent),
     manager_(NULL),
     displayItem_(NULL),
     targetId_(),
@@ -159,26 +156,15 @@ ViridityQtQuickDisplay::~ViridityQtQuickDisplay()
     DGUARDMETHODTIMED;
 }
 
-void ViridityQtQuickDisplay::classBegin()
-{
-    DGUARDMETHODTIMED;
-}
-
 void ViridityQtQuickDisplay::componentComplete()
 {
     DGUARDMETHODTIMED;
 
-    DeclarativeContext *context = DeclarativeEngine::contextForObject(this);
+    ViriditySession *session = this->currentSession();
 
-    if (context)
+    if (session)
     {
-        QObject *obj = ObjectUtils::objectify(context->contextProperty("currentSession"));
-
-        ViriditySession *session = qobject_cast<ViriditySession *>(obj);
-
-        if (session)
-            manager_ = new PrivateQtQuickDisplayManager(session, this);
-
+        manager_ = new PrivateQtQuickDisplayManager(session, this);
         qDebug("currentSession is %p", session);
     }
     else
