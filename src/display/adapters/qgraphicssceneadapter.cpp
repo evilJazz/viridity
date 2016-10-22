@@ -53,6 +53,13 @@ QGraphicsSceneAdapter::QGraphicsSceneAdapter(QGraphicsScene *scene) :
 {
     sceneChangedHandler_ = new SynchronizedSceneChangedHandler(scene_, this);
     connect(sceneChangedHandler_, SIGNAL(newUpdateAvailable(QList<QRectF>)), this, SIGNAL(sceneChanged(QList<QRectF>)));
+
+    // Make scene active and focus items...
+    if (!scene_->isActive())
+    {
+        postEvent(QEvent::WindowActivate);
+        postEvent(QEvent::FocusIn, true);
+    }
 }
 
 int QGraphicsSceneAdapter::width() const
