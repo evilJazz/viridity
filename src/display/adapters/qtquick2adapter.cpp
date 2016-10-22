@@ -139,6 +139,12 @@ void QtQuick2Adapter::init()
     // Initialize the render control and our OpenGL resources.
     context_->makeCurrent(offscreenSurface_);
     renderControl_->initialize(context_);
+
+    // Properly set focus on root item or one of its children that has focus set to true
+    if (rootItem_->scopedFocusItem())
+        rootItem_->scopedFocusItem()->forceActiveFocus();
+    else
+        postEvent(QEvent::FocusIn);
 }
 
 QtQuick2Adapter::~QtQuick2Adapter()

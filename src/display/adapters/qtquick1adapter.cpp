@@ -32,6 +32,10 @@ QtQuick1Adapter::QtQuick1Adapter(QDeclarativeItem *rootItem) :
 {
     if (!rootItem_)
         qFatal("Root item is not assigned.");
+
+    // Only set focus on root item if we have no other item focused currently...
+    if (!rootItem_->focusItem())
+        rootItem_->setFocus(true);
 }
 
 void QtQuick1Adapter::setSize(int width, int height, qreal ratio)
