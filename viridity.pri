@@ -54,11 +54,13 @@ viridity_declarative {
 
     HEADERS += \
         $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
-        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.h
+        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.h \
+        $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.h
 
     SOURCES += \
         $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp \
-        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.cpp
+        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.cpp \
+        $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.cpp
 }
 
 # Display related

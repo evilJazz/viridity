@@ -26,6 +26,7 @@
 
 #include "viriditysessionmanager.h"
 #include "viriditywebserver.h"
+#include "viridityqmlrequesthandler.h"
 #include "viriditydatabridge.h"
 
 #ifdef USE_QTQUICK2
@@ -51,12 +52,17 @@
 #endif
 
 #include "KCL/objectutils.h"
+
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 /* ViridityDeclarative */
 
 void ViridityDeclarative::registerTypes()
 {
+    qmlRegisterType<ViridityQmlRequestHandler>("Viridity", 1, 0, "ViridityRequestHandler");
     qmlRegisterType<ViridityNativeDataBridge>("Viridity", 1, 0, "ViridityNativeDataBridge");
     qmlRegisterUncreatableType<ViriditySession>("Viridity", 1, 0, "ViriditySession", "Can't create a session out of thin air.");
 
