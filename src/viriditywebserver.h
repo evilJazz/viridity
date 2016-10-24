@@ -31,6 +31,7 @@
 #include <QtNetwork/QTcpSocket>
 #include <QThread>
 #include <QPointer>
+#include <QReadWriteLock>
 
 #include "viridityrequesthandler.h"
 #include "viriditysessionmanager.h"
@@ -119,7 +120,7 @@ private:
 private:
     AbstractViriditySessionManager *sessionManager_;
 
-    mutable QMutex connectionMutex_;
+    mutable QReadWriteLock connectionMREW_;
     bool clearingConnections_;
     QList< QPointer<ViridityConnection> > connections_;
 
