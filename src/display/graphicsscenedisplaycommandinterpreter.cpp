@@ -289,7 +289,7 @@ bool GraphicsSceneDisplayCommandInterpreter::handleTextEvent(const QString &comm
         key = c.unicode();
     }
 
-    qDebug("Received text from client: >%s<  key: 0x%x, modifiers: 0x%x", text.toUtf8().constData(), key, modifiers);
+    DPRINTF("Received text from client: >%s<  key: 0x%x, modifiers: 0x%x", text.toUtf8().constData(), key, modifiers);
 
     adapter_->handleKeyEvent(QEvent::KeyPress, key, modifiers, text);
     adapter_->handleKeyEvent(QEvent::KeyRelease, key, modifiers, text);
