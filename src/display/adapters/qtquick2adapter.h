@@ -39,6 +39,8 @@ class QOpenGLFramebufferObject;
 class QQuickRenderControl;
 class QQuickWindow;
 
+#define VIRIDITY_DISPLAY_USE_RENDERCONTROL
+
 class QtQuick2Adapter : public AbstractGraphicsSceneAdapter
 {
     Q_OBJECT
@@ -65,8 +67,12 @@ public:
 private slots:
     void detachFromRootItem();
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     void createFbo();
     void destroyFbo();
+#else
+    void handleFrameSwapped();
+#endif
     void handleSceneChanged();
     void handleRootItemDestroyed();
 
@@ -76,12 +82,16 @@ private:
     QQuickItem *rootItemPreviousParent_;
     QQuickItem *rootItem_;
     QQuickWindow *window_;
+
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     QOpenGLContext *context_;
     QOffscreenSurface *offscreenSurface_;
-    qreal dpr_;
     QOpenGLFramebufferObject *fbo_;
     QQuickRenderControl *renderControl_;
+#endif
     QQuickWindow *quickWindow_;
+
+    qreal dpr_;
 
     QImage buffer_;
     bool updateRequired_;
@@ -103,6 +113,8 @@ private:
 
     void postEvent(QEvent::Type eventType, bool spontaneous = false);
     void postEvent(QEvent *event, bool spontaneous = false);
+
+    bool eventFilter(QObject *watched, QEvent *event);
 };
 
 #endif // QTQUICK2ADAPTER_H

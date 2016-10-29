@@ -62,12 +62,15 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
     rootItemPreviousParent_(rootItem->parentItem()),
     rootItem_(rootItem),
     window_(NULL),
-    fbo_(0),
     updateRequired_(true),
     buttonDown_(false),
     killedAlready_(false)
 {
     DGUARDMETHODTIMED;
+
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
+    fbo_ = 0;
+#endif
 
     if (!rootItem_)
         qFatal("Root item is not assigned.");
@@ -79,11 +82,14 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
     AbstractGraphicsSceneAdapter(NULL),
     rootItem_(NULL),
     window_(window),
-    fbo_(0),
     updateRequired_(true),
     buttonDown_(false)
 {
     DGUARDMETHODTIMED;
+
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
+    fbo_ = 0;
+#endif
 
     if (!window_)
         qFatal("Window is not assigned.");
@@ -97,16 +103,17 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
 
 void QtQuick2Adapter::init()
 {
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     QSurfaceFormat format;
     // Qt Quick may need a depth and stencil buffer. Always make sure these are available.
     format.setDepthBufferSize(16);
     format.setStencilBufferSize(8);
 
-    context_ = new QOpenGLContext;
+    context_ = new QOpenGLContext(this);
     context_->setFormat(format);
     context_->create();
 
-    offscreenSurface_ = new QOffscreenSurface;
+    offscreenSurface_ = new QOffscreenSurface();
     // Pass context_->format(), not format. Format does not specify and color buffer
     // sizes, while the context, that has just been created, reports a format that has
     // these values filled in. Pass this to the offscreen surface to make sure it will be
@@ -120,6 +127,8 @@ void QtQuick2Adapter::init()
     // window never gets created or shown, meaning that it will never get an underlying
     // native (platform) window.
     quickWindow_ = new QQuickWindow(renderControl_);
+    quickWindow_->setPersistentOpenGLContext(false);
+    quickWindow_->setPersistentSceneGraph(false);
     quickWindow_->setObjectName("RenderControlWindow");
 
     // Now hook up the signals. For simplicy we don't differentiate between
@@ -128,6 +137,18 @@ void QtQuick2Adapter::init()
     connect(quickWindow_, SIGNAL(sceneGraphInvalidated()), this, SLOT(destroyFbo()));
     connect(renderControl_, SIGNAL(renderRequested()), this, SLOT(handleSceneChanged()));
     connect(renderControl_, SIGNAL(sceneChanged()), this, SLOT(handleSceneChanged()));
+#else
+    quickWindow_ = new QQuickWindow();
+    quickWindow_->setPersistentOpenGLContext(false);
+    quickWindow_->setPersistentSceneGraph(false);
+    quickWindow_->setObjectName("RenderWindow");
+    quickWindow_->create();
+    quickWindow_->show();
+
+    //connect(quickWindow_, SIGNAL(frameSwapped()), this, SLOT(handleFrameSwapped()));
+
+    connect(quickWindow_, SIGNAL(afterRendering()), this, SLOT(handleFrameSwapped()));
+#endif
 
     // Parent the root item to the window's content item.
     rootItem_->setParentItem(quickWindow_->contentItem());
@@ -136,9 +157,14 @@ void QtQuick2Adapter::init()
     // Update item and rendering related geometries.
     setSize(rootItem_->width(), rootItem_->height(), 1.f);
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     // Initialize the render control and our OpenGL resources.
     context_->makeCurrent(offscreenSurface_);
     renderControl_->initialize(context_);
+#else
+    quickWindow_->installEventFilter(this);
+    rootItem_->setVisible(true);
+#endif
 
     // Properly set focus on root item or one of its children that has focus set to true
     if (rootItem_->scopedFocusItem())
@@ -153,12 +179,16 @@ QtQuick2Adapter::~QtQuick2Adapter()
 
     detachFromRootItem();
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     destroyFbo();
 
     context_->doneCurrent();
+
+    offscreenSurface_->destroy();
     delete offscreenSurface_;
 
     delete context_;
+#endif
 
     killedAlready_ = true;
 }
@@ -185,11 +215,21 @@ void QtQuick2Adapter::detachFromRootItem()
 
         rootItem_->setParentItem(rootItemPreviousParent_);
 
+        if (quickWindow_)
+        {
+            quickWindow_->removeEventFilter(this);
+            quickWindow_->releaseResources();
+            quickWindow_->close();
+            quickWindow_->destroy();
+            quickWindow_->resetOpenGLState();
+        }
+
         rootItem_ = NULL;
         rootItemPreviousParent_ = NULL;
         window_ = NULL;
     }
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     // Make sure the context is current while doing cleanup. Note that we use the
     // offscreen surface here because passing 'this' at this point is not safe: the
     // underlying platform window may already be destroyed. To avoid all the trouble, use
@@ -206,16 +246,32 @@ void QtQuick2Adapter::detachFromRootItem()
         delete renderControl_;
         renderControl_ = NULL;
     }
+#endif
 
     if (quickWindow_)
     {
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
         disconnect(quickWindow_, SIGNAL(sceneGraphInitialized()), this, SLOT(createFbo()));
         disconnect(quickWindow_, SIGNAL(sceneGraphInvalidated()), this, SLOT(destroyFbo()));
+#endif
+
+        quickWindow_->close();
+        quickWindow_->destroy();
 
         delete quickWindow_;
         quickWindow_ = NULL;
     }
 }
+
+#ifndef VIRIDITY_DISPLAY_USE_RENDERCONTROL
+void QtQuick2Adapter::handleFrameSwapped()
+{
+    QMetaObject::invokeMethod(
+        this, "handleSceneChanged",
+        thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::QueuedConnection
+    );
+}
+#endif
 
 int QtQuick2Adapter::width() const
 {
@@ -252,12 +308,14 @@ void QtQuick2Adapter::setSize(int width, int height, qreal ratio)
 
     quickWindow_->setGeometry(0, 0, width, height);
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     if (context_->makeCurrent(offscreenSurface_))
     {
         destroyFbo();
         createFbo();
         context_->doneCurrent();
     }
+#endif
 
     updateRequired_ = true;
     handleSceneChanged();
@@ -272,6 +330,22 @@ void QtQuick2Adapter::postEvent(QEvent *event, bool spontaneous)
         QCoreApplicationPrivate::setEventSpontaneous(event);
 
     QCoreApplication::postEvent(quickWindow_, event);
+}
+
+bool QtQuick2Adapter::eventFilter(QObject *watched, QEvent *event)
+{
+//    int type = event->type();
+//    qDebug("type: %d", type);
+
+#ifndef VIRIDITY_DISPLAY_USE_RENDERCONTROL
+    if (watched == quickWindow_ && event->type() == QEvent::UpdateRequest)
+    {
+        qDebug("Update requested");
+        return false;
+    }
+    else
+#endif
+        QObject::eventFilter(watched, event);
 }
 
 void QtQuick2Adapter::postEvent(QEvent::Type eventType, bool spontaneous)
@@ -379,6 +453,7 @@ void QtQuick2Adapter::render(QPainter *painter, const QVector<QRect> &rects)
         painter->drawImage(rect.topLeft(), buffer_, rect);
 }
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
 void QtQuick2Adapter::createFbo()
 {
     DGUARDMETHODTIMED;
@@ -400,6 +475,7 @@ void QtQuick2Adapter::destroyFbo()
         fbo_ = 0;
     }
 }
+#endif
 
 void QtQuick2Adapter::handleSceneChanged()
 {
@@ -417,6 +493,7 @@ void QtQuick2Adapter::updateBuffer()
 {
     DGUARDMETHODTIMED;
 
+#ifdef VIRIDITY_DISPLAY_USE_RENDERCONTROL
     if (!context_->makeCurrent(offscreenSurface_) || !renderControl_ || !quickWindow_)
         return;
 
@@ -434,6 +511,12 @@ void QtQuick2Adapter::updateBuffer()
     QOpenGLFramebufferObject::bindDefault();
 
     context_->functions()->glFlush();
+#else
+    if (!quickWindow_)
+        return;
+
+    buffer_ = quickWindow_->grabWindow();
+#endif
 
     updateRequired_ = false;
 }
