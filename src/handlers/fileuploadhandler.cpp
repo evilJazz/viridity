@@ -38,12 +38,11 @@ class FileUploadDataHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit FileUploadDataHandler(FileUploadHandler *parent, ViridityHttpServerRequest *request, ViridityHttpServerResponse *response, ViriditySession *session) :
+    explicit FileUploadDataHandler(FileUploadHandler *parent, ViridityHttpServerRequest *request, ViridityHttpServerResponse *response) :
         QObject(parent),
         parent_(parent),
         request_(request),
         response_(response),
-        session_(session),
         fileId_(0)
     {
         QUrl url(request->url());
@@ -334,7 +333,6 @@ private:
     FileUploadHandler *parent_;
     ViridityHttpServerRequest *request_;
     ViridityHttpServerResponse *response_;
-    ViriditySession *session_;
     QByteArray analyzeBuffer_;
 
     QByteArray contentType_;
@@ -363,61 +361,39 @@ private:
 
 /* FileUploadHandler */
 
-FileUploadHandler::FileUploadHandler(ViridityWebServer *server, QObject *parent) :
+FileUploadHandler::FileUploadHandler(const QString &urlEndPoint, ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
-    session_(NULL)
+    urlRe_(urlEndPoint)
 {
-}
-
-FileUploadHandler::FileUploadHandler(ViriditySession *session, QObject *parent) :
-    ViridityBaseRequestHandler(session->sessionManager()->server(), parent),
-    session_(session)
-{
-    session_->registerRequestHandler(this);
-    connect(session, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
 }
 
 FileUploadHandler::~FileUploadHandler()
 {
-    if (session_)
-        session_->unregisterRequestHandler(this);
-}
-
-void FileUploadHandler::handleSessionDestroyed()
-{
-    session_ = NULL;
 }
 
 bool FileUploadHandler::doesHandleRequest(ViridityHttpServerRequest *request)
 {
-    return request->url().endsWith("/upload");
+    return QString::fromUtf8(request->url()).indexOf(urlRe_) > -1;
 }
 
 void FileUploadHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
 {
-    QString id = ViriditySession::parseIdFromUrl(request->url());
-
-    ViriditySession *session = server()->sessionManager()->getSession(id);
-
-    if (session)
+    if (request->method() == "POST")
     {
-        if (request->method() == "POST")
-        {
-            // Hand off to separate data handler!
-            FileUploadDataHandler *handler = new FileUploadDataHandler(this, request, response, session);
-            connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
-            return;
-        }
-        else if (request->method() == "OPTIONS") // to allow CORS pre check
-        {
-            response->writeHead(200);
-            response->end("OK");
-            return;
-        }
+        // Hand off to separate data handler!
+        FileUploadDataHandler *handler = new FileUploadDataHandler(this, request, response);
+        connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+        return;
+    }
+    else if (request->method() == "OPTIONS") // to allow CORS pre check
+    {
+        response->writeHead(200);
+        response->end("OK");
+        return;
     }
 
-    response->writeHead(404);
-    response->end("Not found");
+    response->writeHead(405);
+    response->end("File missing.");
 }
 
 #include "fileuploadhandler.moc" // for FileUploadDataHandler

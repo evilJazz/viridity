@@ -27,6 +27,7 @@
 
 #include <QObject>
 #include <QVariantList>
+#include <QRegExp>
 
 #include "viridityrequesthandler.h"
 
@@ -36,8 +37,7 @@ class FileUploadHandler : public ViridityBaseRequestHandler
 {
     Q_OBJECT
 public:
-    explicit FileUploadHandler(ViridityWebServer *server, QObject *parent = NULL);
-    explicit FileUploadHandler(ViriditySession *session, QObject *parent = NULL);
+    explicit FileUploadHandler(const QString &urlEndPoint, ViridityWebServer *server, QObject *parent = NULL);
     virtual ~FileUploadHandler();
 
     bool doesHandleRequest(ViridityHttpServerRequest *request);
@@ -47,11 +47,8 @@ signals:
     friend class FileUploadDataHandler;
     void newFilesUploaded(const QVariantList &files);
 
-private slots:
-    void handleSessionDestroyed();
-
 private:
-    ViriditySession *session_;
+    QRegExp urlRe_;
 };
 
 #endif // FILEUPLOADHANDLER_H
