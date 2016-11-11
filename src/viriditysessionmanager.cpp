@@ -93,7 +93,8 @@ ViriditySession::ViriditySession(AbstractViriditySessionManager *sessionManager,
     attached_(false),
     logic_(NULL),
     useCount_(0),
-    testingState_(0)
+    testingState_(0),
+    userDataMREW_(QReadWriteLock::Recursive)
 {
     DGUARDMETHODTIMED;
 
@@ -404,6 +405,27 @@ QVariant ViriditySession::stats() const
     return result;
 }
 
+QVariant ViriditySession::userData() const
+{
+    QReadLocker r(&userDataMREW_);
+    return userData_;
+}
+
+void ViriditySession::setUserData(const QVariant &userData)
+{
+    QReadLocker r(&userDataMREW_);
+    if (userData != userData_)
+    {
+        r.unlock();
+        {
+            QWriteLocker r(&userDataMREW_);
+            userData_ = userData;
+        }
+
+        emit userDataChanged();
+    }
+}
+
 void ViriditySession::updateCheckTimerTimeout()
 {
     DGUARDMETHODTIMED;
@@ -468,7 +490,7 @@ AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) 
     cleanupTimer_ = new QTimer(this);
     DOP(cleanupTimer_->setObjectName("AbstractViriditySessionManagerCleanupTimer"));
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
-    cleanupTimer_->start(5000);
+    cleanupTimer_->start(50000);
 }
 
 AbstractViriditySessionManager::~AbstractViriditySessionManager()

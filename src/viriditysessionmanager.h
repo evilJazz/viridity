@@ -27,6 +27,7 @@
 
 #include <QObject>
 #include <QMutex>
+#include <QReadWriteLock>
 #include <QElapsedTimer>
 #include <QTimer>
 #include <QHash>
@@ -62,6 +63,11 @@ class ViriditySession : public QObject, public ViridityRequestHandler
      * \sa AbstractViriditySessionManager::getNewSession()
      */
     Q_PROPERTY(QByteArray initialPeerAddress READ initialPeerAddress CONSTANT)
+
+    /*! Allows access to custom variant data in the session.
+     * \sa ViriditySession::userData, ViriditySession::setUserData
+     */
+    Q_PROPERTY(QVariant userData READ userData WRITE setUserData NOTIFY userDataChanged)
 public:
     explicit ViriditySession(AbstractViriditySessionManager *sessionManager, const QString &id);
     virtual ~ViriditySession();
@@ -204,6 +210,16 @@ public:
      */
     QByteArray initialPeerAddress() const { return initialPeerAddress_; }
 
+    /*!
+     * Return the custom user data as variant.
+     */
+    QVariant userData() const;
+
+    /*!
+     * Sets the new custom user data.
+     */
+    void setUserData(const QVariant &userData);
+
     /*! Static helper method that parses the session ID from an input URL. */
     static QString parseIdFromUrl(const QByteArray &url);
 
@@ -266,6 +282,11 @@ signals:
      */
     void deinitializing();
 
+    /*!
+     * Signal is emitted when the userData change.
+     */
+    void userDataChanged();
+
 private slots:
     void updateCheckTimerTimeout();
     void detachDeferTimerTimeout();
@@ -305,6 +326,9 @@ private:
     int testingState_;
 
     QByteArray initialPeerAddress_;
+
+    mutable QReadWriteLock userDataMREW_;
+    QVariant userData_;
 
     Q_INVOKABLE bool sendMessageToHandlers(const QByteArray &message);
     Q_INVOKABLE void sendMessageToClient(const QByteArray &message, const QString &targetId);
@@ -417,7 +441,7 @@ public:
      * \param id The known identifier string.
      * \return Returns the session instance if it exists. NULL if no matching session was found.
      */
-    void releaseSession(ViriditySession *display);
+    void releaseSession(ViriditySession *session);
 
     /*!
      * Returns a list of session identifier strings this session manager currently manages.
