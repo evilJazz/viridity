@@ -635,6 +635,13 @@
             {
                 $(document).focus();
                 $(dr.frontCanvas).focus();
+
+                if (dr.textInterceptor)
+                {
+                    dr.textInterceptor.style.visibility = "visible";
+                    dr.textInterceptor.focus();
+                    //dr.textInterceptor.style.visibility = "hidden"; // Chrome obviously does not like hiding the textarea...
+                }
             },
 
             init: function()
@@ -683,10 +690,8 @@
                         "padding": 0,
                         "position": "absolute",
                         "outline": "none"
-                    });
-
-                $(dr.frontCanvas).attr("contentEditable", "true");
-                $(dr.frontCanvas).attr("tabindex", 1); // Make canvas focusable!
+                    })
+                    .attr("tabindex", 1); // Make canvas focusable!
 
                 containerElement.append(dr.frontCanvas);
 
@@ -836,6 +841,7 @@
                     if (event.type == "touchstart")
                         sendMouseEvent("mouseMove", simulatedEvent);
 
+                    dr.focus();
                     sendMouseEvent(type, simulatedEvent);
 
                     event.preventDefault();
@@ -907,13 +913,6 @@
                             var len = sentinelTextForBackspace.length * 2;
                             textInterceptor.setSelectionRange(len, len);
                         }
-                    }
-
-                    function focusTextInterceptor()
-                    {
-                        dr.textInterceptor.style.visibility = "visible";
-                        dr.textInterceptor.focus();
-                        //dr.textInterceptor.style.visibility = "hidden"; // Chrome obviously does not like hiding the textarea...
                     }
 
                     function handleTextInterceptorChange()
@@ -1021,9 +1020,6 @@
 
                     dr.textInterceptor = createTextInterceptor();
                     initializeTextInterceptor(dr.textInterceptor);
-
-                    $(dr.frontCanvas).on("touchstart", focusTextInterceptor);
-                    $(dr.frontCanvas).click(focusTextInterceptor);
                 }
 
                 // Finally set up keep alive...
