@@ -62,6 +62,7 @@ public:
 
 /* AbstractGraphicsSceneDisplayManager */
 
+QReadWriteLock AbstractGraphicsSceneDisplayManager::activeDisplayManagersMREW_(QReadWriteLock::Recursive);
 QList<AbstractGraphicsSceneDisplayManager *> AbstractGraphicsSceneDisplayManager::activeDisplayManagers_;
 
 AbstractGraphicsSceneDisplayManager::AbstractGraphicsSceneDisplayManager(ViriditySession *session, QObject *parent) :
@@ -75,7 +76,10 @@ AbstractGraphicsSceneDisplayManager::AbstractGraphicsSceneDisplayManager(Viridit
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
     cleanupTimer_->start(10000);
 
-    activeDisplayManagers_.append(this);
+    {
+        QWriteLocker l(&activeDisplayManagersMREW_);
+        activeDisplayManagers_.append(this);
+    }
 
     mainThreadGateway_ = new MainThreadGateway();
     mainThreadGateway_->manager = this;
@@ -101,7 +105,10 @@ AbstractGraphicsSceneDisplayManager::~AbstractGraphicsSceneDisplayManager()
         session_->unregisterRequestHandler(patchRequestHandler_);
     }
 
-    activeDisplayManagers_.removeAll(this);
+    {
+        QWriteLocker l(&activeDisplayManagersMREW_);
+        activeDisplayManagers_.removeAll(this);
+    }
 
     killAllDisplays();
 
@@ -275,6 +282,7 @@ void AbstractGraphicsSceneDisplayManager::releaseDisplay(GraphicsSceneDisplay *d
 
 QList<AbstractGraphicsSceneDisplayManager *> AbstractGraphicsSceneDisplayManager::activeDisplayManagers()
 {
+    QReadLocker l(&activeDisplayManagersMREW_);
     return activeDisplayManagers_;
 }
 

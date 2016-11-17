@@ -110,6 +110,7 @@ private:
     QHash<GraphicsSceneDisplay *, DisplayResource> displayResources_;
     QTimer *cleanupTimer_;
 
+    static QReadWriteLock activeDisplayManagersMREW_;
     static QList<AbstractGraphicsSceneDisplayManager *> activeDisplayManagers_;
 
     PatchRequestHandler *patchRequestHandler_;
