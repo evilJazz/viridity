@@ -28,9 +28,9 @@
 #include "viridity_global.h"
 
 #include <QtNetwork/QTcpServer>
-#include <QtNetwork/QTcpSocket>
 #include <QThread>
-#include <QPointer>
+#include <QSharedPointer>
+
 #include <QReadWriteLock>
 
 #include "viridityrequesthandler.h"
@@ -77,6 +77,12 @@ public:
     bool listen(const QHostAddress &address, quint16 port, int threadsNumber = QThread::idealThreadCount());
 
     /*!
+     * Stops the HTTP server. It will no longer accept incoming connections.
+     * \return Returns true if the server was stopped successfully, false otherwise.
+     */
+    bool close();
+
+    /*!
      * The current session manager associated with this web server instance.
      * \return The session manager set during construction of the web server instance.
      */
@@ -102,8 +108,8 @@ public:
 
 private slots:
     void handleNewSessionCreated(ViriditySession *session);
-    void closeAllConnections();
-    void removeConnection(ViridityConnection *connection);
+    void cleanConnections();
+    void closeAllConnections(int maxWait = 0);
 
 private:
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
@@ -114,15 +120,15 @@ private:
 
     friend class ViridityConnection;
 
-    virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
-    virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
     AbstractViriditySessionManager *sessionManager_;
 
     mutable QReadWriteLock connectionMREW_;
     bool clearingConnections_;
-    QList< QPointer<ViridityConnection> > connections_;
+    QList< QWeakPointer<ViridityConnection> > connections_;
 
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;

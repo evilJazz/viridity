@@ -40,25 +40,24 @@ public:
     explicit LongPollingHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~LongPollingHandler();
 
-    static bool staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request);
+    static bool staticDoesHandleRequest(ViridityWebServer *server, QSharedPointer<ViridityHttpServerRequest> request);
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private slots:
     void handleSessionInteractionDormant();
     void handleSessionReleaseRequired();
     void handleMessagesAvailable();
-    void handleResponseDestroyed();
     void handleSessionDestroyed();
 
 private:
     QMutex sessionMutex_;
     QPointer<ViriditySession> session_;
 
-    ViridityHttpServerResponse *response_;
+    QSharedPointer<ViridityHttpServerResponse> response_;
 
-    void pushMessageAndEnd(ViridityHttpServerResponse *response, const QByteArray &msg);
+    void pushMessageAndEnd(QSharedPointer<ViridityHttpServerResponse> response, const QByteArray &msg);
     void releaseSession();
 };
 

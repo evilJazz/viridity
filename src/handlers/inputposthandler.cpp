@@ -27,22 +27,23 @@
 #include "viriditywebserver.h"
 #include "viriditysessionmanager.h"
 
-InputPostHandler::InputPostHandler(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response, ViriditySession *session, QObject *parent) :
+InputPostHandler::InputPostHandler(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response, ViriditySession *session, QObject *parent) :
     QObject(parent),
     request_(request),
     response_(response),
     session_(session)
 {
-    connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
-    connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
+    connect(request_.data(), SIGNAL(data(QByteArray)), this, SLOT(handleRequestData(QByteArray)));
+    connect(request_.data(), SIGNAL(end()), this, SLOT(handleRequestEnd()));
+    connect(request_.data(), SIGNAL(close()), this, SLOT(handleRequestClose()));
 }
 
-void InputPostHandler::onData(const QByteArray &chunk)
+void InputPostHandler::handleRequestData(const QByteArray &chunk)
 {
     data_ += chunk;
 }
 
-void InputPostHandler::onEnd()
+void InputPostHandler::handleRequestEnd()
 {
     QList<QByteArray> messages = data_.split('\n');
 
@@ -53,4 +54,14 @@ void InputPostHandler::onEnd()
     response_->headers().insert("Content-Type", "text/plain");
     response_->writeHead(ViridityHttpServerResponse::OK);
     response_->end();
+
+    handleRequestClose();
+}
+
+void InputPostHandler::handleRequestClose()
+{
+    response_.clear();
+    request_.clear();
+
+    deleteLater();
 }

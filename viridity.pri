@@ -16,6 +16,7 @@ INCLUDEPATH += \
 # Generic stuff
 HEADERS += \
     $$VIRIDITY_SRC_PATH/viridity_global.h \
+    $$VIRIDITY_SRC_PATH/viridityconnection.h \
     $$VIRIDITY_SRC_PATH/viriditywebserver.h \
     $$VIRIDITY_SRC_PATH/viriditysessionmanager.h \
     $$VIRIDITY_SRC_PATH/viriditydatabridge.h \
@@ -32,6 +33,7 @@ HEADERS += \
 
 SOURCES += \
     $$VIRIDITY_SRC_PATH/viriditywebserver.cpp \
+    $$VIRIDITY_SRC_PATH/viridityconnection.cpp \
     $$VIRIDITY_SRC_PATH/viriditysessionmanager.cpp \
     $$VIRIDITY_SRC_PATH/viriditydatabridge.cpp \
     $$VIRIDITY_SRC_PATH/viridityrequesthandler.cpp \

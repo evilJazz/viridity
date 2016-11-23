@@ -38,8 +38,8 @@ public:
     explicit SessionRoutingRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SessionRoutingRequestHandler();
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 };
 
 #endif // SESSIONROUTINGREQUESTHANDLER_H

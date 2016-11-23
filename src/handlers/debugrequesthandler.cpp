@@ -43,7 +43,7 @@ DebugRequestHandler::~DebugRequestHandler()
 {
 }
 
-bool DebugRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool DebugRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return request->url().endsWith("/debug") ||
            request->url().endsWith("/killsessions") ||
@@ -51,7 +51,7 @@ bool DebugRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
            request->url().endsWith("/quit");
 }
 
-void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void DebugRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     response->writeHead(ViridityHttpServerResponse::OK);
     response->headers().insert("Content-Type", "text/plain");
@@ -59,8 +59,8 @@ void DebugRequestHandler::handleRequest(ViridityHttpServerRequest *request, Viri
 
     if (request->url().endsWith("/debug"))
     {
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         QVariant stats = server()->stats();
+#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
         response->write(QJsonDocument::fromVariant(stats).toJson(QJsonDocument::Indented) + "\n");
 #else
         response->write("JSON output not supported on Qt 4.x\n");

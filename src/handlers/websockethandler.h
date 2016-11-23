@@ -45,8 +45,8 @@ public:
     explicit WebSocketHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~WebSocketHandler();
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleUpgrade(ViridityHttpServerRequest *request, const QByteArray &head);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void handleUpgrade(QSharedPointer<ViridityHttpServerRequest> request, const QByteArray &head);
 
 private slots:
     void handleMessagesAvailable();
@@ -61,7 +61,7 @@ private:
     QMutex sessionMutex_;
     QPointer<ViriditySession> session_;
 
-    QAbstractSocket *socket_;
+    QSharedPointer<ViridityTcpSocket> socket_;
     Tufao::WebSocket *websocket_;
 };
 

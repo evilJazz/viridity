@@ -283,7 +283,7 @@ QString ViriditySession::parseIdFromUrl(const QByteArray &url)
     return id;
 }
 
-bool ViriditySession::doesHandleRequest(ViridityHttpServerRequest *request)
+bool ViriditySession::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     bool result = false;
 
@@ -296,7 +296,7 @@ bool ViriditySession::doesHandleRequest(ViridityHttpServerRequest *request)
     return result;
 }
 
-void ViriditySession::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void ViriditySession::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     foreach (ViridityRequestHandler *handler, requestHandlers_)
         if (handler->doesHandleRequest(request))

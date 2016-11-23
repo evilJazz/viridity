@@ -52,8 +52,8 @@ public:
 
     static QByteArray determineMimeType(const QString &fileName);
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
     QHash<QByteArray, QString> fileNames_;

@@ -35,14 +35,14 @@ SessionRoutingRequestHandler::~SessionRoutingRequestHandler()
 {
 }
 
-bool SessionRoutingRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool SessionRoutingRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = server()->sessionManager()->getSession(id);
     return session && session->doesHandleRequest(request);
 }
 
-void SessionRoutingRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void SessionRoutingRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
     ViriditySession *session = server()->sessionManager()->getSession(id);

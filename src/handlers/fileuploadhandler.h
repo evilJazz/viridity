@@ -40,8 +40,8 @@ public:
     explicit FileUploadHandler(const QString &urlEndPoint, ViridityWebServer *server, QObject *parent = NULL);
     virtual ~FileUploadHandler();
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 signals:
     friend class FileUploadDataHandler;

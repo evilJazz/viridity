@@ -224,8 +224,8 @@ public:
     static QString parseIdFromUrl(const QByteArray &url);
 
     // ViridityRequestHandler
-    virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
-    virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
     virtual bool event(QEvent *);
 

@@ -50,18 +50,18 @@ LongPollingHandler::~LongPollingHandler()
     DGUARDMETHODTIMED;
 }
 
-bool LongPollingHandler::staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request)
+bool LongPollingHandler::staticDoesHandleRequest(ViridityWebServer *server, QSharedPointer<ViridityHttpServerRequest> request)
 {
     QList<QByteArray> parts = request->url().split('?');
     return parts.count() > 0 && parts[0].endsWith("/v");
 }
 
-bool LongPollingHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool LongPollingHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return staticDoesHandleRequest(server(), request);
 }
 
-void LongPollingHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void LongPollingHandler::doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     DGUARDMETHODTIMED;
 
@@ -100,7 +100,6 @@ void LongPollingHandler::doHandleRequest(ViridityHttpServerRequest *request, Vir
                 session_ = server()->sessionManager()->acquireSession(id);
 
                 response_ = response;
-                connect(response, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
 
                 connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), (Qt::ConnectionType)(Qt::DirectConnection | Qt::UniqueConnection));
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()), (Qt::ConnectionType)(Qt::AutoConnection | Qt::UniqueConnection));
@@ -116,7 +115,6 @@ void LongPollingHandler::doHandleRequest(ViridityHttpServerRequest *request, Vir
         else if (request->method() == "POST") // long polling input
         {
             InputPostHandler *handler = new InputPostHandler(request, response, session);
-            connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
             return;
         }
     }
@@ -146,7 +144,6 @@ void LongPollingHandler::handleSessionInteractionDormant()
     if (response_)
     {
         releaseSession();
-
         pushMessageAndEnd(response_, "ping()");
     }
 }
@@ -189,13 +186,6 @@ void LongPollingHandler::handleMessagesAvailable()
     }
 }
 
-void LongPollingHandler::handleResponseDestroyed()
-{
-    DGUARDMETHODTIMED;
-
-    response_ = NULL;
-}
-
 void LongPollingHandler::handleSessionDestroyed()
 {
     QMutexLocker m(&sessionMutex_);
@@ -203,11 +193,14 @@ void LongPollingHandler::handleSessionDestroyed()
     QMetaObject::invokeMethod(this, "handleSessionInteractionDormant");
 }
 
-void LongPollingHandler::pushMessageAndEnd(ViridityHttpServerResponse *response, const QByteArray &msg)
+void LongPollingHandler::pushMessageAndEnd(QSharedPointer<ViridityHttpServerResponse> response, const QByteArray &msg)
 {
     response->writeHead(ViridityHttpServerResponse::OK);
     response->headers().insert("Content-Type", "text/plain; charset=utf8");
     response->addNoCachingResponseHeaders();
     response->end(msg);
+
+    if (response == response_)
+        response_.clear();
 }
 

@@ -26,15 +26,25 @@
 
 #include "viriditywebserver.h"
 
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
+#include "KCL/debug.h"
+
+#include "viridityconnection.h"
+
 /* ViridityHttpServerRequest */
 
-ViridityHttpServerRequest::ViridityHttpServerRequest(QAbstractSocket *socket, QObject *parent) :
-    Tufao::HttpServerRequest(socket, parent)
+ViridityHttpServerRequest::ViridityHttpServerRequest(QSharedPointer<ViridityTcpSocket> socket, QObject *parent) :
+    Tufao::HttpServerRequest(socket.data(), parent),
+    socket_(socket)
 {
+    DGUARDMETHODTIMED;
 }
 
 ViridityHttpServerRequest::~ViridityHttpServerRequest()
 {
+    DGUARDMETHODTIMED;
 }
 
 QByteArray ViridityHttpServerRequest::getPeerAddressFromRequest() const
@@ -49,15 +59,23 @@ QByteArray ViridityHttpServerRequest::getPeerAddressFromRequest() const
     return peerAddress;
 }
 
+void ViridityHttpServerRequest::sharedPointerDeleteLater(ViridityHttpServerRequest *request)
+{
+    request->deleteLater();
+}
+
 /* ViridityHttpServerResponse */
 
-ViridityHttpServerResponse::ViridityHttpServerResponse(QIODevice *device, Tufao::HttpServerResponse::Options options, QObject *parent) :
-    Tufao::HttpServerResponse(device, options, parent)
+ViridityHttpServerResponse::ViridityHttpServerResponse(QSharedPointer<ViridityTcpSocket> socket, Tufao::HttpServerResponse::Options options, QObject *parent) :
+    Tufao::HttpServerResponse(socket.data(), options, parent),
+    socket_(socket)
 {
+    DGUARDMETHODTIMED;
 }
 
 ViridityHttpServerResponse::~ViridityHttpServerResponse()
 {
+    DGUARDMETHODTIMED;
 }
 
 void ViridityHttpServerResponse::addNoCachingResponseHeaders()
@@ -65,6 +83,11 @@ void ViridityHttpServerResponse::addNoCachingResponseHeaders()
     headers().insert("Cache-Control", "no-store, no-cache, must-revalidate");
     headers().insert("Pragma", "no-cache");
     headers().insert("Expires", "0");
+}
+
+void ViridityHttpServerResponse::sharedPointerDeleteLater(ViridityHttpServerResponse *response)
+{
+    response->deleteLater();
 }
 
 /* ViridityBaseRequestHandler */
@@ -80,28 +103,28 @@ ViridityBaseRequestHandler::~ViridityBaseRequestHandler()
 {
 }
 
-bool ViridityBaseRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool ViridityBaseRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return false;
 }
 
-void ViridityBaseRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void ViridityBaseRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     beginHandleRequest(request, response);
     doHandleRequest(request, response);
     endHandleRequest(request, response);
 }
 
-void ViridityBaseRequestHandler::beginHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void ViridityBaseRequestHandler::beginHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     handlingRequest_ = true;
 }
 
-void ViridityBaseRequestHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void ViridityBaseRequestHandler::doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
 }
 
-void ViridityBaseRequestHandler::endHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void ViridityBaseRequestHandler::endHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     handlingRequest_ = false;
 }

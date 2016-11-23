@@ -36,8 +36,8 @@ public:
     explicit PatchRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~PatchRequestHandler();
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 };
 
 #endif // PATCHREQUESTHANDLER_H

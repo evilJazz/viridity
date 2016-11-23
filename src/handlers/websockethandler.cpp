@@ -34,6 +34,7 @@
 #include "Tufao/WebSocket"
 
 #include "viriditywebserver.h"
+#include "viridityconnection.h"
 
 WebSocketHandler::WebSocketHandler(ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
@@ -62,7 +63,7 @@ WebSocketHandler::~WebSocketHandler()
     DGUARDMETHODTIMED;
 }
 
-void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const QByteArray &head)
+void WebSocketHandler::handleUpgrade(QSharedPointer<ViridityHttpServerRequest> request, const QByteArray &head)
 {
     DGUARDMETHODTIMED;
 
@@ -85,14 +86,14 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
 
                 connect(session_, SIGNAL(newPendingMessagesAvailable()), this, SLOT(handleMessagesAvailable()));
 
-                websocket_->startServerHandshake(request, head);
+                websocket_->startServerHandshake(request.data(), head);
 
                 msg = "reattached(" + session_->id() + ")";
                 websocket_->sendMessage(msg.toUtf8().constData());
             }
             else
             {
-                websocket_->startServerHandshake(request, head);
+                websocket_->startServerHandshake(request.data(), head);
 
                 msg = "inuse(" + session->id() + ")";
                 websocket_->sendMessage(msg.toUtf8().constData());
@@ -103,7 +104,7 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
             QMutexLocker m(&sessionMutex_);
             session_ = server()->sessionManager()->getNewSession(request->getPeerAddressFromRequest());
 
-            websocket_->startServerHandshake(request, head);
+            websocket_->startServerHandshake(request.data(), head);
 
             QString info = "info(" + session_->id() + ")";
             websocket_->sendMessage(info.toUtf8().constData());
@@ -130,7 +131,7 @@ void WebSocketHandler::handleUpgrade(ViridityHttpServerRequest *request, const Q
     request->socket()->close();
 }
 
-bool WebSocketHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool WebSocketHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return request->url().endsWith("/v/ws") || request->url().endsWith("/v/wsb");
 }
@@ -191,5 +192,5 @@ void WebSocketHandler::clientMessageReceived(QByteArray data)
 
 void WebSocketHandler::clientDisconnected()
 {
-    socket_ = NULL;
+    socket_.clear();
 }

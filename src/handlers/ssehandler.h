@@ -40,16 +40,17 @@ public:
     explicit SSEHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~SSEHandler();
 
-    static bool staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request);
+    static bool staticDoesHandleRequest(ViridityWebServer *server, QSharedPointer<ViridityHttpServerRequest> request);
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private slots:
     void handleSessionInteractionDormant();
     void handleSessionReleaseRequired();
     void handleMessagesAvailable();
-    void handleResponseDestroyed();
+    void handleResponseFinished();
+    void handleSocketDisconnected();
     void handleSessionDestroyed();
     void close();
 
@@ -57,11 +58,10 @@ private:
     QMutex sessionMutex_;
     QPointer<ViriditySession> session_;
 
-    ViridityHttpServerResponse *response_;
+    QSharedPointer<ViridityHttpServerResponse> response_;
+    QSharedPointer<ViridityTcpSocket> socket_;
 
-    QAbstractSocket *socket_;
-
-    void setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    void setUpResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
     void releaseSessionAndCloseConnection();
 };
 

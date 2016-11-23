@@ -26,6 +26,9 @@
 #define VIRIDITYREQUESTHANDLER_H
 
 #include <QObject>
+#include <QSharedPointer>
+#include <QAbstractSocket>
+#include <QIODevice>
 #include "Tufao/HttpServerRequest"
 #include "Tufao/HttpServerResponse"
 #include "Tufao/Headers"
@@ -36,6 +39,7 @@
 */
 
 class ViridityWebServer;
+class ViridityTcpSocket;
 
 /*!
  * ViridityHttpServerRequest defines an incoming request from a peer/client/browser.
@@ -46,7 +50,7 @@ class ViridityHttpServerRequest : public Tufao::HttpServerRequest
 {
     Q_OBJECT
 public:
-    explicit ViridityHttpServerRequest(QAbstractSocket *socket, QObject *parent = 0);
+    explicit ViridityHttpServerRequest(QSharedPointer<ViridityTcpSocket> socket, QObject *parent = 0);
     virtual ~ViridityHttpServerRequest();
 
     /*!
@@ -55,6 +59,15 @@ public:
      \sa ViriditySession::initialPeerAddress, AbstractViriditySessionManager::getNewSession
     */
     QByteArray getPeerAddressFromRequest() const;
+
+    QSharedPointer<ViridityTcpSocket> socket() const { return socket_; }
+
+protected:
+    friend class ViridityConnection;
+    static void sharedPointerDeleteLater(ViridityHttpServerRequest *request);
+
+private:
+    QSharedPointer<ViridityTcpSocket> socket_;
 };
 
 /*!
@@ -66,7 +79,7 @@ class ViridityHttpServerResponse : public Tufao::HttpServerResponse
 {
     Q_OBJECT
 public:
-    explicit ViridityHttpServerResponse(QIODevice *device, Options options, QObject *parent = 0);
+    explicit ViridityHttpServerResponse(QSharedPointer<ViridityTcpSocket> socket, Options options, QObject *parent = 0);
     virtual ~ViridityHttpServerResponse();
 
     /*!
@@ -76,6 +89,15 @@ public:
      \sa ViridityRequestHandler ViridityRequestHandler::handleRequest
     */
     void addNoCachingResponseHeaders();
+
+    QSharedPointer<ViridityTcpSocket> socket() const { return socket_; }
+
+protected:
+    friend class ViridityConnection;
+    static void sharedPointerDeleteLater(ViridityHttpServerResponse *response);
+
+private:
+    QSharedPointer<ViridityTcpSocket> socket_;
 };
 
 /*!
@@ -96,10 +118,10 @@ public:
      * \param request The request instance received from the client/browser via the ViridityWebServer.
      * \return Return true if this class can handle the request, false otherwise.
      */
-    virtual bool doesHandleRequest(ViridityHttpServerRequest *request) = 0;
+    virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request) = 0;
 
     /*! Called to handle an incoming request and send out the response. */
-    virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response) = 0;
+    virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response) = 0;
 };
 
 /*!
@@ -115,16 +137,16 @@ public:
     virtual ~ViridityBaseRequestHandler();
 
     // ViridityRequestHandler
-    virtual bool doesHandleRequest(ViridityHttpServerRequest *request);
-    virtual void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
     ViridityWebServer *server() const { return server_; }
     bool handlingRequest() const { return handlingRequest_; }
 
 protected:
-    virtual void beginHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
-    virtual void doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
-    virtual void endHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    virtual void beginHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
+    virtual void doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
+    virtual void endHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
     ViridityWebServer *server_;

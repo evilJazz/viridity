@@ -34,229 +34,9 @@
 #include <QFile>
 #include <QEventLoop>
 
-#include "handlers/inputposthandler.h"
-#include "handlers/websockethandler.h"
-#include "handlers/ssehandler.h"
-#include "handlers/longpollinghandler.h"
-#include "handlers/patchrequesthandler.h"
+#include "viridityconnection.h"
 #include "handlers/filerequesthandler.h"
 #include "handlers/sessionroutingrequesthandler.h"
-
-/* ViridityConnection */
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    typedef qintptr ViriditySocketDescriptor;
-#else
-    typedef int ViriditySocketDescriptor;
-#endif
-
-class ViridityConnection : public QObject
-{
-    Q_OBJECT
-public:
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-    explicit ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor);
-#else
-    explicit ViridityConnection(ViridityWebServer *parent, int socketDescriptor);
-#endif
-
-    virtual ~ViridityConnection();
-
-    ViriditySocketDescriptor socketDescriptor() const { return socketDescriptor_; }
-
-    ViridityWebServer *server() { return server_; }
-
-    QVariant stats() const;
-
-public slots:
-    void setupConnection();
-    void close();
-
-private slots:
-    void handleRequestReady();
-    void handleRequestUpgrade(const QByteArray &);
-    void handleSocketDisconnected();
-
-private:
-    mutable QMutex mutex_;
-
-    WebSocketHandler *webSocketHandler_;
-    SSEHandler *sseHandler_;
-    LongPollingHandler *longPollingHandler_;
-
-    ViridityWebServer *server_;
-
-    QTcpSocket *socket_;
-    ViridityHttpServerRequest *request_;
-    ViriditySocketDescriptor socketDescriptor_;
-
-    QTime created_;
-    QTime lastUsed_;
-    int reUseCount_;
-};
-
-#if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
-ViridityConnection::ViridityConnection(ViridityWebServer *parent, qintptr socketDescriptor) :
-#else
-ViridityConnection::ViridityConnection(ViridityWebServer *parent, int socketDescriptor) :
-#endif
-    QObject(),
-    mutex_(QMutex::Recursive),
-    webSocketHandler_(NULL),
-    sseHandler_(NULL),
-    longPollingHandler_(NULL),
-    server_(parent),
-    socket_(NULL),
-    request_(NULL),
-    socketDescriptor_(socketDescriptor),
-    reUseCount_(0)
-{
-    DGUARDMETHODTIMED;
-    created_.start();
-}
-
-ViridityConnection::~ViridityConnection()
-{
-    DGUARDMETHODTIMED;
-    close();
-    server_->removeConnection(this);
-}
-
-QVariant ViridityConnection::stats() const
-{
-    QMutexLocker l(&mutex_);
-
-    QVariantMap result;
-
-    result.insert("request.url", request_ ? request_->url() : QVariant());
-    result.insert("request.method", request_ ? request_->method() : QVariant());
-    result.insert("socket.peerAddress", socket_ ? socket_->peerAddress().toString() : QVariant());
-    result.insert("socketDescriptor", socketDescriptor());
-    result.insert("age", created_.elapsed());
-    result.insert("lastUsed", lastUsed_.elapsed());
-    result.insert("reUseCount", reUseCount_);
-    result.insert("livingInThread", thread()->objectName());
-
-    return result;
-}
-
-void ViridityConnection::close()
-{
-    if (socket_)
-        socket_->close();
-}
-
-void ViridityConnection::setupConnection()
-{
-    DGUARDMETHODTIMED;
-
-    QMutexLocker l(&mutex_);
-
-    // Open socket
-    socket_ = new QTcpSocket(this);
-    connect(socket_, SIGNAL(disconnected()), this, SLOT(handleSocketDisconnected()));
-
-    // Attach incomming connection to socket
-    if (!socket_->setSocketDescriptor(socketDescriptor_))
-    {
-        delete socket_;
-        this->deleteLater();
-        return;
-    }
-
-    if (request_)
-        request_->deleteLater();
-
-    // Hand-off incoming connection to Tufao to parse request...
-    request_ = new ViridityHttpServerRequest(socket_, this);
-    connect(request_, SIGNAL(ready()), this, SLOT(handleRequestReady()));
-    connect(request_, SIGNAL(upgrade(QByteArray)), this, SLOT(handleRequestUpgrade(QByteArray)));
-
-    DPRINTF("New connection from %s.", socket_->peerAddress().toString().toLatin1().constData());
-}
-
-void ViridityConnection::handleSocketDisconnected()
-{
-    DGUARDMETHODTIMED;
-
-    QMutexLocker l(&mutex_);
-
-    if (request_)
-    {
-        request_->deleteLater();
-        request_ = NULL;
-    }
-
-    if (socket_)
-    {
-        socket_->deleteLater();
-        socket_ = NULL;
-    }
-
-    this->deleteLater();
-}
-
-void ViridityConnection::handleRequestReady()
-{
-    //DGUARDMETHODTIMED;
-
-    lastUsed_.restart();
-    ++reUseCount_;
-
-    ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
-
-    DPRINTF("Request for %s of connection from %s ready.", request->url().constData(), request->getPeerAddressFromRequest().constData());
-
-    QAbstractSocket *socket = request->socket();
-    ViridityHttpServerResponse *response = new ViridityHttpServerResponse(socket, request->responseOptions(), this);
-
-    connect(socket, SIGNAL(disconnected()), response, SLOT(deleteLater()));
-    connect(response, SIGNAL(finished()), response, SLOT(deleteLater()));
-
-    if (request->headers().contains("Expect", "100-continue"))
-        response->writeContinue();
-
-    if (server_->doesHandleRequest(request))
-    {
-        server_->handleRequest(request, response);
-    }
-    else if (SSEHandler::staticDoesHandleRequest(server_, request))
-    {
-        if (!sseHandler_)
-            sseHandler_ = new SSEHandler(server_, this);
-
-        sseHandler_->handleRequest(request, response);
-    }
-    else if (LongPollingHandler::staticDoesHandleRequest(server_, request))
-    {
-        if (!longPollingHandler_)
-            longPollingHandler_ = new LongPollingHandler(server_, this);
-
-        longPollingHandler_->handleRequest(request, response);
-    }
-    else
-    {
-        response->writeHead(404);
-        response->end("Not found");
-    }
-}
-
-void ViridityConnection::handleRequestUpgrade(const QByteArray &head)
-{
-    lastUsed_.restart();
-    ++reUseCount_;
-
-    ViridityHttpServerRequest *request = qobject_cast<ViridityHttpServerRequest *>(sender());
-
-    DPRINTF("Request for %s of connection from %s wants upgrade.", request->url().constData(), request->getPeerAddressFromRequest().constData());
-
-    if (!webSocketHandler_)
-        webSocketHandler_ = new WebSocketHandler(server_, this);
-
-    webSocketHandler_->handleUpgrade(request, head);
-}
-
-
 
 /* ViridityWebServer */
 
@@ -268,6 +48,8 @@ ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionMan
     incomingConnectionCount_(0)
 {
     DGUARDMETHODTIMED;
+
+    qRegisterMetaType< QSharedPointer<ViridityConnection> >();
 
     sessionManager_->setServer(this);
     connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(handleNewSessionCreated(ViriditySession*)));
@@ -284,9 +66,8 @@ ViridityWebServer::~ViridityWebServer()
     DGUARDMETHODTIMED;
     QReadLocker l(&connectionMREW_);
 
+    sessionManager_->killAllSessions();
     close();
-
-    closeAllConnections();
 
     requestHandlers_.clear();
 
@@ -339,6 +120,12 @@ bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int th
     return QTcpServer::listen(address, port);
 }
 
+bool ViridityWebServer::close()
+{
+    QTcpServer::close();
+    closeAllConnections(2000);
+}
+
 AbstractViriditySessionManager *ViridityWebServer::sessionManager()
 {
     return sessionManager_;
@@ -355,6 +142,21 @@ void ViridityWebServer::handleNewSessionCreated(ViriditySession *session)
     DPRINTF("New worker thread %p for session id %s", workerThread, session->id().toLatin1().constData());
 }
 
+void ViridityWebServer::cleanConnections()
+{
+    DGUARDMETHODTIMED;
+    QWriteLocker l(&connectionMREW_);
+    DPRINTF("Connection count before: %d", connections_.count());
+
+    for (int i = connections_.count() - 1; i >= 0; --i)
+    {
+        if (connections_.at(i).isNull())
+            connections_.removeAt(i);
+    }
+
+    DPRINTF("Connection count after: %d", connections_.count());
+}
+
 #if QT_VERSION >= QT_VERSION_CHECK(5, 0, 0)
 void ViridityWebServer::incomingConnection(qintptr handle)
 #else
@@ -364,24 +166,28 @@ void ViridityWebServer::incomingConnection(int handle)
     DGUARDMETHODTIMED;
     QWriteLocker l(&connectionMREW_);
 
+    cleanConnections();
+
     ++incomingConnectionCount_;
     int threadIndex = incomingConnectionCount_ % connectionThreads_.count();
 
-    QPointer<ViridityConnection> connection = new ViridityConnection(this, handle);
-    connections_.append(connection);
+    QSharedPointer<ViridityConnection> connection(
+        new ViridityConnection(this, handle),
+        &ViridityConnection::sharedPointerDeleteLater
+    );
+
+    connections_.append(connection.toWeakRef());
     connection->moveToThread(connectionThreads_.at(threadIndex)); // Move connection to thread's event loop
 
-    QMetaObject::invokeMethod(connection, "setupConnection"); // Dispatch setupConnection call to thread's event loop
+    // Dispatch setupConnection call to thread's event loop
+    QMetaObject::invokeMethod(
+        connection.data(),
+        "setupConnection",
+        Q_ARG(QSharedPointer<ViridityConnection>, connection) // send QSharedPointer reference to keep alive!
+    );
 }
 
-void ViridityWebServer::removeConnection(ViridityConnection *connection)
-{
-    DGUARDMETHODTIMED;
-    QWriteLocker l(&connectionMREW_);
-    connections_.removeAll(connection);
-}
-
-void ViridityWebServer::closeAllConnections()
+void ViridityWebServer::closeAllConnections(int maxWaitMs)
 {
     DGUARDMETHODTIMED;
 
@@ -389,17 +195,27 @@ void ViridityWebServer::closeAllConnections()
 
     {
         QReadLocker l(&connectionMREW_);
-        foreach (QPointer<ViridityConnection> connection, connections_)
+        foreach (QWeakPointer<ViridityConnection> connection, connections_)
         {
-            if (!connection.isNull())
-                QMetaObject::invokeMethod(connection, "close");
+            QSharedPointer<ViridityConnection> shCon = connection.toStrongRef();
+            if (shCon)
+                QMetaObject::invokeMethod(
+                    shCon.data(),
+                    "close",
+                    Q_ARG(QSharedPointer<ViridityConnection>, shCon)  // send QSharedPointer reference to keep alive!
+                );
         }
     }
 
-    QEventLoop lo;
-    while (connections_.count() > 0)
+    if (maxWaitMs > 0)
     {
-        lo.processEvents(QEventLoop::AllEvents, 500);
+        QElapsedTimer timer;
+        QEventLoop lo;
+        while (connections_.count() > 0 && timer.elapsed() < maxWaitMs)
+        {
+            cleanConnections();
+            lo.processEvents(QEventLoop::AllEvents, 10);
+        }
     }
 
     clearingConnections_ = false;
@@ -423,7 +239,7 @@ void ViridityWebServer::unregisterRequestHandler(ViridityRequestHandler *handler
     requestHandlers_.removeAll(handler);
 }
 
-bool ViridityWebServer::doesHandleRequest(ViridityHttpServerRequest *request)
+bool ViridityWebServer::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     bool result = false;
 
@@ -436,7 +252,7 @@ bool ViridityWebServer::doesHandleRequest(ViridityHttpServerRequest *request)
     return result;
 }
 
-void ViridityWebServer::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void ViridityWebServer::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     foreach (ViridityRequestHandler *handler, requestHandlers_)
         if (handler->doesHandleRequest(request))
@@ -452,13 +268,17 @@ QVariant ViridityWebServer::stats() const
     QReadLocker l(&connectionMREW_);
     QVariantList connectionArray;
 
-    foreach (QPointer<ViridityConnection> connection, connections_)
+    foreach (const QWeakPointer<ViridityConnection> &connection, connections_)
+    {
         if (!connection.isNull())
-            connectionArray.append(connection->stats());
+        {
+            QSharedPointer<ViridityConnection> shCon = connection.toStrongRef();
+            if (!shCon.isNull())
+                connectionArray.append(shCon->stats());
+        }
+    }
 
     result.insert("connections", connectionArray);
 
     return result;
 }
-
-#include "viriditywebserver.moc"

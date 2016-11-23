@@ -27,6 +27,7 @@
 #include <QStringList>
 
 #include "viriditywebserver.h"
+#include "viridityconnection.h"
 
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
@@ -47,17 +48,17 @@ SSEHandler::~SSEHandler()
     DGUARDMETHODTIMED;
 }
 
-bool SSEHandler::staticDoesHandleRequest(ViridityWebServer *server, ViridityHttpServerRequest *request)
+bool SSEHandler::staticDoesHandleRequest(ViridityWebServer *server, QSharedPointer<ViridityHttpServerRequest> request)
 {
     return request->url().endsWith("/v/ev");
 }
 
-bool SSEHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool SSEHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return staticDoesHandleRequest(server(), request);
 }
 
-void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void SSEHandler::doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     DGUARDMETHODTIMED;
 
@@ -91,8 +92,7 @@ void SSEHandler::doHandleRequest(ViridityHttpServerRequest *request, ViridityHtt
             QString info = "data: inuse(" + session->id() + ")\n\n";
 
             setUpResponse(request, response);
-            response_->write(info.toUtf8());
-            response_->end();
+            response_->end(info.toUtf8());
         }
 
         return;
@@ -157,7 +157,7 @@ void SSEHandler::handleSessionReleaseRequired()
     releaseSessionAndCloseConnection();
 }
 
-void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void SSEHandler::setUpResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     response_ = response;
 
@@ -165,7 +165,7 @@ void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpS
     response_->addNoCachingResponseHeaders();
     response_->writeHead(ViridityHttpServerResponse::OK);
 
-    connect(response_, SIGNAL(destroyed()), this, SLOT(handleResponseDestroyed()));
+    connect(response_.data(), SIGNAL(finished()), this, SLOT(handleResponseFinished()));
 
     {
         QMutexLocker m(&sessionMutex_);
@@ -179,6 +179,7 @@ void SSEHandler::setUpResponse(ViridityHttpServerRequest *request, ViridityHttpS
     }
 
     socket_ = request->socket();
+    connect(socket_.data(), SIGNAL(disconnected()), this, SLOT(handleSocketDisconnected()));
 }
 
 void SSEHandler::handleMessagesAvailable()
@@ -199,12 +200,18 @@ void SSEHandler::handleMessagesAvailable()
     }
 }
 
-void SSEHandler::handleResponseDestroyed()
+void SSEHandler::handleResponseFinished()
 {
     DGUARDMETHODTIMED;
 
-    response_ = NULL;
-    socket_ = NULL;
+    response_.clear();
+    socket_.clear();
+}
+
+void SSEHandler::handleSocketDisconnected()
+{
+    response_.clear();
+    socket_.clear();
 }
 
 void SSEHandler::handleSessionDestroyed()

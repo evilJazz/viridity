@@ -128,13 +128,13 @@ QByteArray FileRequestHandler::determineMimeType(const QString &fileName)
         return "application/octet-stream";
 }
 
-bool FileRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool FileRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     QList<QByteArray> parts = request->url().split('?');
     return parts.count() > 0 && (fileNames_.contains(parts.at(0)) || globalFileNames_.contains(parts.at(0)));
 }
 
-void FileRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void FileRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     QList<QByteArray> parts = request->url().split('?');
 

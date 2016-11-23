@@ -35,15 +35,16 @@ class InputPostHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit InputPostHandler(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response, ViriditySession *session, QObject *parent = 0);
+    explicit InputPostHandler(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response, ViriditySession *session, QObject *parent = 0);
 
 private slots:
-    void onData(const QByteArray &chunk);
-    void onEnd();
+    void handleRequestData(const QByteArray &chunk);
+    void handleRequestEnd();
+    void handleRequestClose();
 
 private:
-    ViridityHttpServerRequest *request_;
-    ViridityHttpServerResponse *response_;
+    QSharedPointer<ViridityHttpServerRequest> request_;
+    QSharedPointer<ViridityHttpServerResponse> response_;
     ViriditySession *session_;
     QByteArray data_;
 };

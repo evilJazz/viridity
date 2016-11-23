@@ -40,13 +40,13 @@ PatchRequestHandler::~PatchRequestHandler()
 {
 }
 
-bool PatchRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool PatchRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     QString id = ViriditySession::parseIdFromUrl(request->url());
     return request->url().contains("/p/") && request->url().contains("_") && server()->sessionManager()->getSession(id) != NULL;
 }
 
-void PatchRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void PatchRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
 #ifdef VIRIDITY_DEBUG_SIMULATE_RANDOM_ERROR
     if (QDateTime::currentMSecsSinceEpoch() % 101 == 0)

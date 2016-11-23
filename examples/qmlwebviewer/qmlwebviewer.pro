@@ -33,3 +33,21 @@ linux-* {
 
 RESOURCES += \
     resources.qrc
+
+# ccache available?
+*g++* {
+    system(ccache -V): CONFIG += ccache_available
+
+    ccache_available {
+        message("Using ccache for speeding up repeated builds.")
+        QMAKE_CC = ccache $$QMAKE_CC
+        QMAKE_CXX = ccache $$QMAKE_CXX
+    }
+}
+
+#DEFINES += QT_SHAREDPOINTER_TRACK_POINTERS
+#QMAKE_CFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
+#QMAKE_CXXFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
+#QMAKE_LFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
+
+#DEFINES += VIRIDITY_DEBUG

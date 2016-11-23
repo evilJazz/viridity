@@ -26,7 +26,7 @@ void RewriteRequestHandler::clear()
     rewriteRules_.clear();
 }
 
-bool RewriteRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool RewriteRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     QString url = request->url();
 
@@ -59,7 +59,7 @@ bool RewriteRequestHandler::doesHandleRequest(ViridityHttpServerRequest *request
     return false;
 }
 
-void RewriteRequestHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void RewriteRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     // Does not handle any request itself...
 }

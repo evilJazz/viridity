@@ -38,7 +38,7 @@ class FileUploadDataHandler : public QObject
 {
     Q_OBJECT
 public:
-    explicit FileUploadDataHandler(FileUploadHandler *parent, ViridityHttpServerRequest *request, ViridityHttpServerResponse *response) :
+    explicit FileUploadDataHandler(FileUploadHandler *parent, QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response) :
         QObject(parent),
         parent_(parent),
         request_(request),
@@ -64,8 +64,8 @@ public:
             boundary_ = r.cap(1).toUtf8();
         }
 
-        connect(request_, SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
-        connect(request_, SIGNAL(end()), this, SLOT(onEnd()));
+        connect(request_.data(), SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
+        connect(request_.data(), SIGNAL(end()), this, SLOT(onEnd()));
     }
 
 private slots:
@@ -331,8 +331,8 @@ private slots:
 
 private:
     FileUploadHandler *parent_;
-    ViridityHttpServerRequest *request_;
-    ViridityHttpServerResponse *response_;
+    QSharedPointer<ViridityHttpServerRequest> request_;
+    QSharedPointer<ViridityHttpServerResponse> response_;
     QByteArray analyzeBuffer_;
 
     QByteArray contentType_;
@@ -371,18 +371,18 @@ FileUploadHandler::~FileUploadHandler()
 {
 }
 
-bool FileUploadHandler::doesHandleRequest(ViridityHttpServerRequest *request)
+bool FileUploadHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return QString::fromUtf8(request->url()).indexOf(urlRe_) > -1;
 }
 
-void FileUploadHandler::handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response)
+void FileUploadHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     if (request->method() == "POST")
     {
         // Hand off to separate data handler!
         FileUploadDataHandler *handler = new FileUploadDataHandler(this, request, response);
-        connect(response, SIGNAL(destroyed()), handler, SLOT(deleteLater()));
+        connect(response.data(), SIGNAL(destroyed()), handler, SLOT(deleteLater()));
         return;
     }
     else if (request->method() == "OPTIONS") // to allow CORS pre check

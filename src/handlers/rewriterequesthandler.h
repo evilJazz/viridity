@@ -41,8 +41,8 @@ public:
 
     void clear();
 
-    bool doesHandleRequest(ViridityHttpServerRequest *request);
-    void handleRequest(ViridityHttpServerRequest *request, ViridityHttpServerResponse *response);
+    bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
+    void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
     QStringList rewriteRules_;
