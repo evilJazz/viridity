@@ -54,8 +54,15 @@ viridity_declarative {
 
     QT += qml
 
-    HEADERS += $$VIRIDITY_SRC_PATH/viriditydeclarative.h
-    SOURCES += $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp
+    HEADERS += \
+        $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
+        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.h \
+        $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.h
+
+    SOURCES += \
+        $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp \
+        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.cpp \
+        $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.cpp
 }
 
 # Display related
@@ -63,6 +70,8 @@ CONFIG += viridity_module_display
 !win32: CONFIG += viridity_use_improved_jpeg viridity_use_improved_png
 
 viridity_module_display {
+    DEFINES += VIRIDITY_MODULE_DISPLAY
+
     QT += gui
 
     INCLUDEPATH += \
@@ -176,10 +185,12 @@ viridity_module_display {
 
     viridity_module_display_declarative {
         HEADERS += \
-            $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h
+            $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
+            $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.h
 
         SOURCES += \
-            $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.cpp
+            $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.cpp \
+            $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.cpp
     }
 
     viridity_module_display_qgraphicscene {

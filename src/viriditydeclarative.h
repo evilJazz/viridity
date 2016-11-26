@@ -39,4 +39,49 @@ public:
     static void registerTypes();
 };
 
+#ifdef USE_QTQUICK1
+#include <QDeclarativeEngine>
+#include <QDeclarativeParserStatus>
+#else
+#include <QQmlEngine>
+#include <QQmlParserStatus>
+#endif
+
+class ViridityWebServer;
+class AbstractViriditySessionManager;
+class ViriditySession;
+
+class ViridityDeclarativeBaseObject :
+    public QObject,
+#ifdef KCL_QTQUICK2
+    public QQmlParserStatus
+#else
+    public QDeclarativeParserStatus
+#endif
+{
+    Q_OBJECT
+#ifdef KCL_QTQUICK2
+    Q_INTERFACES(QQmlParserStatus)
+#else
+    Q_INTERFACES(QDeclarativeParserStatus)
+#endif
+public:
+    ViridityDeclarativeBaseObject(QObject *parent = NULL);
+    virtual ~ViridityDeclarativeBaseObject();
+
+    virtual void classBegin();
+    virtual void componentComplete();
+
+protected:
+#ifdef USE_QTQUICK1
+    QDeclarativeEngine *engine();
+#else
+    QQmlEngine *engine();
+#endif
+
+    ViridityWebServer *webServer();
+    AbstractViriditySessionManager *sessionManager();
+    ViriditySession *currentSession();
+};
+
 #endif // VIRIDITYDECLARATIVE_H
