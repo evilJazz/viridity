@@ -172,8 +172,8 @@ int main(int argc, char *argv[])
     ViridityWebServer server(&a, &sessionManager);
 
 #ifdef VIRIDITY_DEBUG
-    DebugRequestHandler debugRequestHandler(&server);
-    server.registerRequestHandler(&debugRequestHandler);
+    QSharedPointer<ViridityRequestHandler> debugRequestHandler(new DebugRequestHandler(&server));
+    server.registerRequestHandler(debugRequestHandler);
 #endif
 
     if (server.listen(QHostAddress::Any, dataPort))
