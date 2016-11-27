@@ -29,6 +29,9 @@
 #include "display/declarativescenesizehandler.h"
 #include "display/graphicsscenedisplaymanager.h"
 
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 /* PrivateQtQuickDisplayManager */
