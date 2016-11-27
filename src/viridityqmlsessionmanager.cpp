@@ -12,6 +12,9 @@
     typedef QQmlComponent DeclarativeComponent;
 #endif
 
+#ifndef VIRIDITY_DEBUG
+#undef DEBUG
+#endif
 #include "KCL/debug.h"
 
 ViridityQmlSessionManager::ViridityQmlSessionManager(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, QObject *parent) :

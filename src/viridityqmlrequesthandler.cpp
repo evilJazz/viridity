@@ -12,6 +12,7 @@
 #include <QPointer>
 
 #include "viriditywebserver.h"
+#include "viridityconnection.h"
 
 #include "KCL/objectutils.h"
 
@@ -33,6 +34,7 @@ public:
         request_(request)
     {
         DGUARDMETHODTIMED;
+        connect(request_->socket().data(), SIGNAL(disconnected()), this, SLOT(deleteLater()));
     }
 
     virtual ~PrivateViridityRequestWrapper()
@@ -59,6 +61,7 @@ public:
     {
         DGUARDMETHODTIMED;
         connect(response_.data(), SIGNAL(finished()), this, SLOT(deleteLater()));
+        connect(response_->socket().data(), SIGNAL(disconnected()), this, SLOT(deleteLater()));
     }
 
     virtual ~PrivateViridityResponseWrapper()

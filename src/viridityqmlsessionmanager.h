@@ -28,6 +28,7 @@ public:
 #endif
 
     QObject *globalLogic();
+    void startUpGlobalLogic() { globalLogic(); }
 
 protected:
     void initSession(ViriditySession *session);
