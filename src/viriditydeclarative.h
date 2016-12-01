@@ -53,17 +53,17 @@ class ViriditySession;
 
 class ViridityDeclarativeBaseObject :
     public QObject,
-#ifdef KCL_QTQUICK2
-    public QQmlParserStatus
-#else
+#ifdef USE_QTQUICK1
     public QDeclarativeParserStatus
+#else
+    public QQmlParserStatus
 #endif
 {
     Q_OBJECT
-#ifdef KCL_QTQUICK2
-    Q_INTERFACES(QQmlParserStatus)
-#else
+#ifdef USE_QTQUICK1
     Q_INTERFACES(QDeclarativeParserStatus)
+#else
+    Q_INTERFACES(QQmlParserStatus)
 #endif
 public:
     ViridityDeclarativeBaseObject(QObject *parent = NULL);

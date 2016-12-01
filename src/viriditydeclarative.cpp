@@ -29,15 +29,7 @@
 #include "viridityqmlrequesthandler.h"
 #include "viriditydatabridge.h"
 
-#ifdef USE_QTQUICK2
-    #include <QtQml>
-    #include <QQmlEngine>
-    #include <QQmlContext>
-    #include <QQmlComponent>
-    typedef QQmlEngine DeclarativeEngine;
-    typedef QQmlContext DeclarativeContext;
-    typedef QQmlComponent DeclarativeComponent;
-#else
+#ifdef USE_QTQUICK1
     #include <QtDeclarative>
     #include <QDeclarativeEngine>
     #include <QDeclarativeContext>
@@ -45,6 +37,14 @@
     typedef QDeclarativeEngine DeclarativeEngine;
     typedef QDeclarativeContext DeclarativeContext;
     typedef QDeclarativeComponent DeclarativeComponent;
+#else
+    #include <QtQml>
+    #include <QQmlEngine>
+    #include <QQmlContext>
+    #include <QQmlComponent>
+    typedef QQmlEngine DeclarativeEngine;
+    typedef QQmlContext DeclarativeContext;
+    typedef QQmlComponent DeclarativeComponent;
 #endif
 
 #ifdef VIRIDITY_MODULE_DISPLAY

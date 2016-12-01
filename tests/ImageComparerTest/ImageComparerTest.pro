@@ -1,8 +1,6 @@
-QT       += core gui declarative testlib
+QT       += core gui testlib
 
 TARGET = ImageComparerTest
-
-CONFIG += TUFAO
 
 TEMPLATE = app
 
@@ -18,9 +16,7 @@ SOURCES += main.cpp
 
 CONFIG += viridity_module_display_areafingerprints
 
-include(../../3rdparty/kcl/kcl.pri)
-include(../../3rdparty/tufao/tufao-min.pri)
-include(../../viridity.pri)
+include(../../viridity-static.pri)
 
 DEFINES += USE_MOVE_ANALYZER USE_MOVE_ANALYZER_FINEGRAINED
 

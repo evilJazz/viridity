@@ -15,6 +15,10 @@
 #include "handlers/filerequesthandler.h"
 
 #ifdef VIRIDITY_DEBUG
+#define VIRIDITY_DEBUG_REQUESTHANDLER
+#endif
+
+#ifdef VIRIDITY_DEBUG_REQUESTHANDLER
 #include "handlers/debugrequesthandler.h"
 #endif
 
@@ -81,7 +85,7 @@ int main(int argc, char *argv[])
 
     sessionManager.startUpGlobalLogic();
 
-#ifdef VIRIDITY_DEBUG
+#ifdef VIRIDITY_DEBUG_REQUESTHANDLER
     QSharedPointer<DebugRequestHandler> debugRequestHandler(new DebugRequestHandler(&server));
     server.registerRequestHandler(debugRequestHandler);
 #endif

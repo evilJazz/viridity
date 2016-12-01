@@ -20,8 +20,8 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
-contains(QT_VERSION, ^4\\..*): CONFIG += viridity_module_display_qtquick1
-contains(QT_VERSION, ^5\\..*): CONFIG += viridity_module_display_qtquick2
+contains(QT_VERSION, ^4\\..*): CONFIG += viridity_declarative viridity_qtquick1
+contains(QT_VERSION, ^5\\..*): CONFIG += viridity_declarative viridity_qtquick2
 
 include(../../viridity-static.pri)
 
@@ -50,4 +50,4 @@ RESOURCES += \
 #QMAKE_CXXFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
 #QMAKE_LFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
 
-#DEFINES += VIRIDITY_DEBUG
+DEFINES += VIRIDITY_DEBUG_REQUESTHANDLER

@@ -1,7 +1,33 @@
 # Enable if you want to debug Viridity...
 #DEFINES += VIRIDITY_DEBUG
 
-QT += core network concurrent
+contains(QT_VERSION, ^4\\.[0-6]\\..*) {
+    message("Viridity: Cannot build using Qt version $${QT_VERSION}.")
+    error("Use at least Qt 4.7.")
+}
+
+QT += core network
+
+contains(QT_VERSION, ^4\\..*) {
+    CONFIG += viridity_qt4
+
+    contains(QT, declarative): CONFIG += viridity_qtquick1 viridity_declarative
+    contains(QT, gui): CONFIG += viridity_widgets
+
+    message("Viridity: Configuring for Qt 4, actual version: $${QT_VERSION}")
+}
+
+contains(QT_VERSION, ^5\\..*) {
+    CONFIG += viridity_qt5
+    QT += concurrent
+
+    contains(QT, quick): CONFIG += viridity_qtquick2 viridity_declarative
+
+    contains(QT, declarative): CONFIG += viridity_qtquick1 viridity_declarative
+    contains(QT, widgets): CONFIG += viridity_widgets
+
+    message("Viridity: Configuring for Qt 5, actual version: $${QT_VERSION}")
+}
 
 DEFINES += USE_MULTITHREADING
 
@@ -47,12 +73,22 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/debugrequesthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/rewriterequesthandler.cpp
 
-CONFIG += viridity_declarative
-
 viridity_declarative {
-    DEFINES += USE_QTQUICK2
-
     QT += qml
+
+    viridity_qtquick1 {
+        message("Viridity: Configuring QtQuick 1.x declarative support classes")
+        QT += declarative
+        DEFINES += USE_QTQUICK1
+        DEFINES -= USE_QTQUICK2
+    }
+
+    viridity_qtquick2 {
+        message("Viridity: Configuring QtQuick 2.x declarative support classes")
+        QT += qml quick
+        DEFINES += USE_QTQUICK2
+        DEFINES -= USE_QTQUICK1
+    }
 
     HEADERS += \
         $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
@@ -148,42 +184,37 @@ viridity_module_display {
             $$VIRIDITY_SRC_PATH/display/tools/graphicsscenedisplayplayer.cpp
     }
 
-    include($${PWD}/3rdparty/kcl/qmlpp/src/qmlpp.pri)
+    viridity_declarative {
 
-    viridity_module_display_qtquick1 {
-        message("Viridity: Configuring with QtQuick 1.x support")
+        include($${PWD}/3rdparty/kcl/qmlpp/src/qmlpp.pri)
 
-        QT += declarative
-        DEFINES += USE_QTQUICK1
-        DEFINES -= USE_QTQUICK2
-        CONFIG += viridity_module_display_qgraphicscene viridity_module_display_declarative
+        viridity_qtquick1 {
+            message("Viridity: Configuring display module with QtQuick 1.x support")
 
-        HEADERS += \
-            $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.h
+            CONFIG += viridity_module_display_qgraphicscene viridity_module_display_declarative
 
-        SOURCES += \
-            $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.cpp
-    }
+            HEADERS += \
+                $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.h
 
-    viridity_module_display_qtquick2 {
-        message("Viridity: Configuring with QtQuick 2.x support")
+            SOURCES += \
+                $$VIRIDITY_SRC_PATH/display/adapters/qtquick1adapter.cpp
+        }
 
-        QT += qml quick
-        DEFINES += USE_QTQUICK2
-        DEFINES -= USE_QTQUICK1
-        CONFIG += viridity_module_display_declarative
+        viridity_qtquick2 {
+            message("Viridity: Configuring display module with QtQuick 2.x support")
 
-        HEADERS += \
-            $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.h
+            CONFIG += viridity_module_display_declarative
 
-        SOURCES += \
-            $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
-    }
+            HEADERS += \
+                $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.h
 
-    contains(DEFINES, USE_QTQUICK1): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
-    contains(DEFINES, USE_QTQUICK2): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
+            SOURCES += \
+                $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
+        }
 
-    viridity_module_display_declarative {
+        contains(DEFINES, USE_QTQUICK1): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
+        contains(DEFINES, USE_QTQUICK2): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
+
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
             $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.h
@@ -194,7 +225,7 @@ viridity_module_display {
     }
 
     viridity_module_display_qgraphicscene {
-        message("Viridity: Configuring with QGraphicsScene support")
+        message("Viridity: Configuring display module with QGraphicsScene support")
 
         DEFINES += USE_QGRAPHICSSCENE
 
