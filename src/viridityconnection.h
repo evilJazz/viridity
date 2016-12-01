@@ -100,7 +100,7 @@ private slots:
     void handleSocketDisconnected();
 
 private:
-    mutable QReadWriteLock sharedPointerMREW_;
+    mutable QReadWriteLock sharedMemberMREW_;
 
     WebSocketHandler *webSocketHandler_;
     SSEHandler *sseHandler_;
@@ -113,6 +113,10 @@ private:
     QSharedPointer<ViridityHttpServerResponse> response_;
 
     ViriditySocketDescriptor socketDescriptor_;
+
+    // Copied here because Tufao classes are not thread-safe internally
+    QByteArray requestUrl_;
+    QByteArray requestMethod_;
 
     QTime created_;
     QTime lastUsed_;

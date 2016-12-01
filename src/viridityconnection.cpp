@@ -69,7 +69,7 @@ ViridityConnection::ViridityConnection(ViridityWebServer *server, qintptr socket
 ViridityConnection::ViridityConnection(ViridityWebServer *server, int socketDescriptor) :
 #endif
     QObject(),
-    sharedPointerMREW_(QReadWriteLock::Recursive),
+    sharedMemberMREW_(QReadWriteLock::Recursive),
     webSocketHandler_(NULL),
     sseHandler_(NULL),
     longPollingHandler_(NULL),
@@ -94,16 +94,16 @@ ViridityConnection::~ViridityConnection()
 
 QVariant ViridityConnection::stats()
 {
-    QReadLocker l(&sharedPointerMREW_);
+    QReadLocker l(&sharedMemberMREW_);
 
     QVariantMap result;
 
-    result.insert("request.url", !request_.isNull() ? request_->url() : QVariant());
-    result.insert("request.method", !request_.isNull() ? request_->method() : QVariant());
+    result.insert("request.url", requestUrl_);
+    result.insert("request.method", requestMethod_);
 
     result.insert("socket.peerAddress", !socket_.isNull() && socket_->state() == QAbstractSocket::ConnectedState ? socket_->peerAddress().toString() : QVariant());
 
-    result.insert("socketDescriptor", socketDescriptor());
+    result.insert("socketDescriptor", socketDescriptor_);
     result.insert("age", created_.elapsed());
     result.insert("lastUsed", lastUsed_.elapsed());
     result.insert("reUseCount", reUseCount_);
@@ -130,7 +130,7 @@ void ViridityConnection::setupConnection(QSharedPointer<ViridityConnection> refe
     DGUARDMETHODTIMED;
     if (reference.data() != this) return;
 
-    QWriteLocker l(&sharedPointerMREW_);
+    QWriteLocker l(&sharedMemberMREW_);
 
     // Open socket
     socket_ = QSharedPointer<ViridityTcpSocket>(
@@ -156,6 +156,9 @@ void ViridityConnection::setupConnection(QSharedPointer<ViridityConnection> refe
     connect(request_.data(), SIGNAL(ready()), this, SLOT(handleRequestReady()));
     connect(request_.data(), SIGNAL(upgrade(QByteArray)), this, SLOT(handleRequestUpgrade(QByteArray)));
 
+    requestUrl_ = request_->url();
+    requestMethod_ = request_->method();
+
     DPRINTF("New connection from %s.", socket_->peerAddress().toString().toLatin1().constData());
 }
 
@@ -164,7 +167,7 @@ void ViridityConnection::handleSocketDisconnected()
     DGUARDMETHODTIMED;
 
     // This mutex is required because we need exclusive access when changing our shared pointer members that are accessed from different threads!
-    QWriteLocker l(&sharedPointerMREW_);
+    QWriteLocker l(&sharedMemberMREW_);
 
     handleResponseFinished();
 
@@ -189,7 +192,7 @@ void ViridityConnection::handleResponseFinished()
     DGUARDMETHODTIMED;
 
     // This mutex is required because we need exclusive access when changing our shared pointer members that are accessed from different threads!
-    QWriteLocker l(&sharedPointerMREW_);
+    QWriteLocker l(&sharedMemberMREW_);
 
     if (response_)
         disconnect(response_.data(), SIGNAL(finished()), this, SLOT(handleResponseFinished()));
@@ -201,8 +204,14 @@ void ViridityConnection::handleRequestReady()
 {
     //DGUARDMETHODTIMED;
 
-    lastUsed_.restart();
-    ++reUseCount_;
+    {
+        QWriteLocker l(&sharedMemberMREW_);
+        lastUsed_.restart();
+        ++reUseCount_;
+
+        requestUrl_ = request_->url();
+        requestMethod_ = request_->method();
+    }
 
     DPRINTF("Request for %s of connection from %s ready.", request_->url().constData(), request_->getPeerAddressFromRequest().constData());
 
