@@ -5,6 +5,9 @@
 
 #include "KCL/webcall.h"
 
+#include "viriditywebserver.h"
+#include "handlers/debugrequesthandler.h"
+
 class ClientServerTest : public QObject
 {
     Q_OBJECT
@@ -16,21 +19,33 @@ private Q_SLOTS:
     void initTestCase();
     void cleanupTestCase();
 
-    void stressWebCallOnWrongUrlWithKeepAlive();
-    void stressWebCallOnWrongUrlWithoutKeepAlive();
+    void stressWebCall404WithKeepAlive();
+    void stressWebCall404WithoutKeepAlive();
 
     void stressWebCallOnDebugWithKeepAlive();
     void stressWebCallOnDebugWithoutKeepAlive();
+
+    void benchmarkWebCall404WithKeepAlive();
+    void benchmarkWebCall404WithoutKeepAlive();
+
+    void benchmarkWebCallOnDebugWithKeepAlive();
+    void benchmarkWebCallOnDebugWithoutKeepAlive();
+
+private:
+    ViridityWebServer server_;
+    QSharedPointer<DebugRequestHandler> debugRequestHandler_;
+    QString baseUrl_;
 };
 
 struct StressTestWebCall
 {
     struct Result
     {
-        Result() : requestsExecuted(0), successfulRequests(0), non2xxErrorsReceived(0), errorsReceived(0) {}
+        Result() : requestsExecuted(0), successfulRequests(0), non2xxErrorsReceived(0), notFound404ErrorsReceived(0), errorsReceived(0) {}
         int requestsExecuted;
         int successfulRequests;
         int non2xxErrorsReceived;
+        int notFound404ErrorsReceived;
         int errorsReceived;
 
         QString toString() const { return QString().sprintf("requestsExecuted: %d, successfulRequests: %d, non2xxErrorsReceived: %d, errorsReceived: %d", requestsExecuted, successfulRequests, non2xxErrorsReceived, errorsReceived); }
@@ -44,10 +59,7 @@ struct StressTestWebCall
 
         QEventLoop e;
 
-        QNetworkAccessManager *nam = NULL;
-
-        if (useKeepAlive)
-            nam = new QNetworkAccessManager();
+        QScopedPointer<QNetworkAccessManager> nam(new QNetworkAccessManager());
 
         for (int i = 0; i < requests; ++i)
         {
@@ -75,15 +87,16 @@ struct StressTestWebCall
                     if (wc->statusCode() < 200 || wc->statusCode() >= 300)
                         ++result.non2xxErrorsReceived;
 
+                    if (wc->statusCode() == 404)
+                        ++result.notFound404ErrorsReceived;
+
                     error = true;
                 }
             );
 
             wc->setAutoDelete(true);
-
-            if (nam)
-                wc->setNetworkAccessManager(nam);
-
+            wc->setNetworkAccessManager(nam.data());
+            wc->setRequestHeader("Connection", useKeepAlive ? "Keep-Alive" : "Close");
             wc->get(url);
             ++result.requestsExecuted;
             ++pendingConnectionCount;
@@ -96,41 +109,84 @@ struct StressTestWebCall
     }
 };
 
-ClientServerTest::ClientServerTest()
+ClientServerTest::ClientServerTest() :
+    QObject(),
+    server_(this, NULL),
+    debugRequestHandler_(new DebugRequestHandler(&server_))
 {
+    server_.registerRequestHandler(debugRequestHandler_);
+
+    const int port = 10101;
+    baseUrl_ = QString("http://127.0.0.1:") + QString::number(port);
+
+    if (!server_.listen(QHostAddress::LocalHost, port))
+        qFatal("Could not setup in-process test web server on port %d.", port);
 }
 
 void ClientServerTest::initTestCase()
 {
+
 }
 
 void ClientServerTest::cleanupTestCase()
 {
-
+    server_.close();
 }
 
-void ClientServerTest::stressWebCallOnWrongUrlWithKeepAlive()
+void ClientServerTest::stressWebCall404WithKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl("http://127.0.0.1:8080/testcall_"), 8, 20000, true, false);
-    QVERIFY2(result.non2xxErrorsReceived == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 20000, true, false);
+    QVERIFY2(result.notFound404ErrorsReceived == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
-void ClientServerTest::stressWebCallOnWrongUrlWithoutKeepAlive()
+void ClientServerTest::stressWebCall404WithoutKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl("http://127.0.0.1:8080/testcall_"), 8, 20000, false, false);
-    QVERIFY2(result.non2xxErrorsReceived == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 20000, false, false);
+    QVERIFY2(result.notFound404ErrorsReceived == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
 void ClientServerTest::stressWebCallOnDebugWithKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl("http://127.0.0.1:8080/debug"), 8, 20000, true, true);
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 20000, true, true);
     QVERIFY2(result.successfulRequests == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
 void ClientServerTest::stressWebCallOnDebugWithoutKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl("http://127.0.0.1:8080/debug"), 8, 20000, false, true);
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 20000, false, true);
     QVERIFY2(result.successfulRequests == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
+}
+
+void ClientServerTest::benchmarkWebCall404WithKeepAlive()
+{
+    QBENCHMARK
+    {
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 200000, true, false);
+    }
+}
+
+void ClientServerTest::benchmarkWebCall404WithoutKeepAlive()
+{
+    QBENCHMARK
+    {
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 200000, false, false);
+    }
+}
+
+void ClientServerTest::benchmarkWebCallOnDebugWithKeepAlive()
+{
+    QBENCHMARK
+    {
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 200000, true, false);
+    }
+}
+
+void ClientServerTest::benchmarkWebCallOnDebugWithoutKeepAlive()
+{
+    QBENCHMARK
+    {
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 200000, false, false);
+    }
 }
 
 QTEST_MAIN(ClientServerTest)
