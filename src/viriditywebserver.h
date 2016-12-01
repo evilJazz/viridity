@@ -61,7 +61,7 @@ public:
      * \param parent The parent this instance is a child to.
      * \param sessionManager Specifies the session manager to use for handling session.
      */
-    explicit ViridityWebServer(QObject *parent, AbstractViriditySessionManager *sessionManager);
+    explicit ViridityWebServer(QObject *parent, AbstractViriditySessionManager *sessionManager = NULL);
 
     /*! Destroys the web server instance. */
     virtual ~ViridityWebServer();

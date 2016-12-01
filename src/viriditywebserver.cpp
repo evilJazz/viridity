@@ -51,14 +51,17 @@ ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionMan
 
     qRegisterMetaType< QSharedPointer<ViridityConnection> >();
 
-    sessionManager_->setServer(this);
-    connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(handleNewSessionCreated(ViriditySession*)));
-
     fileRequestHandler_ = QSharedPointer<ViridityRequestHandler>(new FileRequestHandler(this));
-    sessionRoutingRequestHandler_ = QSharedPointer<ViridityRequestHandler>(new SessionRoutingRequestHandler(this));
-
     registerRequestHandler(fileRequestHandler_);
-    registerRequestHandler(sessionRoutingRequestHandler_);
+
+    if (sessionManager_)
+    {
+        sessionManager_->setServer(this);
+        connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(handleNewSessionCreated(ViriditySession*)));
+
+        sessionRoutingRequestHandler_ = QSharedPointer<ViridityRequestHandler>(new SessionRoutingRequestHandler(this));
+        registerRequestHandler(sessionRoutingRequestHandler_);
+    }
 }
 
 ViridityWebServer::~ViridityWebServer()
@@ -66,7 +69,9 @@ ViridityWebServer::~ViridityWebServer()
     DGUARDMETHODTIMED;
     QReadLocker l(&connectionMREW_);
 
-    sessionManager_->killAllSessions();
+    if (sessionManager_)
+        sessionManager_->killAllSessions();
+
     close();
 
     requestHandlers_.clear();
@@ -279,7 +284,8 @@ QVariant ViridityWebServer::stats() const
 {
     QVariantMap result;
 
-    result.insert("sessionManager", sessionManager_->stats());
+    if (sessionManager_)
+        result.insert("sessionManager", sessionManager_->stats());
 
     QReadLocker l(&connectionMREW_);
     QVariantList connectionArray;
