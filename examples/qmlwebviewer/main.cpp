@@ -24,6 +24,7 @@
 
 #include "kclplugin.h"
 #include "KCL/filesystemutils.h"
+#include "KCL/settingsgroup.h"
 
 int main(int argc, char *argv[])
 {
@@ -33,6 +34,14 @@ int main(int argc, char *argv[])
     QGuiApplication a(argc, argv);
     a.setQuitOnLastWindowClosed(false);
 #endif
+
+    a.setOrganizationDomain("meteorasoftworks.com");
+    a.setOrganizationName("Meteora Softworks");
+    a.setApplicationName("QMLWebViewer");
+
+    QByteArray settingsFileName = qgetenv("QMLWEBVIEWER_SETTINGS");
+    if (!settingsFileName.isEmpty())
+        SettingsGroup::setGlobalIniFilename(QFile::decodeName(settingsFileName));
 
     if (a.arguments().count() == 1)
     {

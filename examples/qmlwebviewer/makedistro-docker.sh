@@ -51,11 +51,19 @@ RUN apt-get update && apt-get -y install \
     fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl1-mesa \
     libxslt1.1 libgstreamer0.10-0 libgstreamer-plugins-base0.10-0 \
     libxi6 libfontconfig1 git
+
 RUN mkdir /data
+RUN mkdir /config
+RUN chown www-data.www-data config
+
 VOLUME /data
+VOLUME /config
+
 EXPOSE 8080
+
 ADD "output.tar.gz" /
 ADD "run.sh" "$TARGETROOT"
+
 USER www-data
 ENTRYPOINT ["$TARGETROOT/run.sh"]
 DOCKER
