@@ -224,16 +224,17 @@ bool GraphicsSceneDisplayCommandInterpreter::handleKeyEvent(const QString &comma
         case 46 : key = Qt::Key_Delete; break;
         //case 48 ... 57 : /*key = Qt::Key_0 + (key - 48);*/ text = textForKey(key, modifiers); break; // 0 to 9
         //case 65 ... 90 : /*key = Qt::Key_A + (key - 64);*/ text = textForKey(key, modifiers); break; // A to Z
-        case 96 : key = Qt::Key_0; break;
-        case 97 : key = Qt::Key_1; break;
-        case 98 : key = Qt::Key_2; break;
-        case 99 : key = Qt::Key_3; break;
-        case 100: key = Qt::Key_4; break;
-        case 101: key = Qt::Key_5; break;
-        case 102: key = Qt::Key_6; break;
-        case 103: key = Qt::Key_7; break;
-        case 104: key = Qt::Key_8; break;
-        case 105: key = Qt::Key_9; break;
+        case 96 : // Qt::Key_0
+        case 97 : // Qt::Key_1
+        case 98 : // Qt::Key_2
+        case 99 : // Qt::Key_3
+        case 100: // Qt::Key_4
+        case 101: // Qt::Key_5
+        case 102: // Qt::Key_6
+        case 103: // Qt::Key_7
+        case 104: // Qt::Key_8
+        case 105: // Qt::Key_9
+                  key = Qt::Key_0 + (key - 96); keyDownKeyCodeHandled_ = false; break;
         case 112: key = Qt::Key_F1; break;
         case 113: key = Qt::Key_F2; break;
         case 114: key = Qt::Key_F3; break;
