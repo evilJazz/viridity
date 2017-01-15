@@ -35,6 +35,9 @@ private:
     ViridityWebServer server_;
     QSharedPointer<DebugRequestHandler> debugRequestHandler_;
     QString baseUrl_;
+
+    int defaultRequests_;
+    int defaultConcurrencyLevel_;
 };
 
 struct StressTestWebCall
@@ -112,7 +115,9 @@ struct StressTestWebCall
 ClientServerTest::ClientServerTest() :
     QObject(),
     server_(this, NULL),
-    debugRequestHandler_(new DebugRequestHandler(&server_))
+    debugRequestHandler_(new DebugRequestHandler(&server_)),
+    defaultRequests_(20000),
+    defaultConcurrencyLevel_(8)
 {
     server_.registerRequestHandler(debugRequestHandler_);
 
@@ -135,25 +140,25 @@ void ClientServerTest::cleanupTestCase()
 
 void ClientServerTest::stressWebCall404WithKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 20000, true, false);
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), defaultConcurrencyLevel_, defaultRequests_, true, false);
     QVERIFY2(result.notFound404ErrorsReceived == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
 void ClientServerTest::stressWebCall404WithoutKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 20000, false, false);
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), defaultConcurrencyLevel_, defaultRequests_, false, false);
     QVERIFY2(result.notFound404ErrorsReceived == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
 void ClientServerTest::stressWebCallOnDebugWithKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 20000, true, true);
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), defaultConcurrencyLevel_, defaultRequests_, true, true);
     QVERIFY2(result.successfulRequests == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
 void ClientServerTest::stressWebCallOnDebugWithoutKeepAlive()
 {
-    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 20000, false, true);
+    StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), defaultConcurrencyLevel_, defaultRequests_, false, true);
     QVERIFY2(result.successfulRequests == result.requestsExecuted, QString("Failure: %1").arg(result.toString()).toUtf8().constData());
 }
 
@@ -161,7 +166,7 @@ void ClientServerTest::benchmarkWebCall404WithKeepAlive()
 {
     QBENCHMARK
     {
-        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 200000, true, false);
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), defaultConcurrencyLevel_, defaultRequests_, true, false);
     }
 }
 
@@ -169,7 +174,7 @@ void ClientServerTest::benchmarkWebCall404WithoutKeepAlive()
 {
     QBENCHMARK
     {
-        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), 8, 200000, false, false);
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/testcall_"), defaultConcurrencyLevel_, defaultRequests_, false, false);
     }
 }
 
@@ -177,7 +182,7 @@ void ClientServerTest::benchmarkWebCallOnDebugWithKeepAlive()
 {
     QBENCHMARK
     {
-        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 200000, true, false);
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), defaultConcurrencyLevel_, defaultRequests_, true, false);
     }
 }
 
@@ -185,7 +190,7 @@ void ClientServerTest::benchmarkWebCallOnDebugWithoutKeepAlive()
 {
     QBENCHMARK
     {
-        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), 8, 200000, false, false);
+        StressTestWebCall::Result result = StressTestWebCall::run(QUrl(baseUrl_ + "/debug"), defaultConcurrencyLevel_, defaultRequests_, false, false);
     }
 }
 
