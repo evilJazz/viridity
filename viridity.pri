@@ -102,7 +102,6 @@ viridity_declarative {
 }
 
 # Display related
-CONFIG += viridity_module_display
 !win32: CONFIG += viridity_use_improved_jpeg viridity_use_improved_png
 
 viridity_module_display {
