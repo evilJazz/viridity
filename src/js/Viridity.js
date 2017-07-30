@@ -265,7 +265,16 @@ var Viridity = function(options)
             var callbacks = v.callbacks[eventName];
 
             for (var i = 0; i < callbacks.length; ++i)
-                callbacks[i](params);
+            {
+                try
+                {
+                    callbacks[i](params);
+                }
+                catch (e)
+                {
+                    console.log("Viridity: Error occurred while executing callback " + callbacks[i] + " for event " + eventName + ": " + e);
+                }
+            }
         },
 
         _longPollingSendInputEvents: function()

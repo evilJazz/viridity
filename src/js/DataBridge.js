@@ -57,17 +57,36 @@ var DataBridge = function(viridityChannel, id)
                     if (c.pendingResponseCallbacks.hasOwnProperty(responseId))
                     {
                         if (typeof(c.pendingResponseCallbacks[responseId]) == "function")
-                            c.pendingResponseCallbacks[responseId](JSON.parse(input));
+                        {
+                            try
+                            {
+                                c.pendingResponseCallbacks[responseId](JSON.parse(input));
+                                processed = true;
+                            }
+                            catch (e)
+                            {
+                                console.log("Viridity DataBridge: Error occurred while executing response callback handler for targetId " + c.targetId + ": " + e);
+                                processed = false;
+                            }
+                        }
 
                         delete c.pendingResponseCallbacks[responseId];
-                        processed = true;
                     }
                 }
                 else if (typeof(c.onDataReceived) == "function")
                 {
-                    var result = c.onDataReceived(JSON.parse(input));
+                    try
+                    {
+                        var result = c.onDataReceived(JSON.parse(input));
+                        processed = true;
+                    }
+                    catch (e)
+                    {
+                        console.log("Viridity DataBridge: Error occurred while executing onDataReceived handler for targetId " + c.targetId + ": " + e);
+                        processed = false;
+                    }
+
                     v.sendMessage("dataResponse(" + responseId + "):" + JSON.stringify(result), c.targetId);
-                    processed = true;
                 }
             }
 
