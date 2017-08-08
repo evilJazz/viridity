@@ -21,6 +21,7 @@ contains(QT_VERSION, ^5\\..*) {
     CONFIG += viridity_qt5
     QT += concurrent
 
+    contains(QT, qml): CONFIG += viridity_declarative
     contains(QT, quick): CONFIG += viridity_qtquick2 viridity_declarative
 
     contains(QT, declarative): CONFIG += viridity_qtquick1 viridity_declarative

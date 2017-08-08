@@ -23,7 +23,10 @@ protected:
         QQmlEngine *engine = new QQmlEngine();
         engine->addImportPath(":/");
 
-        engine->rootContext()->setContextProperty("currentSession", session);
+        ViridityQmlSessionWrapper *sessionWrapper = new ViridityQmlSessionWrapper(session);
+        QQmlEngine::setObjectOwnership(sessionWrapper, QQmlEngine::JavaScriptOwnership);
+
+        engine->rootContext()->setContextProperty("currentSession", sessionWrapper);
 
         QQmlComponent component(engine, QUrl("qrc:/simple.qml"));
 
