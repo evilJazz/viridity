@@ -47,6 +47,8 @@ public:
 #include <QQmlParserStatus>
 #endif
 
+#include <QPointer>
+
 class ViridityWebServer;
 class AbstractViriditySessionManager;
 class ViriditySession;
@@ -82,6 +84,41 @@ protected:
     ViridityWebServer *webServer();
     AbstractViriditySessionManager *sessionManager();
     ViriditySession *currentSession();
+};
+
+
+/* ViridityQmlSessionWrapper */
+
+class ViridityQmlSessionWrapper : public QObject
+{
+    Q_OBJECT
+    Q_PROPERTY(QString id READ id CONSTANT)
+    Q_PROPERTY(QByteArray initialPeerAddress READ initialPeerAddress CONSTANT)
+    Q_PROPERTY(QVariant userData READ userData WRITE setUserData NOTIFY userDataChanged)
+
+    Q_PROPERTY(ViriditySession *nativeSession READ nativeSession CONSTANT)
+public:
+    explicit ViridityQmlSessionWrapper(ViriditySession *session, QObject *parent = 0);
+    virtual ~ViridityQmlSessionWrapper();
+
+    ViriditySession *nativeSession() const;
+
+signals:
+    void initialized();
+    void attached();
+    void interactionDormant();
+    void releaseRequired();
+    void detached();
+    void deinitializing();
+    void userDataChanged();
+
+private:
+    QPointer<ViriditySession> session_;
+
+    const QString id() const;
+    QByteArray initialPeerAddress() const;
+    QVariant userData() const;
+    void setUserData(const QVariant &userData);
 };
 
 #endif // VIRIDITYDECLARATIVE_H

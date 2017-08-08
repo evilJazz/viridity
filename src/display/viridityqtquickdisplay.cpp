@@ -41,10 +41,12 @@ class PrivateQtQuickDisplayManager : public AbstractMultiGraphicsSceneDisplayMan
     Q_OBJECT
 public:
     PrivateQtQuickDisplayManager(ViriditySession *session, ViridityQtQuickDisplay *parent) :
-        AbstractMultiGraphicsSceneDisplayManager(session, session),
+        AbstractMultiGraphicsSceneDisplayManager(session, NULL),
         parent_(parent)
     {
         DGUARDMETHODTIMED;
+        moveToThread(session->thread());
+        connect(session, SIGNAL(destroyed()), this, SLOT(deleteLater()));
     }
 
     virtual ~PrivateQtQuickDisplayManager()
@@ -138,7 +140,7 @@ protected slots:
     }
 
 private:
-    ViridityQtQuickDisplay *parent_;
+    QPointer<ViridityQtQuickDisplay> parent_;
 };
 
 

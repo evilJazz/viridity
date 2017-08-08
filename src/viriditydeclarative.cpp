@@ -76,10 +76,12 @@ void ViridityDeclarative::registerTypes()
 ViridityDeclarativeBaseObject::ViridityDeclarativeBaseObject(QObject *parent) :
     QObject(parent)
 {
+    DGUARDMETHODTIMED;
 }
 
 ViridityDeclarativeBaseObject::~ViridityDeclarativeBaseObject()
 {
+    DGUARDMETHODTIMED;
 }
 
 void ViridityDeclarativeBaseObject::classBegin()
@@ -157,10 +159,12 @@ ViriditySession *ViridityDeclarativeBaseObject::currentSession()
     {
         // Works only in sessionLogic!
         QObject *obj = ObjectUtils::objectify(context->contextProperty("currentSession"));
-        ViriditySession *session = qobject_cast<ViriditySession *>(obj);
+        ViridityQmlSessionWrapper *sessionWrapper = qobject_cast<ViridityQmlSessionWrapper *>(obj);
 
-        if (session)
+        if (sessionWrapper)
         {
+            ViriditySession *session = sessionWrapper->nativeSession();
+
             if (DeclarativeEngine::objectOwnership(session) != DeclarativeEngine::CppOwnership)
                 DeclarativeEngine::setObjectOwnership(session, DeclarativeEngine::CppOwnership);
 
@@ -169,4 +173,51 @@ ViriditySession *ViridityDeclarativeBaseObject::currentSession()
     }
 
     return NULL;
+}
+
+
+/* ViridityQmlSessionWrapper */
+
+ViridityQmlSessionWrapper::ViridityQmlSessionWrapper(ViriditySession *session, QObject *parent) :
+    QObject(parent),
+    session_(session)
+{
+    DGUARDMETHODTIMED;
+    connect(session, SIGNAL(initialized()), this, SIGNAL(initialized()));
+    connect(session, SIGNAL(attached()), this, SIGNAL(attached()));
+    connect(session, SIGNAL(interactionDormant()), this, SIGNAL(interactionDormant()));
+    connect(session, SIGNAL(releaseRequired()), this, SIGNAL(releaseRequired()));
+    connect(session, SIGNAL(detached()), this, SIGNAL(detached()));
+    connect(session, SIGNAL(deinitializing()), this, SIGNAL(deinitializing()));
+    connect(session, SIGNAL(userDataChanged()), this, SIGNAL(userDataChanged()));
+}
+
+ViridityQmlSessionWrapper::~ViridityQmlSessionWrapper()
+{
+    DGUARDMETHODTIMED;
+}
+
+ViriditySession *ViridityQmlSessionWrapper::nativeSession() const
+{
+    return session_;
+}
+
+const QString ViridityQmlSessionWrapper::id() const
+{
+    return session_ ? session_->id() : QString();
+}
+
+QByteArray ViridityQmlSessionWrapper::initialPeerAddress() const
+{
+    return session_ ? session_->initialPeerAddress() : QByteArray();
+}
+
+QVariant ViridityQmlSessionWrapper::userData() const
+{
+    return session_ ? session_->userData() : QVariant();
+}
+
+void ViridityQmlSessionWrapper::setUserData(const QVariant &userData)
+{
+    if (session_) session_->setUserData(userData);
 }

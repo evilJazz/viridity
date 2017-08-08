@@ -107,7 +107,6 @@ public:
     QVariant stats() const;
 
 private slots:
-    void handleNewSessionCreated(ViriditySession *session);
     void cleanConnections();
     void closeAllConnections(int maxWait = 0);
 
@@ -132,8 +131,6 @@ private:
 
     QList<QThread *> connectionThreads_;
     int incomingConnectionCount_;
-
-    QList<QThread *> sessionThreads_;
 
     mutable QReadWriteLock requestHandlersMREW_;
     QList< QSharedPointer<ViridityRequestHandler> > requestHandlers_;

@@ -491,6 +491,18 @@ AbstractViriditySessionManager::AbstractViriditySessionManager(QObject *parent) 
     DOP(cleanupTimer_->setObjectName("AbstractViriditySessionManagerCleanupTimer"));
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killExpiredSessions()));
     cleanupTimer_->start(50000);
+
+    QThread *newThread;
+    int threadsNumber = QThread::idealThreadCount();
+
+    sessionThreads_.reserve(threadsNumber);
+    for (int i = 0; i < threadsNumber; ++i)
+    {
+        newThread = new QThread(this);
+        newThread->setObjectName("VSessionThread" + QString::number(i));
+        newThread->start();
+        sessionThreads_.append(newThread);
+    }
 }
 
 AbstractViriditySessionManager::~AbstractViriditySessionManager()
@@ -498,6 +510,17 @@ AbstractViriditySessionManager::~AbstractViriditySessionManager()
     DGUARDMETHODTIMED;
     killAllSessions();
     cleanupTimer_->stop();
+
+    foreach (QThread *t, sessionThreads_)
+        t->quit();
+
+    foreach (QThread *t, sessionThreads_)
+    {
+        t->wait();
+        delete t;
+    }
+
+    sessionThreads_.clear();
 }
 
 ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray &initialPeerAddress)
@@ -587,6 +610,12 @@ ViriditySession *AbstractViriditySessionManager::createSession(const QString &id
 {
     DGUARDMETHODTIMED;
     ViriditySession *session = createNewSessionInstance(id);
+
+    int threadIndex = sessionCount() % sessionThreads_.count();
+    QThread *workerThread = sessionThreads_.at(threadIndex);
+    session->moveToThread(workerThread); // Move session to thread's event loop
+
+    DPRINTF("New worker thread %p for session id %s", workerThread, session->id().toLatin1().constData());
 
     session->setInitialPeerAddress(initialPeerAddress);
     initSession(session);

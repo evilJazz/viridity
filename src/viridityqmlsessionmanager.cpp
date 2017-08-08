@@ -12,10 +12,14 @@
     typedef QQmlComponent DeclarativeComponent;
 #endif
 
+#include "viriditydeclarative.h"
+
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
 #endif
 #include "KCL/debug.h"
+
+/* ViridityQmlSessionManager */
 
 ViridityQmlSessionManager::ViridityQmlSessionManager(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, QObject *parent) :
     AbstractViriditySessionManager(parent),
@@ -35,7 +39,7 @@ ViridityQmlSessionManager::~ViridityQmlSessionManager()
 void ViridityQmlSessionManager::initSession(ViriditySession *session)
 {
     DGUARDMETHODTIMED;
-    // RUNS IN MAIN THREAD! session also currently in main thread, later moved to worker thread by web server!
+    // RUNS IN MAIN THREAD! session already is in different thread!
 
     QObject *gl = globalLogic();
 
@@ -46,11 +50,11 @@ void ViridityQmlSessionManager::initSession(ViriditySession *session)
     if (component.status() != DeclarativeComponent::Ready)
         qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
 
-    // Make sure, the engine does not take ownership of our session...
-    DeclarativeEngine::setObjectOwnership(session, DeclarativeEngine::CppOwnership);
+    ViridityQmlSessionWrapper *sessionWrapper = new ViridityQmlSessionWrapper(session);
+    DeclarativeEngine::setObjectOwnership(sessionWrapper, DeclarativeEngine::JavaScriptOwnership);
 
     context->setContextProperty("globalLogic", gl);
-    context->setContextProperty("currentSession", session);
+    context->setContextProperty("currentSession", sessionWrapper);
     context->setContextProperty("sessionManager", this);
 
     QObject *sessionLogic = component.create(context);
@@ -61,6 +65,7 @@ void ViridityQmlSessionManager::initSession(ViriditySession *session)
     sessionLogic->setParent(engine());
 
     connect(session, SIGNAL(destroyed()), sessionLogic, SLOT(deleteLater()));
+    connect(session, SIGNAL(destroyed()), sessionWrapper, SLOT(deleteLater()));
     connect(sessionLogic, SIGNAL(destroyed()), context, SLOT(deleteLater()));
 
     session->setLogic(sessionLogic);

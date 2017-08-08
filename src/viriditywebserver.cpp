@@ -57,7 +57,6 @@ ViridityWebServer::ViridityWebServer(QObject *parent, AbstractViriditySessionMan
     if (sessionManager_)
     {
         sessionManager_->setServer(this);
-        connect(sessionManager_, SIGNAL(newSessionCreated(ViriditySession*)), this, SLOT(handleNewSessionCreated(ViriditySession*)));
 
         sessionRoutingRequestHandler_ = QSharedPointer<ViridityRequestHandler>(new SessionRoutingRequestHandler(this));
         registerRequestHandler(sessionRoutingRequestHandler_);
@@ -85,22 +84,12 @@ ViridityWebServer::~ViridityWebServer()
         delete t;
     }
 
-    foreach (QThread *t, sessionThreads_)
-        t->quit();
-
-    foreach (QThread *t, sessionThreads_)
-    {
-        t->wait();
-        delete t;
-    }
-
     connectionThreads_.clear();
-    sessionThreads_.clear();
 }
 
 bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int threadsNumber)
 {
-    threadsNumber = qMax(1, threadsNumber / 2);
+    threadsNumber = qMax(1, threadsNumber);
 
     QThread *newThread;
 
@@ -111,15 +100,6 @@ bool ViridityWebServer::listen(const QHostAddress &address, quint16 port, int th
         newThread->setObjectName("VConnThread" + QString::number(i));
         newThread->start();
         connectionThreads_.append(newThread);
-    }
-
-    sessionThreads_.reserve(threadsNumber);
-    for (int i = 0; i < threadsNumber; ++i)
-    {
-        newThread = new QThread(this);
-        newThread->setObjectName("VSessionThread" + QString::number(i));
-        newThread->start();
-        sessionThreads_.append(newThread);
     }
 
     return QTcpServer::listen(address, port);
@@ -134,17 +114,6 @@ bool ViridityWebServer::close()
 AbstractViriditySessionManager *ViridityWebServer::sessionManager()
 {
     return sessionManager_;
-}
-
-void ViridityWebServer::handleNewSessionCreated(ViriditySession *session)
-{
-    DGUARDMETHODTIMED;
-
-    int threadIndex = sessionManager_->sessionCount() % sessionThreads_.count();
-    QThread *workerThread = sessionThreads_.at(threadIndex);
-    session->moveToThread(workerThread); // Move session to thread's event loop
-
-    DPRINTF("New worker thread %p for session id %s", workerThread, session->id().toLatin1().constData());
 }
 
 void ViridityWebServer::cleanConnections()

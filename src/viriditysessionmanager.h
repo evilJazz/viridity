@@ -545,6 +545,8 @@ protected slots:
 private:
     ViridityWebServer *server_;
 
+    QList<QThread *> sessionThreads_;
+
     mutable QMutex sessionMutex_;
     QHash<QString, ViriditySession *> sessions_;
     QSet<QString> sessionInKillGracePeriod_;

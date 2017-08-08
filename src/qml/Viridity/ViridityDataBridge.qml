@@ -107,7 +107,7 @@ QtObject {
     id: root
 
     /** type:ViriditySession The associated session instance */
-    property alias session: bridge.session
+    property QtObject session: bridge.session
 
     /** type:string Specifies the target id on the Viridity communication channel. The remote handler has to listen to this target id. */
     property alias targetId: bridge.targetId
@@ -145,6 +145,8 @@ QtObject {
     property list<QtObject> internalChildren: [
         ViridityNativeDataBridge {
             id: bridge
+
+            session: root.session == currentSession ? currentSession.nativeSession : root.session
 
             onDataReceived: // responseId, input
             {
