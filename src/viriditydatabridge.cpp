@@ -142,27 +142,30 @@ bool ViridityNativeDataBridge::localHandleMessage(const QByteArray &message, con
 {
     if (canHandleMessage(message, sessionId, targetId))
     {
-        int paramStartIndex = message.indexOf("(");
-        int paramStopIndex = message.indexOf("):");
-        QByteArray rawParams = message.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+        QString command;
+        QStringList params;
 
-        QString responseId = rawParams.mid(0, paramStartIndex);
+        int datagramStartIndex = ViridityMessageHandler::splitMessage(message, command, params);
 
-        QString input = QString::fromUtf8(message.mid(paramStopIndex + 2));
-
-        if (message.startsWith("dataResponse"))
+        if (datagramStartIndex > -1 && params.length() == 1)
         {
-            emit responseReceived(responseId, input, sessionId);
-            return true;
-        }
-        else
-        {
-            setResponse(QString::null);
-            emit dataReceived(responseId, input);
+            QString responseId = params.at(0);
+            QString input = QString::fromUtf8(message.mid(datagramStartIndex));
 
-            QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
-            session_->dispatchMessageToClient(message.toUtf8(), targetId);
-            return true;
+            if (command == "dataResponse")
+            {
+                emit responseReceived(responseId, input, sessionId);
+                return true;
+            }
+            else
+            {
+                setResponse(QString::null);
+                emit dataReceived(responseId, input);
+
+                QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
+                session_->dispatchMessageToClient(message.toUtf8(), targetId);
+                return true;
+            }
         }
     }
 
