@@ -66,17 +66,29 @@ QString ViridityMessageHandler::takeTargetFromMessage(QByteArray &message)
         return QString::null;
 }
 
-void ViridityMessageHandler::splitMessage(const QByteArray &message, QString &command, QStringList &params)
+int ViridityMessageHandler::splitMessage(const QByteArray &message, QString &command, QStringList &params)
 {
     QString rawMsg = message;
 
+    int datagramStartIndex = -1;
     int paramStartIndex = rawMsg.indexOf("(");
-    int paramStopIndex = rawMsg.indexOf(")");
+    int paramStopIndex = rawMsg.indexOf(")", paramStartIndex);
 
-    command = rawMsg.mid(0, paramStartIndex);
-    QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
+    if (paramStopIndex > -1)
+    {
+        command = rawMsg.mid(0, paramStartIndex);
+        QString rawParams = rawMsg.mid(paramStartIndex + 1, paramStopIndex - paramStartIndex - 1);
 
-    params = rawParams.split(",", QString::KeepEmptyParts);
+        params = rawParams.split(",", QString::KeepEmptyParts);
+
+        if (paramStopIndex + 2 < rawMsg.length() &&
+            rawMsg.at(paramStopIndex + 1) == ':')
+        {
+            datagramStartIndex = paramStopIndex + 2;
+        }
+    }
+
+    return datagramStartIndex;
 }
 
 

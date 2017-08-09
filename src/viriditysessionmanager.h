@@ -380,8 +380,9 @@ public:
      * \param message The input message.
      * \param command The parsed command as QString.
      * \param params The parsed parameters of the message as QStringList.
+     * \return Start index of optional datagram if exists, -1 otherwise.
      */
-    static void splitMessage(const QByteArray &message, QString &command, QStringList &params);
+    static int splitMessage(const QByteArray &message, QString &command, QStringList &params);
 };
 
 /*!
