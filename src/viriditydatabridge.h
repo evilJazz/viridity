@@ -27,6 +27,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QPointer>
 #include <QSet>
 
 #include "viriditysessionmanager.h"
@@ -79,8 +80,8 @@ private slots:
     void handleSessionDestroyed();
 
 private:
-    ViriditySession *session_;
-    AbstractViriditySessionManager *sessionManager_;
+    QPointer<ViriditySession> session_;
+    QPointer<AbstractViriditySessionManager> sessionManager_;
     QSet<QString> subscriberSessionIds_;
     QString targetId_;
 

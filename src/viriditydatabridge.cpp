@@ -111,7 +111,7 @@ void ViridityNativeDataBridge::unregisterMessageHandler()
 
 AbstractViriditySessionManager *ViridityNativeDataBridge::sessionManager() const
 {
-    return session_ ? session_->sessionManager() : sessionManager_;
+    return session_ ? session_->sessionManager() : sessionManager_.data();
 }
 
 QVariant ViridityNativeDataBridge::sendData(const QString &data, const QString &destinationSessionId)
