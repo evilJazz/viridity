@@ -27,6 +27,7 @@
 
 #include <QObject>
 #include <QVariant>
+#include <QSet>
 
 #include "viriditysessionmanager.h"
 
@@ -34,12 +35,16 @@ class ViridityNativeDataBridge : public QObject, public ViridityMessageHandler
 {
     Q_OBJECT
     Q_PROPERTY(ViriditySession *session READ session WRITE setSession NOTIFY sessionChanged)
+    Q_PROPERTY(AbstractViriditySessionManager *sessionManager READ sessionManager WRITE setSessionManager NOTIFY sessionManagerChanged)
     Q_PROPERTY(QString targetId READ targetId WRITE setTargetId NOTIFY targetIdChanged)
     Q_PROPERTY(QString response READ response WRITE setResponse NOTIFY responseChanged)
 
 public:
     explicit ViridityNativeDataBridge(QObject *parent = 0);
     virtual ~ViridityNativeDataBridge();
+
+    void setSessionManager(AbstractViriditySessionManager *sessionManager);
+    AbstractViriditySessionManager *sessionManager() const;
 
     void setSession(ViriditySession *session);
     ViriditySession *session() const { return session_; }
@@ -50,7 +55,7 @@ public:
     QString response() const { return response_; }
     void setResponse(const QString &value);
 
-    Q_INVOKABLE QVariant sendData(const QString &data, const QString &destinationSessionId);
+    Q_INVOKABLE QVariant sendData(const QString &data, const QString &destinationSessionId = QString::null);
 
 protected:
     // ViridityMessageHandler
@@ -63,7 +68,9 @@ private:
 signals:
     void dataReceived(const QString &responseId, const QString &input);
     void responseReceived(const QString &responseId, const QString &response, const QString &sessionId);
+    void sessionSubscribed(const QString &responseId, const QString &subscribingSessionId);
 
+    void sessionManagerChanged();
     void sessionChanged();
     void targetIdChanged();
     void responseChanged();
@@ -73,6 +80,8 @@ private slots:
 
 private:
     ViriditySession *session_;
+    AbstractViriditySessionManager *sessionManager_;
+    QSet<QString> subscriberSessionIds_;
     QString targetId_;
 
     QString response_;
@@ -80,8 +89,8 @@ private:
 
     int getNewResponseId();
 
-    void registerHandler();
-    void unregisterHandler();
+    void registerMessageHandler();
+    void unregisterMessageHandler();
 };
 
 #endif // VIRIDITYDATABRIDGE_H

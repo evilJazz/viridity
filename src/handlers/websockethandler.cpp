@@ -185,9 +185,7 @@ void WebSocketHandler::handleSessionDestroyed()
 void WebSocketHandler::clientMessageReceived(QByteArray data)
 {
     QMutexLocker m(&sessionMutex_);
-
-    if (session_)
-        session_->dispatchMessageToHandlers(data);
+    server()->sessionManager()->dispatchMessageToHandlers(data, session_ ? session_->id() : QString::null);
 }
 
 void WebSocketHandler::clientDisconnected()

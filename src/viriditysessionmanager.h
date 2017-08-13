@@ -468,9 +468,17 @@ public:
      * \param targetId Either the identifier of the target on the remote side or QString::null to broadcast to all targets.
      * \returns True if the message was dispatched to at least one session's remote client, false if no matching session was found.
      * \note This method does not wait for the message to be delivered and instead returns immediately.
-     * \sa ViriditySession::dispatchMessageToClient
+     * \sa ViridityMessageHandler, ViriditySession::dispatchMessageToClient
      */
     Q_INVOKABLE bool dispatchMessageToClientMatchingLogic(const QByteArray &message, QObject *logic, const QString &targetId);
+
+    /*! Used to dispatch a message to the global message handlers.
+     * \param message The raw message as QByteArray.
+     * \param srcSessionId The identifier of the session this message originates from or QString::null for anonymous.
+     * \returns Either true if the message was delivered to a message handler or false if no message handler handled the message.
+     * \sa ViridityMessageHandler, ViriditySession::dispatchMessageToHandlers
+     */
+    Q_INVOKABLE bool dispatchMessageToGlobalHandlers(const QByteArray &message, const QString &srcSessionId = QString::null);
 
     /*! Used to dispatch a message to the remote client(s) of a specific session or all sessions, optionally specifying a target within the session(s).
      * \param message The raw message as QByteArray.
@@ -494,6 +502,20 @@ public:
      * Returns debug statistics and details.
      */
     virtual QVariant stats() const;
+
+    /*!
+     * Register a message handler in the global context.
+     * \param handler An instance pointer to a class instance implementing the ViridityMessageHandler interface.
+     * \sa ViridityMessageHandler
+     */
+    void registerMessageHandler(ViridityMessageHandler *handler);
+
+    /*!
+     * Unregister a message handler from the global context.
+     * \param handler An instance pointer to a class instance implementing the ViridityMessageHandler interface.
+     * \sa ViridityMessageHandler
+     */
+    void unregisterMessageHandler(ViridityMessageHandler *handler);
 
 signals:
     /*!
@@ -548,12 +570,14 @@ private:
 
     QList<QThread *> sessionThreads_;
 
-    mutable QMutex sessionMutex_;
+    mutable QReadWriteLock sessionMREW_;
     QHash<QString, ViriditySession *> sessions_;
     QSet<QString> sessionInKillGracePeriod_;
     QTimer *cleanupTimer_;
 
     int sessionTimeout_;
+
+    QList<ViridityMessageHandler *> messageHandlers_;
 
     Q_INVOKABLE ViriditySession *createSession(const QString &id, const QByteArray &initialPeerAddress); // Always executed in thread of session manager
     ViriditySession *createNewSessionInstance(const QString &id); // Always executed in thread of session manager

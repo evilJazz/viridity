@@ -102,6 +102,17 @@ var DataBridge = function(viridityChannel, id)
 
             var message = "data(" + c.responseId + "):" + JSON.stringify(data);
             v.sendMessage(message, c.targetId);
+        },
+
+        subscribe: function(callback)
+        {
+            ++c.responseId;
+
+            if (typeof(callback) == "function")
+                c.pendingResponseCallbacks[c.responseId] = callback;
+
+            var message = "dataSubscribe(" + c.responseId + "," + v.sessionId + ")";
+            v.sendMessage(message, c.targetId);
         }
     }
 

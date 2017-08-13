@@ -56,6 +56,7 @@ void ViridityQmlSessionManager::initSession(ViriditySession *session)
     context->setContextProperty("globalLogic", gl);
     context->setContextProperty("currentSession", sessionWrapper);
     context->setContextProperty("sessionManager", this);
+    context->setContextProperty("currentSessionManager", this);
 
     QObject *sessionLogic = component.create(context);
 
@@ -82,6 +83,7 @@ QObject *ViridityQmlSessionManager::globalLogic()
             qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
 
         engine()->rootContext()->setContextProperty("sessionManager", this);
+        engine()->rootContext()->setContextProperty("currentSessionManager", this);
 
         globalLogic_ = component.create(engine()->rootContext());
         globalLogic_->setParent(this);

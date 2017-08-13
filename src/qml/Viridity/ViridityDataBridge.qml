@@ -106,7 +106,10 @@ import "ViridityDataBridge.js" as Private
 QtObject {
     id: root
 
-    /** type:ViriditySession The associated session instance */
+    /** type:AbstractViriditySessionManager The associated session manager instance. Only explicitly set this if this databridge will be used in a non-session context, i.e. in a global logic. The client-side has to explicitly subscribe to this data bridge's targetId. */
+    property alias sessionManager: bridge.sessionManager
+
+    /** type:ViriditySession The associated session instance. null if this data bridge is used in a non-session context. */
     property QtObject session: bridge.session
 
     /** type:string Specifies the target id on the Viridity communication channel. The remote handler has to listen to this target id. */
@@ -141,12 +144,24 @@ QtObject {
         return "";
     }
 
+    /**
+     * Called when a client is subscribing to this targetId. Subscription is required for data bridges in a non-session context, i.e. in a global logic.
+     * @param type:string subscribingSessionId The identifier of the session wanting to subscribe to this data bridge and it's targetId.
+     * @return type:variant Return data to be sent via the bridge to the target receiver's callback. Can be any JS data type serializable to JSON. Returning false will deny subscription.
+     */
+
+    function onSessionSubscribed(subscribingSessionId)
+    {
+        return true;
+    }
+
     default property alias children: root.internalChildren
     property list<QtObject> internalChildren: [
         ViridityNativeDataBridge {
             id: bridge
 
-            session: root.session == currentSession ? currentSession.nativeSession : root.session
+            session: typeof(currentSession) != "undefined" &&
+                     root.session == currentSession ? currentSession.nativeSession : root.session
 
             onDataReceived: // responseId, input
             {
@@ -167,6 +182,16 @@ QtObject {
 
                     delete Private.pendingResponseCallbacks[responseId];
                 }
+            }
+
+            onSessionSubscribed: // responseId, subscribingSessionId
+            {
+                var response = root.onSessionSubscribed(subscribingSessionId);
+
+                if (typeof(response) == "undefined")
+                    bridge.response = "null";
+                else
+                    bridge.response = JSON.stringify(response);
             }
         }
     ]

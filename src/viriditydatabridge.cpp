@@ -33,6 +33,7 @@
 ViridityNativeDataBridge::ViridityNativeDataBridge(QObject *parent) :
     QObject(parent),
     session_(NULL),
+    sessionManager_(NULL),
     response_(QString::null),
     responseId_(0)
 {
@@ -40,7 +41,7 @@ ViridityNativeDataBridge::ViridityNativeDataBridge(QObject *parent) :
 
 ViridityNativeDataBridge::~ViridityNativeDataBridge()
 {
-    unregisterHandler();
+    unregisterMessageHandler();
 }
 
 void ViridityNativeDataBridge::handleSessionDestroyed()
@@ -48,19 +49,27 @@ void ViridityNativeDataBridge::handleSessionDestroyed()
     session_ = NULL;
 }
 
+void ViridityNativeDataBridge::setSessionManager(AbstractViriditySessionManager *sessionManager)
+{
+    unregisterMessageHandler();
+    sessionManager_ = sessionManager;
+    registerMessageHandler();
+    emit sessionManagerChanged();
+}
+
 void ViridityNativeDataBridge::setSession(ViriditySession *session)
 {
-    unregisterHandler();
+    unregisterMessageHandler();
     session_ = session;
-    registerHandler();
+    registerMessageHandler();
     emit sessionChanged();
 }
 
 void ViridityNativeDataBridge::setTargetId(const QString &targetId)
 {
-    unregisterHandler();
+    unregisterMessageHandler();
     targetId_ = targetId;
-    registerHandler();
+    registerMessageHandler();
     emit targetIdChanged();
 }
 
@@ -76,31 +85,42 @@ int ViridityNativeDataBridge::getNewResponseId()
     return responseId_;
 }
 
-void ViridityNativeDataBridge::registerHandler()
+void ViridityNativeDataBridge::registerMessageHandler()
 {
     if (session_)
     {
         session_->registerMessageHandler(this);
         connect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()), Qt::DirectConnection);
     }
+
+    if (sessionManager_)
+        sessionManager_->registerMessageHandler(this);
 }
 
-void ViridityNativeDataBridge::unregisterHandler()
+void ViridityNativeDataBridge::unregisterMessageHandler()
 {
     if (session_)
     {
         disconnect(session_, SIGNAL(destroyed()), this, SLOT(handleSessionDestroyed()));
         session_->unregisterMessageHandler(this);
     }
+
+    if (sessionManager_)
+        sessionManager_->unregisterMessageHandler(this);
+}
+
+AbstractViriditySessionManager *ViridityNativeDataBridge::sessionManager() const
+{
+    return session_ ? session_->sessionManager() : sessionManager_;
 }
 
 QVariant ViridityNativeDataBridge::sendData(const QString &data, const QString &destinationSessionId)
 {
     int result = getNewResponseId();
 
-    if (!session_)
+    if (!session_ && !sessionManager_)
     {
-        qWarning("No session assigned. Will not send data.");
+        qWarning("No session or session manager assigned. Will not send data.");
         return false;
     }
 
@@ -108,18 +128,27 @@ QVariant ViridityNativeDataBridge::sendData(const QString &data, const QString &
 
     bool dispatched = false;
 
-    // Broadcast to all sessions that implement the same logic if no specific destination session was set!
-    if (destinationSessionId.isEmpty())
-        dispatched = session_->sessionManager()->dispatchMessageToClientMatchingLogic(message.toUtf8(), session_->logic(), targetId_);
+    if (session_)
+    {
+        // Broadcast to all sessions that implement the same logic if no specific destination session was set!
+        if (destinationSessionId.isEmpty())
+            dispatched = sessionManager()->dispatchMessageToClientMatchingLogic(message.toUtf8(), session_->logic(), targetId_);
+        else
+            dispatched = sessionManager()->dispatchMessageToClient(message.toUtf8(), destinationSessionId, targetId_);
+    }
     else
-        dispatched = session_->sessionManager()->dispatchMessageToClient(message.toUtf8(), destinationSessionId, targetId_);
+    {
+        // Send data only to subscribers, i.e. when this data bridge is not in context of a specific owner session...
+        foreach (const QString &sessionId, subscriberSessionIds_)
+            dispatched = sessionManager()->dispatchMessageToClient(message.toUtf8(), sessionId, targetId_);
+    }
 
     return dispatched ? result : false;
 }
 
 bool ViridityNativeDataBridge::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    return targetId == targetId_ && (message.startsWith("dataResponse") || message.startsWith("data"));
+    return targetId == targetId_ && (message.startsWith("dataResponse") || message.startsWith("data") || message.startsWith("dataSubscribe"));
 }
 
 bool ViridityNativeDataBridge::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -147,25 +176,43 @@ bool ViridityNativeDataBridge::localHandleMessage(const QByteArray &message, con
 
         int datagramStartIndex = ViridityMessageHandler::splitMessage(message, command, params);
 
-        if (datagramStartIndex > -1 && params.length() == 1)
+        if (params.length() == 1)
+        {
+            if (datagramStartIndex > -1)
+            {
+                QString responseId = params.at(0);
+                QString input = QString::fromUtf8(message.mid(datagramStartIndex));
+
+                if (command == "dataResponse")
+                {
+                    emit responseReceived(responseId, input, sessionId);
+                    return true;
+                }
+                else
+                {
+                    setResponse(QString::null);
+                    emit dataReceived(responseId, input);
+
+                    QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
+                    sessionManager()->dispatchMessageToClient(message.toUtf8(), sessionId, targetId);
+                    return true;
+                }
+            }
+        }
+        else if (params.length() == 2 && command == "dataSubscribe")
         {
             QString responseId = params.at(0);
-            QString input = QString::fromUtf8(message.mid(datagramStartIndex));
+            QString subscribingSessionId = params.at(1);
 
-            if (command == "dataResponse")
-            {
-                emit responseReceived(responseId, input, sessionId);
-                return true;
-            }
-            else
-            {
-                setResponse(QString::null);
-                emit dataReceived(responseId, input);
+            setResponse(QString::null);
+            emit sessionSubscribed(responseId, subscribingSessionId);
 
-                QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
-                session_->dispatchMessageToClient(message.toUtf8(), targetId);
-                return true;
-            }
+            if (response() != "false" && !subscriberSessionIds_.contains(subscribingSessionId))
+                subscriberSessionIds_.insert(subscribingSessionId);
+
+            QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
+            sessionManager()->dispatchMessageToClient(message.toUtf8(), subscribingSessionId, targetId);
+            return true;
         }
     }
 

@@ -48,7 +48,7 @@ void InputPostHandler::handleRequestEnd()
     QList<QByteArray> messages = data_.split('\n');
 
     foreach (const QByteArray &message, messages)
-        session_->dispatchMessageToHandlers(message);
+        session_->sessionManager()->dispatchMessageToHandlers(message, session_->id());
 
     // handle request
     response_->headers().insert("Content-Type", "text/plain");
