@@ -38,13 +38,6 @@
 #endif
 #include "KCL/debug.h"
 
-QString createUniqueID()
-{
-    QString uuid = QUuid::createUuid().toString();
-    return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
-}
-
-
 /* ViridityMessageHandler */
 
 QList<QByteArray> ViridityMessageHandler::takePendingMessages(bool returnBinary)
@@ -546,7 +539,7 @@ ViriditySession *AbstractViriditySessionManager::getNewSession(const QByteArray 
         this, "createSession",
         this->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
         Q_RETURN_ARG(ViriditySession *, session),
-        Q_ARG(const QString &, createUniqueID().left(10)),
+        Q_ARG(const QString &, AbstractViriditySessionManager::createUniqueID().left(10)),
         Q_ARG(const QByteArray &, initialPeerAddress)
     );
 
@@ -775,6 +768,12 @@ void AbstractViriditySessionManager::registerMessageHandler(ViridityMessageHandl
 void AbstractViriditySessionManager::unregisterMessageHandler(ViridityMessageHandler *handler)
 {
     messageHandlers_.removeAll(handler);
+}
+
+QString AbstractViriditySessionManager::createUniqueID()
+{
+    QString uuid = QUuid::createUuid().toString();
+    return QString(QCryptographicHash::hash(uuid.toUtf8(), QCryptographicHash::Sha1).toHex());
 }
 
 QVariant AbstractViriditySessionManager::stats() const

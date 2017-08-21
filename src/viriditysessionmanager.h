@@ -221,7 +221,7 @@ public:
     void setUserData(const QVariant &userData);
 
     /*! Static helper method that parses the session ID from an input URL. */
-    static QString parseIdFromUrl(const QByteArray &url);
+    Q_INVOKABLE static QString parseIdFromUrl(const QByteArray &url);
 
     // ViridityRequestHandler
     virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
@@ -516,6 +516,9 @@ public:
      * \sa ViridityMessageHandler
      */
     void unregisterMessageHandler(ViridityMessageHandler *handler);
+
+    /*! Static helper method that creates a unique id */
+    Q_INVOKABLE QString createUniqueID();
 
 signals:
     /*!
