@@ -46,6 +46,14 @@ var DocumentRenderer = function(viridityChannel, id)
             });
         },
 
+        trigger: function(element, itemName)
+        {
+            dataBridge.sendData({
+                action: "clicked",
+                itemName: itemName
+            });
+        },
+
         handleDataReceived: function(dataBridge, input)
         {
             if (input.action == "update")

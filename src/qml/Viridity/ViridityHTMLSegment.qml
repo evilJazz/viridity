@@ -61,7 +61,7 @@ TemplateRenderer {
 
     function replaceMarkerForContent()
     {
-        var id = renderer.name + "Content";
+        var id = renderer.name;
         var attrs = formatAttributes(getContentMarkerAttributes());
 
         return '<' + contentMarkerElement + ' id="' + id + '"' + attrs + '>' +
@@ -77,7 +77,7 @@ TemplateRenderer {
         {
             if (input.action === "contentUpdate")
             {
-                if (input.itemName === renderer.name + "Content")
+                if (input.itemName === renderer.name)
                     _sendContentUpdate();
             }
         }
@@ -94,8 +94,7 @@ TemplateRenderer {
     // Overrideable functions
     function _ViridityHTMLSegment_getPropertyMarkerAttributes()
     {
-       var attrs = propertyMarkerAttributes;
-       return attrs;
+       return propertyMarkerAttributes;
     }
 
     function getPropertyMarkerAttributes()
@@ -105,13 +104,12 @@ TemplateRenderer {
 
     function _ViridityHTMLSegment_getContentMarkerAttributes()
     {
-        var attrs = contentMarkerAttributes;
-        return attrs;
+        return contentMarkerAttributes;
     }
 
     function getContentMarkerAttributes()
     {
-        return _ViridityHTMLSegment_getContentMarkerAttributes;
+        return _ViridityHTMLSegment_getContentMarkerAttributes();
     }
 
     function _ViridityHTMLSegment_handleTemplateChanged()
@@ -131,7 +129,7 @@ TemplateRenderer {
 
         topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
             action: "update",
-            property: renderer.name + "Content",
+            property: renderer.name,
             value: renderer.content
         });
 
@@ -161,7 +159,7 @@ TemplateRenderer {
     {
         topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
             action: visible ? "show" : "hide",
-            itemName: renderer.name + "Content"
+            itemName: renderer.name
         });
     }
 

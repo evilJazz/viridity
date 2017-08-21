@@ -18,10 +18,10 @@ function itemAppended(item)
 function itemInsertedAfter(item, afterItem)
 {
     if (item.contentDirty) item.updateContent();
-    actions.push({ action: "insertAfter", content: item.replaceMarkerForContent(), afterItemName: afterItem.name + "Content" });
+    actions.push({ action: "insertAfter", content: item.replaceMarkerForContent(), afterItemName: afterItem.name });
 }
 
 function itemRemoved(item)
 {
-    actions.push({ itemName: item.name + "Content", action: "remove" });
+    actions.push({ itemName: item.name, action: "remove" });
 }

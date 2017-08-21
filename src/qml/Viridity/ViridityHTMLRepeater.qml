@@ -74,7 +74,7 @@ ViridityHTMLColumn {
             for (var i = 0; i < Private.actions.length; ++i)
             {
                 var action = Private.actions[i];
-                action.parentName = column.name + "Content";
+                action.parentName = column.name;
 
                 if (action.item)
                 {
@@ -92,7 +92,7 @@ ViridityHTMLColumn {
 
             topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
                 action: "updateChildren",
-                itemName: column.name + "Content",
+                itemName: column.name,
                 generation: generation,
                 updates: updates
             });
@@ -108,7 +108,7 @@ ViridityHTMLColumn {
 
         topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
             action: "update",
-            property: column.name + "Content",
+            property: column.name,
             generation: generation,
             value: column.content
         });
