@@ -176,12 +176,15 @@ void SSEHandler::handleMessagesAvailable()
     {
         QList<QByteArray> messages = session_->takePendingMessages();
 
-        QByteArray out;
-        foreach (const QByteArray &message, messages)
-            out += "data: " + message + "\n";
+        if (messages.count() > 0)
+        {
+            QByteArray out;
+            foreach (const QByteArray &message, messages)
+                out += "data: " + message + "\n";
 
-        response_->write(out + "\n");
-        response_->flush();
+            response_->write(out + "\n");
+            response_->flush();
+        }
     }
 }
 

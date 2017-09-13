@@ -173,14 +173,17 @@ void LongPollingHandler::handleMessagesAvailable()
     {
         QList<QByteArray> messages = session_->takePendingMessages();
 
-        server()->sessionManager()->releaseSession(session_);
-        session_ = NULL;
+        if (messages.count() > 0)
+        {
+            server()->sessionManager()->releaseSession(session_);
+            session_ = NULL;
 
-        QByteArray out;
-        foreach (const QByteArray &message, messages)
-            out += message + "\n";
+            QByteArray out;
+            foreach (const QByteArray &message, messages)
+                out += message + "\n";
 
-        pushMessageAndEnd(response_, out);
+            pushMessageAndEnd(response_, out);
+        }
     }
 }
 
