@@ -29,6 +29,20 @@
 **
 ****************************************************************************/
 
+var ViridityDisplayEvents = {
+    KeyboardInputs: 1 << 0,
+
+    MousePresses: 1 << 8,
+    MouseDoubleClick: 1 << 9,
+    MouseMoveWhenMousePressed: 1 << 10,
+    MouseHover: 1 << 11,
+    MouseWheel: 1 << 12,
+
+    Touch: 1 << 16,
+
+    ContextMenu: 1 << 24
+};
+
 (function($)
 {
     $.fn.viridity = function(viridityChannel, targetId, params, options)
@@ -41,6 +55,16 @@
         {
             debugVerbosity: 0,
             debugDraw: false,
+
+            enabledEvents:
+                ViridityDisplayEvents.KeyboardInputs |
+                ViridityDisplayEvents.MousePresses |
+                ViridityDisplayEvents.MouseDoubleClick |
+                ViridityDisplayEvents.MouseMoveWhenMousePressed |
+                ViridityDisplayEvents.MouseHover |
+                ViridityDisplayEvents.MouseWheel |
+                ViridityDisplayEvents.Touch |
+                ViridityDisplayEvents.ContextMenu,
 
             targetId: undefined,
             params: [],
@@ -786,7 +810,7 @@
 
                 function sendKeyEvent(type, event, printableCharacter)
                 {
-                    if (!v.connected)
+                    if (!v.connected || (dr.enabledEvents & ViridityDisplayEvents.KeyboardInputs) == 0)
                         return;
 
                     if (dr.debugVerbosity > 0)
@@ -807,17 +831,21 @@
                     }
                 }               
 
-                $(dr.frontCanvas).mousedown(function(event)  { dr.focus(); sendMouseEvent("mouseDown", event); });
-                $(dr.frontCanvas).mouseup(function(event)    { sendMouseEvent("mouseUp", event); });
-                $(dr.frontCanvas).mousemove(function(event)  { sendMouseEvent("mouseMove", event); });
-                $(dr.frontCanvas).mouseover(function(event)  { sendMouseEvent("mouseEnter", event); });
-                $(dr.frontCanvas).mouseout(function(event)   { sendMouseEvent("mouseExit", event); });
-                $(dr.frontCanvas).mouseenter(function(event) { sendMouseEvent("mouseEnter", event); });
-                $(dr.frontCanvas).dblclick(function(event)   { sendMouseEvent("mouseDblClick", event); });
-                $(dr.frontCanvas).bind("contextmenu", function (event) { sendMouseEvent("contextMenu", event); });
+                $(dr.frontCanvas).mousedown(function(event)  { if (dr.enabledEvents & ViridityDisplayEvents.MousePresses) { dr.focus(); sendMouseEvent("mouseDown", event); }});
+                $(dr.frontCanvas).mouseup(function(event)    { if (dr.enabledEvents & ViridityDisplayEvents.MousePresses) { sendMouseEvent("mouseUp", event); }});
+                $(dr.frontCanvas).mousemove(function(event)  { if ((dr.enabledEvents & ViridityDisplayEvents.MouseHover) ||
+                                                                  ((dr.enabledEvents & ViridityDisplayEvents.MouseMoveWhenMousePressed) && event.which)) { sendMouseEvent("mouseMove", event); }});
+                $(dr.frontCanvas).mouseover(function(event)  { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseEnter", event); }});
+                $(dr.frontCanvas).mouseout(function(event)   { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseExit", event); }});
+                $(dr.frontCanvas).mouseenter(function(event) { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseEnter", event); }});
+                $(dr.frontCanvas).dblclick(function(event)   { if (dr.enabledEvents & ViridityDisplayEvents.MouseDoubleClick) { sendMouseEvent("mouseDblClick", event); }});
+                $(dr.frontCanvas).bind("contextmenu", function (event) { if (dr.enabledEvents & ViridityDisplayEvents.ContextMenu) { sendMouseEvent("contextMenu", event); }});
 
                 function handleTouchEvent(event)
                 {
+                    if ((dr.enabledEvents & ViridityDisplayEvents.Touch) == 0)
+                        return;
+
                     event = event.originalEvent;
 
                     var touchPoints = event.changedTouches;
@@ -854,7 +882,11 @@
 
                 var setUpWheelSupport = function()
                 {
-                    $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY) { sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY); });
+                    $(dr.frontCanvas).mousewheel(function(event, delta, deltaX, deltaY)
+                    {
+                        if (dr.enabledEvents & ViridityDisplayEvents.MouseWheel)
+                            sendMouseEvent("mouseWheel", event, deltaX + "," + deltaY);
+                    });
                 }
 
                 if ($.fn.mousewheel == undefined)
@@ -908,6 +940,9 @@
 
                     function moveCursorToEnd(textInterceptor)
                     {
+                        if ((dr.enabledEvents & ViridityDisplayEvents.KeyboardInputs) == 0)
+                            return;
+
                         if (textInterceptor.setSelectionRange)
                         {
                             var len = sentinelTextForBackspace.length * 2;
@@ -917,7 +952,8 @@
 
                     function handleTextInterceptorChange()
                     {
-                        if (changingText) return;
+                        if (changingText | (dr.enabledEvents & ViridityDisplayEvents.KeyboardInputs) == 0)
+                            return;
 
                         changingText = true;
                         try
