@@ -834,7 +834,7 @@ var ViridityDisplayEvents = {
                 $(dr.frontCanvas).mousedown(function(event)  { if (dr.enabledEvents & ViridityDisplayEvents.MousePresses) { dr.focus(); sendMouseEvent("mouseDown", event); }});
                 $(dr.frontCanvas).mouseup(function(event)    { if (dr.enabledEvents & ViridityDisplayEvents.MousePresses) { sendMouseEvent("mouseUp", event); }});
                 $(dr.frontCanvas).mousemove(function(event)  { if ((dr.enabledEvents & ViridityDisplayEvents.MouseHover) ||
-                                                                  ((dr.enabledEvents & ViridityDisplayEvents.MouseMoveWhenMousePressed) && event.button)) { sendMouseEvent("mouseMove", event); }});
+                                                                  ((dr.enabledEvents & ViridityDisplayEvents.MouseMoveWhenMousePressed) && event.buttons)) { sendMouseEvent("mouseMove", event); }});
                 $(dr.frontCanvas).mouseover(function(event)  { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseEnter", event); }});
                 $(dr.frontCanvas).mouseout(function(event)   { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseExit", event); }});
                 $(dr.frontCanvas).mouseenter(function(event) { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseEnter", event); }});
