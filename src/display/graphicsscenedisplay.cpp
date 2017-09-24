@@ -326,8 +326,7 @@ QList<QByteArray> GraphicsSceneDisplay::takePendingMessages(bool returnBinary)
 
     updateAvailable_ = false;
 
-    GraphicsSceneBufferRendererLocker l(renderer_); // Lock and hold until all patches are created!
-    QList<UpdateOperation> ops = renderer_->updateBuffer();
+    QList<UpdateOperation> ops = renderer_->updateBufferAndGetUpdateOperations();
 
     DPRINTF("Updates available: %d", ops.count());
 
@@ -537,4 +536,3 @@ bool GraphicsSceneDisplay::handleMessage(const QByteArray &message, const QStrin
 
     return result;
 }
-

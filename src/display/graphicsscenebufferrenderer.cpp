@@ -120,8 +120,13 @@ void GraphicsSceneBufferRenderer::setSettings(const ComparerSettings &settings)
         comparer_->setSettings(settings_);
 }
 
-QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
+QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer()
 {
+    DGUARDMETHODTIMED;
+
+    swapWorkBuffer();
+    QPainter p(workBuffer_);
+
     DTIMERINIT(paintTimer);
     // Properly set up to make eraseRect work the way we expect it to work,
     // ie. replace with the defined transparent brush instead of merging/blending
@@ -160,20 +165,25 @@ QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer(QPainter &p)
         }
     }
 
+    damageRegion_.clear();
+    updatesAvailable_ = false;
+
     DTIMERPRINT(paintTimer, "Damage region paint");
 
     return rects;
 }
 
-UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
+UpdateOperationList GraphicsSceneBufferRenderer::updateBufferAndGetUpdateOperations()
 {
     DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferAndRegionMutex_);
 
-    swapWorkBuffer();
+    QVector<QRect> rects;
 
-    QPainter p(workBuffer_);
-    QVector<QRect> rects = paintUpdatesToBuffer(p);
+    QMetaObject::invokeMethod(
+        this, "paintUpdatesToBuffer",
+        thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
+        Q_RETURN_ARG(QVector<QRect>, rects)
+    );
 
     UpdateOperationList ops;
 
@@ -199,9 +209,6 @@ UpdateOperationList GraphicsSceneBufferRenderer::updateBuffer()
             ops.append(op);
         }
     }
-
-    damageRegion_.clear();
-    updatesAvailable_ = false;
 
     return ops;
 }
@@ -285,7 +292,7 @@ void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 #ifdef USE_SCENE_DAMAGEREGION
     QMutexLocker m(&bufferAndRegionMutex_);
 
-    QString rectString;
+    //QString rectString;
 
     foreach (const QRectF &rect, rects)
     {
@@ -322,8 +329,7 @@ void GraphicsSceneBufferRenderer::sceneDestroyed()
 
 void GraphicsSceneBufferRenderer::swapWorkBuffer()
 {
-    //DGUARDMETHODTIMED;
-    QMutexLocker m(&bufferAndRegionMutex_);
+    DGUARDMETHODTIMED;
 
     if (workBuffer_ == &buffer1_)
     {

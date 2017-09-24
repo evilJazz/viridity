@@ -134,7 +134,7 @@ public:
      * via ViriditySession::takePendingMessages and ViriditySession::pendingMessagesAvailable
      * \note For internal use by the request handlers that provide the communication channel for Viridity, i.e. WebSocketHandler, SSEHandler, LongPollingHandler.
      */
-    void handlerIsReadyForDispatch(ViridityMessageHandler *handler);
+    Q_INVOKABLE void handlerIsReadyForDispatch(ViridityMessageHandler *handler);
 
     /*! Returns the session manager of this session. */
     AbstractViriditySessionManager *sessionManager() { return sessionManager_; }

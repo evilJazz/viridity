@@ -71,6 +71,9 @@ AbstractGraphicsSceneDisplayManager::AbstractGraphicsSceneDisplayManager(Viridit
     displayMutex_(QMutex::Recursive)
 {
     DGUARDMETHODTIMED;
+
+    qRegisterMetaType<ViridityMessageHandler *>();
+
     cleanupTimer_ = new QTimer(this);
     DOP(cleanupTimer_->setObjectName("AbstractGraphicsSceneDisplayManagerCleanupTimer"));
     connect(cleanupTimer_, SIGNAL(timeout()), this, SLOT(killObsoleteDisplays()));
@@ -240,7 +243,13 @@ void AbstractGraphicsSceneDisplayManager::handleDisplayUpdateAvailable()
     DGUARDMETHODTIMED;
     GraphicsSceneDisplay *display = qobject_cast<GraphicsSceneDisplay *>(sender());
     if (display)
-        session_->handlerIsReadyForDispatch(display);
+    {
+        QMetaObject::invokeMethod(
+            session_,
+            "handlerIsReadyForDispatch",
+            Q_ARG(ViridityMessageHandler *, display)
+        );
+    }
 }
 
 GraphicsSceneDisplay *AbstractGraphicsSceneDisplayManager::getDisplay(const QString &id)

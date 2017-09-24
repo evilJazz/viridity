@@ -256,17 +256,26 @@ bool ViriditySession::pendingMessagesAvailable() const
 
 QList<QByteArray> ViriditySession::takePendingMessages(bool returnBinary)
 {
-    QMutexLocker l(&dispatchMutex_);
+    QList<QByteArray> messages;
+    QList<ViridityMessageHandler *> messageHandlersRequestingMessageDispatch;
 
-    QList<QByteArray> messages = messages_;
+    {
+        QMutexLocker l(&dispatchMutex_);
 
-    foreach (ViridityMessageHandler *handler, messageHandlersRequestingMessageDispatch_)
+        messages = messages_;
+        messages.detach();
+
+        messageHandlersRequestingMessageDispatch = messageHandlersRequestingMessageDispatch_;
+        messageHandlersRequestingMessageDispatch.detach();
+
+        messages_.clear();
+        messageHandlersRequestingMessageDispatch_.clear();
+    }
+
+    foreach (ViridityMessageHandler *handler, messageHandlersRequestingMessageDispatch)
     {
         messages += handler->takePendingMessages(returnBinary);
     }
-
-    messages_.clear();
-    messageHandlersRequestingMessageDispatch_.clear();
 
     return messages;
 }

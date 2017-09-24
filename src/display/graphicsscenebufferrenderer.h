@@ -62,7 +62,7 @@ public:
     const ComparerSettings &settings() const;
     void setSettings(const ComparerSettings &settings);
 
-    UpdateOperationList updateBuffer();
+    UpdateOperationList updateBufferAndGetUpdateOperations();
 
     const QImage &buffer() const { return *workBuffer_; }
     bool updatesAvailable() const { return updatesAvailable_; }
@@ -109,7 +109,7 @@ protected:
     void swapWorkBuffer();
     void emitUpdatesAvailable();
 
-    QVector<QRect> paintUpdatesToBuffer(QPainter &p);
+    Q_INVOKABLE QVector<QRect> paintUpdatesToBuffer();
 };
 
 #endif // GRAPHICSSCENEBUFFERRENDERER_H

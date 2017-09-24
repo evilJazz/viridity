@@ -118,6 +118,8 @@ private:
     MainThreadGateway *mainThreadGateway_;
 };
 
+Q_DECLARE_METATYPE(ViridityMessageHandler *)
+
 /*!
  * The SingleGraphicsSceneDisplayManager class provides the simplest form of a graphics scene display manager supporting only one graphics scene and command interpreter shared by all displays.
  * The graphics scene is encapsulated by a AbstractGraphicsSceneAdapter instance which is passed to the constructor of this display manager.
