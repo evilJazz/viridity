@@ -74,7 +74,7 @@ QByteArray ImageAux::removeAncillaryChunksFromPNGStream(const QByteArray &input)
 {
     QByteArray result;
 
-    if (input.at(0) == (char)0x89 && input.mid(1, 3) == "PNG")
+    if (input.size() > 0 && input.at(0) == (char)0x89 && input.mid(1, 3) == "PNG")
     {
         result += input.mid(0, 8); // copy PNG file header
         int index = 8;
