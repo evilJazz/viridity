@@ -30,7 +30,7 @@ contains(QT_VERSION, ^5\\..*) {
     message("Viridity: Configuring for Qt 5, actual version: $${QT_VERSION}")
 }
 
-DEFINES += USE_MULTITHREADING
+DEFINES += USE_MULTITHREADING VIRIDITY_TRIM_PROCESS_MEMORY_USAGE
 
 VIRIDITY_SRC_PATH = $$PWD/src
 VIRIDITY_RES_PATH = $$PWD/resources

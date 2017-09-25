@@ -24,6 +24,10 @@
 
 #include "viriditysessionmanager.h"
 
+#ifdef VIRIDITY_TRIM_PROCESS_MEMORY_USAGE
+#include "KCL/systemutils.h"
+#endif
+
 #include <QStringList>
 
 #include <QUuid>
@@ -621,6 +625,9 @@ void AbstractViriditySessionManager::releaseSession(ViriditySession *session)
 ViriditySession *AbstractViriditySessionManager::createSession(const QString &id, const QByteArray &initialPeerAddress)
 {
     DGUARDMETHODTIMED;
+
+    killExpiredSessions();
+
     ViriditySession *session = createNewSessionInstance(id);
 
     int threadIndex = sessionCount() % sessionThreads_.count();
@@ -834,6 +841,11 @@ void AbstractViriditySessionManager::killExpiredSessions()
             emit noSessions();
 
         cleanupTimer_->start();
+
+#ifdef VIRIDITY_TRIM_PROCESS_MEMORY_USAGE
+        // Attempt to give our memory back to the OS...
+        SystemUtils::trimProcessMemoryUsage();
+#endif
     }
 }
 
