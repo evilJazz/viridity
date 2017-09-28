@@ -6,7 +6,7 @@
 
 #include <viriditysessionmanager.h>
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
 #include <QDeclarativeEngine>
 #include <QDeclarativeContext>
 #else
@@ -21,7 +21,7 @@ public:
     ViridityQmlSessionManager(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, QObject *parent = 0);
     virtual ~ViridityQmlSessionManager();
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     QDeclarativeEngine *engine();
 #else
     QQmlEngine *engine();
@@ -34,7 +34,7 @@ protected:
     void initSession(ViriditySession *session);
 
 private:
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     QDeclarativeEngine *engine_;
 #else
     QQmlEngine *engine_;

@@ -1,6 +1,6 @@
 #include "viridityqmlsessionmanager.h"
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     #include <QDeclarativeComponent>
     typedef QDeclarativeEngine DeclarativeEngine;
     typedef QDeclarativeContext DeclarativeContext;

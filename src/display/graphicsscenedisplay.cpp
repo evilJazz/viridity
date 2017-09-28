@@ -43,11 +43,11 @@
 
 #include <QtConcurrentFilter>
 
-#ifdef USE_IMPROVED_JPEG
+#ifdef VIRIDITY_USE_IMPROVED_JPEG
 #include "private/jpegwriter.h"
 #endif
 
-#ifdef USE_IMPROVED_PNG
+#ifdef VIRIDITY_USE_IMPROVED_PNG
 #include "private/pngwriter.h"
 #endif
 
@@ -227,7 +227,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
         // Saving PNG is very expensive!
         QBuffer pngBuffer;
         pngBuffer.open(QIODevice::ReadWrite);
-#ifdef USE_IMPROVED_PNG
+#ifdef VIRIDITY_USE_IMPROVED_PNG
         writePNG(image, &pngBuffer, encoderSettings_.compressionLevel, PNGAllFilters);
 #else
         image.save(&pngBuffer, "PNG", ImageAux::zlibCompressionLevelToQPNGHandlerQuality(encoderSettings_.compressionLevel));
@@ -245,7 +245,7 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 
         QBuffer jpegBuffer;
         jpegBuffer.open(QIODevice::ReadWrite);
-#ifdef USE_IMPROVED_JPEG
+#ifdef VIRIDITY_USE_IMPROVED_JPEG
         writeJPEG(image, &jpegBuffer, encoderSettings_.jpegQuality, true, false);
 #else
         image.save(&jpegBuffer, "JPEG", encoderSettings_.jpegQuality);

@@ -39,7 +39,7 @@ public:
     static void registerTypes();
 };
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
 #include <QDeclarativeEngine>
 #include <QDeclarativeParserStatus>
 #else
@@ -55,14 +55,14 @@ class ViriditySession;
 
 class ViridityDeclarativeBaseObject :
     public QObject,
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     public QDeclarativeParserStatus
 #else
     public QQmlParserStatus
 #endif
 {
     Q_OBJECT
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     Q_INTERFACES(QDeclarativeParserStatus)
 #else
     Q_INTERFACES(QQmlParserStatus)
@@ -75,7 +75,7 @@ public:
     virtual void componentComplete();
 
 protected:
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     QDeclarativeEngine *engine();
 #else
     QQmlEngine *engine();

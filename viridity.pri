@@ -30,7 +30,7 @@ contains(QT_VERSION, ^5\\..*) {
     message("Viridity: Configuring for Qt 5, actual version: $${QT_VERSION}")
 }
 
-DEFINES += USE_MULTITHREADING VIRIDITY_TRIM_PROCESS_MEMORY_USAGE
+DEFINES += VIRIDITY_USE_MULTITHREADING VIRIDITY_TRIM_PROCESS_MEMORY_USAGE
 
 VIRIDITY_SRC_PATH = $$PWD/src
 VIRIDITY_RES_PATH = $$PWD/resources
@@ -80,15 +80,15 @@ viridity_declarative {
     viridity_qtquick1 {
         message("Viridity: Configuring QtQuick 1.x declarative support classes")
         QT += declarative
-        DEFINES += USE_QTQUICK1
-        DEFINES -= USE_QTQUICK2
+        DEFINES += VIRIDITY_USE_QTQUICK1
+        DEFINES -= VIRIDITY_USE_QTQUICK2
     }
 
     viridity_qtquick2 {
         message("Viridity: Configuring QtQuick 2.x declarative support classes")
         QT += qml quick
-        DEFINES += USE_QTQUICK2
-        DEFINES -= USE_QTQUICK1
+        DEFINES += VIRIDITY_USE_QTQUICK2
+        DEFINES -= VIRIDITY_USE_QTQUICK1
     }
 
     HEADERS += \
@@ -106,6 +106,8 @@ viridity_declarative {
 !win32: CONFIG += viridity_use_improved_jpeg viridity_use_improved_png
 
 viridity_module_display {
+    message("Viridity: Configuring display module")
+
     DEFINES += VIRIDITY_MODULE_DISPLAY
 
     QT += gui
@@ -139,7 +141,9 @@ viridity_module_display {
         $$VIRIDITY_SRC_PATH/display/handlers/patchrequesthandler.cpp
 
     viridity_use_improved_jpeg {
-        DEFINES += USE_IMPROVED_JPEG
+        message("Viridity: Configuring display module to use improved JPEG writer support")
+
+        DEFINES += VIRIDITY_USE_IMPROVED_JPEG
 
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/private/jpegwriter.h
@@ -151,7 +155,9 @@ viridity_module_display {
     }
 
     viridity_use_improved_png {
-        DEFINES += USE_IMPROVED_PNG
+        message("Viridity: Configuring display module to use improved PNG writer support")
+
+        DEFINES += VIRIDITY_USE_IMPROVED_PNG
 
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/private/pngwriter.h
@@ -163,7 +169,9 @@ viridity_module_display {
     }
 
     viridity_module_display_areafingerprints {
-        DEFINES += USE_AREAFINGERPRINTS
+        message("Viridity: Configuring display module to use area finger printing")
+
+        DEFINES += VIRIDITY_USE_AREAFINGERPRINTS
 
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/comparer/areafingerprint.h
@@ -173,6 +181,8 @@ viridity_module_display {
     }
 
     viridity_module_display_tools {
+        message("Viridity: Configuring display module with tools")
+
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/private/graphicsscenedisplaytests.h \
             $$VIRIDITY_SRC_PATH/display/tools/graphicsscenedisplayrecorder.h \
@@ -212,8 +222,8 @@ viridity_module_display {
                 $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
         }
 
-        contains(DEFINES, USE_QTQUICK1): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
-        contains(DEFINES, USE_QTQUICK2): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
+        contains(DEFINES, VIRIDITY_USE_QTQUICK1): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
+        contains(DEFINES, VIRIDITY_USE_QTQUICK2): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
 
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
@@ -227,7 +237,7 @@ viridity_module_display {
     viridity_module_display_qgraphicscene {
         message("Viridity: Configuring display module with QGraphicsScene support")
 
-        DEFINES += USE_QGRAPHICSSCENE
+        DEFINES += VIRIDITY_USE_QGRAPHICSSCENE
 
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/private/synchronizedscenechangedhandler.h \

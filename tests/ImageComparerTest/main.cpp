@@ -7,19 +7,19 @@
 
 #include <QPainter>
 
-#include "comparer/imagecomparer.h"
-#include "comparer/moveanalyzer.h"
-#include "comparer/areafingerprint.h"
-#include "comparer/imageaux.h"
-#include "graphicsscenedisplay.h"
+#include "display/comparer/imagecomparer.h"
+#include "display/comparer/moveanalyzer.h"
+#include "display/comparer/areafingerprint.h"
+#include "display/comparer/imageaux.h"
+#include "display/graphicsscenedisplay.h"
 
 #include "KCL/imageutils.h"
 
-#ifdef USE_IMPROVED_JPEG
+#ifdef VIRIDITY_USE_IMPROVED_JPEG
 #include "private/jpegwriter.h"
 #endif
 
-#ifdef USE_IMPROVED_PNG
+#ifdef VIRIDITY_USE_IMPROVED_PNG
 #include "private/pngwriter.h"
 #endif
 
@@ -290,6 +290,7 @@ private slots:
         qDebug("buffer.size: %d", buffer.size());
     }
 
+#ifdef VIRIDITY_USE_IMPROVED_PNG
     void benchmarkSaveToPNGOpt1Lena()
     {
         QBuffer buffer;
@@ -349,6 +350,7 @@ private slots:
 
         qDebug("buffer.size: %d", buffer.size());
     }
+#endif
 
     void benchmarkSaveToQCompress1Lena()
     {
@@ -460,7 +462,7 @@ private slots:
         }
     }
 
-#ifdef USE_IMPROVED_JPEG
+#ifdef VIRIDITY_USE_IMPROVED_JPEG
     void benchmarkSaveToJPEG90Optimized()
     {
         QBENCHMARK

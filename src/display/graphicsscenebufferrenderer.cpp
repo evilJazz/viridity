@@ -26,7 +26,7 @@
 
 #include <QThread>
 
-#define USE_SCENE_DAMAGEREGION
+#define VIRIDITY_USE_SCENE_DAMAGEREGION
 
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
@@ -137,7 +137,7 @@ QVector<QRect> GraphicsSceneBufferRenderer::paintUpdatesToBuffer()
 
     if (adapter_)
     {
-#ifdef USE_SCENE_DAMAGEREGION
+#ifdef VIRIDITY_USE_SCENE_DAMAGEREGION
         rects = damageRegion_.rects();
         foreach (const QRect &rect, rects)
             p.eraseRect(rect);
@@ -289,7 +289,7 @@ void GraphicsSceneBufferRenderer::sceneAttached()
 void GraphicsSceneBufferRenderer::sceneChanged(QList<QRectF> rects)
 {
     //DGUARDMETHODTIMED;
-#ifdef USE_SCENE_DAMAGEREGION
+#ifdef VIRIDITY_USE_SCENE_DAMAGEREGION
     QMutexLocker m(&bufferAndRegionMutex_);
 
     //QString rectString;

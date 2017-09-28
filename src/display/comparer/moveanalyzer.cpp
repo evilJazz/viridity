@@ -35,9 +35,9 @@
 #endif
 #include "KCL/debug.h"
 
-//#define USE_GRAYSCALE_OPT
+//#define VIRIDITY_USE_GRAYSCALE_OPT
 
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
 #include "areafingerprint.h"
 #endif
 
@@ -56,7 +56,7 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, int template
     movedRectSearchMisses_(0),
     movedRectSearchEnabled_(true)
 {
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
     searchAreaFingerPrints_ = new AreaFingerPrints();
     searchAreaFingerPrints_->initFromImage(imageBefore_, imageBefore_->rect(), templateWidth);
 #endif
@@ -64,7 +64,7 @@ MoveAnalyzer::MoveAnalyzer(QImage *imageBefore, QImage *imageAfter, int template
 
 MoveAnalyzer::~MoveAnalyzer()
 {
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
     delete searchAreaFingerPrints_;
     searchAreaFingerPrints_ = NULL;
 #endif
@@ -95,7 +95,7 @@ void MoveAnalyzer::swap()
     imageBefore_ = imageAfter_;
     imageAfter_ = temp;
 
-#ifdef USE_GRAYSCALE_OPT
+#ifdef VIRIDITY_USE_GRAYSCALE_OPT
     ensureImagesUpdated();
     imageBeforeGray_ = imageAfterGray_;
     imageAfterGray_ = QImage();
@@ -110,7 +110,7 @@ void MoveAnalyzer::swap()
 
 void MoveAnalyzer::ensureImagesUpdated()
 {
-#ifdef USE_GRAYSCALE_OPT
+#ifdef VIRIDITY_USE_GRAYSCALE_OPT
     QMutexLocker l(&mutex_);
 
     if (imageAfterGray_.isNull())
@@ -120,7 +120,7 @@ void MoveAnalyzer::ensureImagesUpdated()
 
 void MoveAnalyzer::updateArea(const QRect &rect)
 {
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
     searchAreaFingerPrints_->updateFromImage(imageBefore_, rect);
 #endif
 
@@ -253,7 +253,7 @@ MoveOperationList MoveAnalyzer::findMoveOperations(const QRect &searchArea, QReg
     return result;
 }
 
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
 struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPositionMatcher
 {
     MoveAnalyzer *moveAnalyzer;
@@ -268,7 +268,7 @@ struct MoveAnalyzerAreaFingerPrintsPositionMatcher : public AreaFingerPrintsPosi
 
 QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &templateRect)
 {
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
     if (templateRect.width() % searchAreaFingerPrints_->templateWidth() == 0)
 		return findMovedRectAreaFingerPrint(searchArea, templateRect);        
     else
@@ -276,7 +276,7 @@ QRect MoveAnalyzer::findMovedRect(const QRect &searchArea, const QRect &template
         return findMovedRectExhaustive(searchArea, templateRect);
 }
 
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
 QRect MoveAnalyzer::findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect)
 {
     AreaFingerPrint templateFingerPrint(imageAfter_, templateRect);
@@ -309,7 +309,7 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
     if (roiBottom < 1 || roiRight < 1)
         return QRect();
 
-#ifdef USE_GRAYSCALE_OPT
+#ifdef VIRIDITY_USE_GRAYSCALE_OPT
     const int bytes = templateWidth * sizeof(uchar);
     const int stride = imageBeforeGray_.bytesPerLine() / sizeof(uchar);
 
@@ -332,7 +332,7 @@ QRect MoveAnalyzer::findMovedRectExhaustive(const QRect &searchArea, const QRect
 
             for (int x = 0; x < roiRight; ++x)
             {
-#ifndef USE_GRAYSCALE_OPT
+#ifndef VIRIDITY_USE_GRAYSCALE_OPT
                 if (*pBuf1 == *pBufStart2 &&
                     *(pBuf1 + 1) == *(pBufStart2 + 1) &&
                     *(pBuf1 + 2) == *(pBufStart2 + 2) &&

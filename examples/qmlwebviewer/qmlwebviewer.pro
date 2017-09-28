@@ -52,3 +52,5 @@ RESOURCES += \
 #QMAKE_LFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
 
 DEFINES += VIRIDITY_DEBUG_REQUESTHANDLER
+#DEFINES += VIRIDITY_DEBUG
+

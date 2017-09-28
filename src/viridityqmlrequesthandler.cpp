@@ -1,6 +1,6 @@
 #include "viridityqmlrequesthandler.h"
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     #include <QDeclarativeEngine>
     typedef QDeclarativeEngine DeclarativeEngine;
 #else

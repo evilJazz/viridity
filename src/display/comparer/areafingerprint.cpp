@@ -27,8 +27,8 @@
 #include <QThread>
 #include <QtConcurrent>
 
-#define USE_NSN // Almost 7x faster than naive memcmp
-//#define USE_NSN_MEMCMP
+#define VIRIDITY_USE_NSN // Almost 7x faster than naive memcmp
+//#define VIRIDITY_USE_NSN_MEMCMP
 
 #ifndef VIRIDITY_DEBUG
 #undef DEBUG
@@ -147,7 +147,7 @@ int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int 
 
     if (needleSize > 1)
     {
-#ifndef USE_NSN
+#ifndef VIRIDITY_USE_NSN
         int needleSizeBytes = needleSize * sizeof(AreaFingerPrintHash);
 
         int index = startIndex;
@@ -161,7 +161,7 @@ int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int 
         // Adapted to work on AreaFingerPrintHash
 
         quint32 index, k, l;
-#ifdef USE_NSN_MEMCMP
+#ifdef VIRIDITY_USE_NSN_MEMCMP
         const size_t needleSizeBytes = (needleSize - 2) * sizeof(AreaFingerPrintHash);
 #else
         const int needleSize2 = needleSize - 2;
@@ -187,7 +187,7 @@ int AreaFingerPrint::indexOf(const AreaFingerPrint &needle, int startIndex, int 
             }
             else
             {
-#ifdef USE_NSN_MEMCMP
+#ifdef VIRIDITY_USE_NSN_MEMCMP
                 if (needleData[0] == haystackData[index] &&
                     !memcmp(needleData + 2, haystackData + index + 2, needleSizeBytes))
                     return index;
@@ -305,7 +305,7 @@ void AreaFingerPrints::updateFromImage(QImage *image, const QRect &area)
     }
 }
 
-#ifdef USE_MULTITHREADING
+#ifdef VIRIDITY_USE_MULTITHREADING
 
 struct AreaFingerPrintsThreadedUpdateFromImage
 {
@@ -357,7 +357,7 @@ void AreaFingerPrints::updateFromImageThreaded(QImage *image, const QRect &area)
         if (remainingHeight > 0)
             lineRects.append(QRect(rect.x(), rect.y() + partsTotalHeight, rect.width(), remainingHeight));
 
-#ifdef USE_MULTITHREADING
+#ifdef VIRIDITY_USE_MULTITHREADING
         QtConcurrent::blockingFilter(lineRects, AreaFingerPrintsThreadedUpdateFromImage(image, this));
 #else
         foreach (const QRect &partRect, lineRects)
