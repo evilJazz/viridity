@@ -8,6 +8,7 @@ CONFIG   -= app_bundle
 
 TEMPLATE = app
 
+CONFIG  += kcl_enable_ccache
 include(../../viridity-static.pri)
 
 SOURCES += clientservertest.cpp

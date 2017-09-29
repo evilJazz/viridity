@@ -15,7 +15,7 @@ TEMPLATE = app
 SOURCES += main.cpp
 
 CONFIG += viridity_module_display viridity_module_display_areafingerprints
-
+CONFIG  += kcl_enable_ccache
 include(../../viridity-static.pri)
 
 RESOURCES += \
