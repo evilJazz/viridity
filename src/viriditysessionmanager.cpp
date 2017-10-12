@@ -301,6 +301,12 @@ QString ViriditySession::parseIdFromUrl(const QByteArray &url)
     return id;
 }
 
+void ViriditySession::filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
+{
+    foreach (ViridityRequestHandler *handler, requestHandlers_)
+        handler->filterRequestResponse(request, response);
+}
+
 bool ViriditySession::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     bool result = false;

@@ -225,9 +225,9 @@ void ViridityConnection::handleRequestReady()
     if (request_->headers().contains("Expect", "100-continue"))
         response_->writeContinue();
 
-    if (server_->doesHandleRequest(request_))
+    if (server_->handleRequest(request_, response_))
     {
-        server_->handleRequest(request_, response_);
+        return;
     }
     else if (SSEHandler::staticDoesHandleRequest(server_, request_))
     {
@@ -246,7 +246,7 @@ void ViridityConnection::handleRequestReady()
     else
     {
         response_->writeHead(404);
-        response_->end("Not found");
+        response_->end("404 Not found");
     }
 }
 

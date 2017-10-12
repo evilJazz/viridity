@@ -116,6 +116,29 @@ public:
         DGUARDMETHODTIMED;
     }
 
+    void filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
+    {
+        DGUARDMETHODTIMED;
+
+        if (!proxy_) return;
+
+        PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
+        requestWrapper->moveToThread(proxy_->thread());
+        QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
+
+        PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
+        responseWrapper->moveToThread(proxy_->thread());
+        QVariant responseVar = ObjectUtils::objectToVariant(responseWrapper);
+
+        QMetaObject::invokeMethod(
+            proxy_,
+            "filterRequestResponse",
+            Qt::QueuedConnection,
+            Q_ARG(QVariant, requestVar),
+            Q_ARG(QVariant, responseVar)
+        );
+    }
+
     bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
     {
         DGUARDMETHODTIMED;

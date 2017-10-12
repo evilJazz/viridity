@@ -215,10 +215,8 @@ void ViridityWebServer::unregisterRequestHandler(QSharedPointer<ViridityRequestH
     requestHandlers_.removeAll(handler);
 }
 
-bool ViridityWebServer::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
+bool ViridityWebServer::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
-    bool result = false;
-
     QList< QSharedPointer<ViridityRequestHandler> > localList;
     {
         QReadLocker l(&requestHandlersMREW_);
@@ -227,26 +225,18 @@ bool ViridityWebServer::doesHandleRequest(QSharedPointer<ViridityHttpServerReque
     }
 
     foreach (const QSharedPointer<ViridityRequestHandler> &handler, localList)
-    {
-        result = handler->doesHandleRequest(request);
-        if (result) break;
-    }
+        handler->filterRequestResponse(request, response);
 
-    return result;
-}
-
-void ViridityWebServer::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
-{
-    QList< QSharedPointer<ViridityRequestHandler> > localList;
-    {
-        QReadLocker l(&requestHandlersMREW_);
-        localList = requestHandlers_;
-        localList.detach(); // Required to raise ref counters
-    }
+    bool result = false;
 
     foreach (const QSharedPointer<ViridityRequestHandler> &handler, localList)
         if (handler->doesHandleRequest(request))
+        {
             handler->handleRequest(request, response);
+            result = true;
+        }
+
+    return result;
 }
 
 QVariant ViridityWebServer::stats() const

@@ -50,7 +50,7 @@ class ViridityConnection;
     \sa ViridityRequestHandler, ViriditySessionManager
 */
 
-class ViridityWebServer : public QTcpServer, private ViridityRequestHandler
+class ViridityWebServer : public QTcpServer
 {
     Q_OBJECT
 public:
@@ -119,8 +119,7 @@ private:
 
     friend class ViridityConnection;
 
-    virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
-    virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
+    virtual bool handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
     AbstractViriditySessionManager *sessionManager_;
