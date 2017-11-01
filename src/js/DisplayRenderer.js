@@ -91,6 +91,7 @@ var ViridityDisplayEvents = {
 
             textInterceptor: 0,
             useTextInterceptor: false,
+            showInputMethodOnFocus: true,
 
             ratio: 1,
 
@@ -660,12 +661,24 @@ var ViridityDisplayEvents = {
                 $(document).focus();
                 $(dr.frontCanvas).focus();
 
+                if (dr.showInputMethodOnFocus)
+                    dr.showInputMethod();
+            },
+
+            showInputMethod: function()
+            {
                 if (dr.textInterceptor)
                 {
                     dr.textInterceptor.style.visibility = "visible";
                     dr.textInterceptor.focus();
                     //dr.textInterceptor.style.visibility = "hidden"; // Chrome obviously does not like hiding the textarea...
                 }
+            },
+
+            hideInputMethod: function()
+            {
+                $(document).focus();
+                $(dr.frontCanvas).focus();
             },
 
             init: function()
@@ -677,6 +690,9 @@ var ViridityDisplayEvents = {
                 {
                     if (typeof(options.useTextInterceptor) == "boolean")
                         dr.useTextInterceptor = options.useTextInterceptor;
+
+                    if (typeof(options.showInputMethodOnFocus) == "boolean")
+                        dr.showInputMethodOnFocus = options.showInputMethodOnFocus;
                 }
 
                 dr._requestNewDisplay();
