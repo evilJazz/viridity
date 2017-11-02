@@ -122,6 +122,9 @@ public:
 
         if (!proxy_) return;
 
+        if (proxy_->metaObject()->indexOfMethod("filterRequestResponse(QVariant,QVariant)") == -1)
+            return;
+
         PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
         requestWrapper->moveToThread(proxy_->thread());
         QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
