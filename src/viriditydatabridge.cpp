@@ -25,6 +25,7 @@
 #include <QCoreApplication>
 #include <QDebug>
 
+#include <QStringList>
 #include <QThread>
 
 #include "viriditysessionmanager.h"

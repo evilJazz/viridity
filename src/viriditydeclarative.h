@@ -47,6 +47,7 @@ public:
 #include <QQmlParserStatus>
 #endif
 
+#include <QVariant>
 #include <QPointer>
 
 class ViridityWebServer;
