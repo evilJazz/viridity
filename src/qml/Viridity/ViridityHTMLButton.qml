@@ -1,6 +1,6 @@
 /* Work in progress */
 
-import QtQuick 2.0
+import QtQuick 2.2
 import KCL 1.0
 import Viridity 1.0
 

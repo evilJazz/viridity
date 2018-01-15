@@ -22,7 +22,7 @@
 **
 ****************************************************************************/
 
-import QtQuick 2.0
+import QtQuick 2.2
 import Viridity 1.0
 
 import "ViridityDataBridge.js" as Private
