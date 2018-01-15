@@ -1,4 +1,4 @@
-QT       += core
+QT       += core sql
 
 TARGET = qmlwebviewer
 

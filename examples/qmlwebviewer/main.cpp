@@ -25,6 +25,7 @@
 #include "kclplugin.h"
 #include "KCL/filesystemutils.h"
 #include "KCL/settingsgroup.h"
+#include "KCL/simplebase.h"
 
 int main(int argc, char *argv[])
 {
@@ -42,6 +43,8 @@ int main(int argc, char *argv[])
     QByteArray settingsFileName = qgetenv("QMLWEBVIEWER_SETTINGS");
     if (!settingsFileName.isEmpty())
         SettingsGroup::setGlobalIniFilename(QFile::decodeName(settingsFileName));
+
+    SettingsGroup::setGlobalCustomSettingsFormat(SimpleBase::simpleBaseFormat());
 
     if (a.arguments().count() == 1)
     {
