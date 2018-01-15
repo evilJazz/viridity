@@ -2,6 +2,7 @@ import QtQuick 2.2
 import Viridity 1.0
 
 ViridityDataBridge {
+    id: dataBridge
     session: currentSession // context property pointing to ViriditySession instance set when setting up the QML engine + logic in AbstractViriditySessionManager::initSession
     targetId: "test"
 
@@ -22,7 +23,7 @@ ViridityDataBridge {
         interval: 2000
         repeat: true
         triggeredOnStart: true
-        onTriggered: sendData("Timer triggered.")
+        onTriggered: dataBridge.sendData("Timer triggered.")
     }
 
     Connections {
@@ -30,7 +31,7 @@ ViridityDataBridge {
 
         onAttached:
         {
-            sendData(
+            dataBridge.sendData(
                 "Session is attached!",
                 function(response, sessionId)
                 {
@@ -43,7 +44,7 @@ ViridityDataBridge {
 
         onInitialized:
         {
-            sendData(
+            dataBridge.sendData(
                 "Session is initialized!",
                 function(response, sessionId)
                 {

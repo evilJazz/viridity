@@ -1,4 +1,4 @@
-QT       += core qml
+QT       += core
 
 TARGET = simple
 
@@ -20,6 +20,9 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
+contains(QT_VERSION, ^4\\..*): CONFIG += viridity_declarative viridity_qtquick1
+contains(QT_VERSION, ^5\\..*): CONFIG += viridity_declarative viridity_qtquick2
+CONFIG  += kcl_enable_ccache
 include(../../viridity-static.pri)
 
 linux-* {
