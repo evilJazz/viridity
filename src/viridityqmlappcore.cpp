@@ -24,9 +24,12 @@
 
 #include "KCL/filesystemutils.h"
 #include "KCL/settingsgroup.h"
-#include "KCL/simplebase.h"
 #include "KCL/logging.h"
 #include "KCL/debug.h"
+
+#ifdef KCL_simplebase
+#include "KCL/simplebase.h"
+#endif
 
 #include "viriditydeclarative.h"
 #include "viriditydatabridge.h"
@@ -109,7 +112,7 @@ bool ViridityQmlBasicAppCore::initialize(const QUrl &globalLogicUrl, const QUrl 
     return true;
 }
 
-bool ViridityQmlBasicAppCore::startWebServer(int dataPort)
+bool ViridityQmlBasicAppCore::startWebServer(const QHostAddress &address, int dataPort)
 {
     DGUARDMETHODTIMED;
 
@@ -128,7 +131,7 @@ bool ViridityQmlBasicAppCore::startWebServer(int dataPort)
     // Start web server...
     DPRINTF("Starting web server...");
 
-    return server_->listen(QHostAddress::Any, dataPort);
+    return server_->listen(address, dataPort);
 }
 
 void ViridityQmlBasicAppCore::stopWebServer()
@@ -139,6 +142,7 @@ void ViridityQmlBasicAppCore::stopWebServer()
 
 void ViridityQmlBasicAppCore::initEngine()
 {
+    DGUARDMETHODTIMED;
     FileRequestHandler::publishViridityFiles();
     ViridityDeclarative::registerTypes();
 
@@ -159,6 +163,7 @@ ViridityQmlExtendedAppCore::~ViridityQmlExtendedAppCore()
 
 bool ViridityQmlExtendedAppCore::initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, const QString &dataLocation)
 {
+    DGUARDMETHODTIMED;
     if (!ViridityQmlBasicAppCore::initialize(globalLogicUrl, sessionLogicUrl))
         return false;
 
@@ -185,10 +190,11 @@ bool ViridityQmlExtendedAppCore::initialize(const QUrl &globalLogicUrl, const QU
 
     // Read settings...
     DPRINTF("Loading settings from %s...", settingsFileName_.toUtf8().constData());
+
+#ifdef KCL_logging
     debugLogFileName_ = settings_->value("logging/debugLogFileName", FileSystemUtils::pathAppend(qApp->applicationDirPath(), "debug.log")).toString();
 
-    QString databaseType = settings_->value("database/type", "sqlite").toString().toLower();
-
+/*
     // Enable debug logger...
     if (!debugLogFileName_.isEmpty())
     {
@@ -200,6 +206,11 @@ bool ViridityQmlExtendedAppCore::initialize(const QUrl &globalLogicUrl, const QU
     }
     else
         DPRINTF("No debug logging to file enabled...");
+*/
+#endif
+
+#ifdef KCL_simplebase
+    QString databaseType = settings_->value("database/type", "sqlite").toString().toLower();
 
     // Initialize data storage...
     DPRINTF("Setting up database...");
@@ -233,12 +244,19 @@ bool ViridityQmlExtendedAppCore::initialize(const QUrl &globalLogicUrl, const QU
 
     SimpleBase sb;
     sb.loadDatabase();
+#endif
 
     return true;
 }
 
+QSharedPointer<RewriteRequestHandler> ViridityQmlExtendedAppCore::rewriteRequestHandler()
+{
+    return rewriteRequestHandler_;
+}
+
 void ViridityQmlExtendedAppCore::initEngine()
 {
+    DGUARDMETHODTIMED;
     ViridityQmlBasicAppCore::initEngine();
 
     // Initialize static KCL plugin...

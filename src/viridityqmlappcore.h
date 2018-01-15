@@ -23,7 +23,7 @@ public:
     virtual bool initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl);
     virtual void installTrapsForDefaultQuittingSignals();
 
-    virtual bool startWebServer(int dataPort);
+    virtual bool startWebServer(const QHostAddress &address, int dataPort);
     virtual void stopWebServer();
 
     static ViridityQmlBasicAppCore *instance();
@@ -43,6 +43,8 @@ public:
     virtual ~ViridityQmlExtendedAppCore();
 
     virtual bool initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, const QString &dataLocation);
+
+    QSharedPointer<RewriteRequestHandler> rewriteRequestHandler();
 
 protected:
     virtual void initEngine();
