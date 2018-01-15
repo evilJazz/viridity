@@ -75,13 +75,15 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/rewriterequesthandler.cpp
 
 viridity_declarative {
-    QT += qml
+    include($$PWD/3rdparty/kcl/qmlpp/src/qmlpp.pri)
 
     viridity_qtquick1 {
         message("Viridity: Configuring QtQuick 1.x declarative support classes")
         QT += declarative
         DEFINES += VIRIDITY_USE_QTQUICK1
         DEFINES -= VIRIDITY_USE_QTQUICK2
+
+        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml/Viridity, @QtQuick1, 1.0)
     }
 
     viridity_qtquick2 {
@@ -89,6 +91,8 @@ viridity_declarative {
         QT += qml quick
         DEFINES += VIRIDITY_USE_QTQUICK2
         DEFINES -= VIRIDITY_USE_QTQUICK1
+
+        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml/Viridity, @QtQuick2, 2.0)
     }
 
     HEADERS += \
@@ -197,9 +201,6 @@ viridity_module_display {
     }
 
     viridity_declarative {
-
-        include($${PWD}/3rdparty/kcl/qmlpp/src/qmlpp.pri)
-
         viridity_qtquick1 {
             message("Viridity: Configuring display module with QtQuick 1.x support")
 
@@ -223,9 +224,6 @@ viridity_module_display {
             SOURCES += \
                 $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
         }
-
-        contains(DEFINES, VIRIDITY_USE_QTQUICK1): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick1, 1.0)
-        contains(DEFINES, VIRIDITY_USE_QTQUICK2): qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml, @QtQuick2, 2.0)
 
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
