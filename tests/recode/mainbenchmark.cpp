@@ -7,13 +7,13 @@
 
 #include <QPainter>
 
-#include "graphicsscenedisplay.h"
-#include "comparer/imagecomparer.h"
-#include "private/graphicsscenedisplaytests.h"
+#include "display/graphicsscenedisplay.h"
+#include "display/comparer/imagecomparer.h"
+#include "display/private/graphicsscenedisplaytests.h"
 
 #include "KCL/imageutils.h"
 
-#ifdef USE_IMPROVED_JPEG
+#ifdef VIRIDITY_USE_IMPROVED_JPEG
 #include "private/jpegwriter.h"
 #endif
 

@@ -23,7 +23,7 @@ CONFIG(release, debug|release) {
 contains(QT_VERSION, ^4\\..*): CONFIG += viridity_declarative viridity_qtquick1
 contains(QT_VERSION, ^5\\..*): CONFIG += viridity_declarative viridity_qtquick2
 CONFIG += viridity_module_display
-
+CONFIG  += kcl_enable_ccache
 include(../../viridity-static.pri)
 
 linux-* {
@@ -35,20 +35,11 @@ linux-* {
 RESOURCES += \
     resources.qrc
 
-# ccache available?
-*g++* {
-    system(ccache -V): CONFIG += ccache_available
-
-    ccache_available {
-        message("Using ccache for speeding up repeated builds.")
-        QMAKE_CC = ccache $$QMAKE_CC
-        QMAKE_CXX = ccache $$QMAKE_CXX
-    }
-}
-
 #DEFINES += QT_SHAREDPOINTER_TRACK_POINTERS
 #QMAKE_CFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
 #QMAKE_CXXFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
 #QMAKE_LFLAGS += -lasan -g -fsanitize=address -fno-omit-frame-pointer
 
 DEFINES += VIRIDITY_DEBUG_REQUESTHANDLER
+#DEFINES += VIRIDITY_DEBUG
+

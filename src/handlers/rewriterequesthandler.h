@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2012-2016 Andre Beckedorf, Meteora Softworks
+** Copyright (C) 2012-2017 Andre Beckedorf, Meteora Softworks
 ** Contact: info@meteorasoftworks.com
 **
 ** This file is part of Viridity
@@ -36,8 +36,8 @@ public:
     explicit RewriteRequestHandler(ViridityWebServer *server, QObject *parent = NULL);
     virtual ~RewriteRequestHandler();
 
-    void addRule(const QString &rule);
-    void removeRule(const QString &rule);
+    bool addRule(const QString &rule);
+    bool removeRule(const QString &rule);
 
     void clear();
 
@@ -45,7 +45,25 @@ public:
     void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
+    enum RewriteFlag
+    {
+        RewriteInternal,
+        RewriteExternal
+    };
+
+    struct RewriteRule
+    {
+        QString pattern; // TODO: One QRegExp instance can not be used by different threads, find solution to prepare reg exp...
+        QString substitution;
+        RewriteFlag flag;
+        int rewriteHttpStatusCode;
+
+        bool interpretRule(const QString &rule);
+        QString doesMatchAndSubstitute(const QString &input) const;
+    };
+
     QStringList rewriteRules_;
+    QList<RewriteRule> interpretedRewriteRules_;
 };
 
 #endif // REWRITEREQUESTHANDLER_H

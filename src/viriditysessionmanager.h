@@ -224,6 +224,7 @@ public:
     Q_INVOKABLE static QString parseIdFromUrl(const QByteArray &url);
 
     // ViridityRequestHandler
+    virtual void filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
     virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
     virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 

@@ -114,13 +114,23 @@ public:
     virtual ~ViridityRequestHandler() {}
 
     /*!
+     * Unconditionally called to filter the request and possibly set up headers in the response.
+     * \param request The request instance received from the client/browser via the ViridityWebServer.
+     * \param response The pending response instance to the client/browser.
+     */
+    virtual void filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response) = 0;
+
+    /*!
      * Determines whether this class can handle (or wishes to handle) the request.
      * \param request The request instance received from the client/browser via the ViridityWebServer.
      * \return Return true if this class can handle the request, false otherwise.
      */
     virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request) = 0;
 
-    /*! Called to handle an incoming request and send out the response. */
+    /*! Called to handle an incoming request and send out the response.
+     * \param request The request instance received from the client/browser via the ViridityWebServer.
+     * \param response The pending response instance to the client/browser.
+     */
     virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response) = 0;
 };
 
@@ -137,6 +147,7 @@ public:
     virtual ~ViridityBaseRequestHandler();
 
     // ViridityRequestHandler
+    virtual void filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
     virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
     virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 

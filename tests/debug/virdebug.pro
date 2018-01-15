@@ -24,7 +24,7 @@ CONFIG(release, debug|release) {
     QMAKE_CXXFLAGS -= -g
 }
 
-CONFIG += viridity_module_display_tools viridity_module_display_qtquick1
+CONFIG += viridity_module_display_tools
 include(../../viridity-static.pri)
 
 RESOURCES += \

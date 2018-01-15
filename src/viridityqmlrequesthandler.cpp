@@ -1,6 +1,6 @@
 #include "viridityqmlrequesthandler.h"
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     #include <QDeclarativeEngine>
     typedef QDeclarativeEngine DeclarativeEngine;
 #else
@@ -114,6 +114,32 @@ public:
     virtual ~PrivateQmlRequestHandler()
     {
         DGUARDMETHODTIMED;
+    }
+
+    void filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
+    {
+        DGUARDMETHODTIMED;
+
+        if (!proxy_) return;
+
+        if (proxy_->metaObject()->indexOfMethod("filterRequestResponse(QVariant,QVariant)") == -1)
+            return;
+
+        PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
+        requestWrapper->moveToThread(proxy_->thread());
+        QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
+
+        PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
+        responseWrapper->moveToThread(proxy_->thread());
+        QVariant responseVar = ObjectUtils::objectToVariant(responseWrapper);
+
+        QMetaObject::invokeMethod(
+            proxy_,
+            "filterRequestResponse",
+            Qt::QueuedConnection,
+            Q_ARG(QVariant, requestVar),
+            Q_ARG(QVariant, responseVar)
+        );
     }
 
     bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)

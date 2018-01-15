@@ -1,6 +1,6 @@
 #include "viridityqtquickdisplay.h"
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     #include <QGraphicsScene>
     #include <QDeclarativeEngine>
     #include <QDeclarativeContext>
@@ -76,7 +76,7 @@ protected slots:
         }
         */
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
         QDeclarativeItem *rootItem = qobject_cast<QDeclarativeItem *>(item);
 
         if (rootItem)

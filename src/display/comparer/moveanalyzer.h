@@ -58,7 +58,7 @@ struct VectorEstimate
 
 typedef QList<VectorEstimate> VectorEstimates;
 
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
 class AreaFingerPrints;
 #endif
 
@@ -89,7 +89,7 @@ signals:
 protected:
     friend class ImageComparerTest;
     QRect findMovedRect(const QRect &searchArea, const QRect &templateRect);
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
     QRect findMovedRectAreaFingerPrint(const QRect &searchArea, const QRect &templateRect);
 #endif
     QRect findMovedRectExhaustive(const QRect &searchArea, const QRect &templateRect);
@@ -105,7 +105,7 @@ private:
 
     int templateWidth_;
     int searchRadius_;
-#ifdef USE_AREAFINGERPRINTS
+#ifdef VIRIDITY_USE_AREAFINGERPRINTS
     AreaFingerPrints *searchAreaFingerPrints_;
 #endif
 

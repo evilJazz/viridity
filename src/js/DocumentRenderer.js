@@ -29,6 +29,25 @@
 **
 ****************************************************************************/
 
+var DR = {
+    documentRenderers: [],
+    dataBridges: {},
+
+    a: function(actionName, itemName, targetId, element)
+    {
+        var dataBridge = DR.dataBridges[targetId];
+        if (dataBridge)
+        {
+            dataBridge.sendData({
+                action: actionName,
+                itemName: itemName
+            });
+        }
+        else
+            console.log("Target databridge '" + targetId + "' not found while sending action '" + actionName + "' from element '" + itemName + "'.");
+    }
+};
+
 var DocumentRenderer = function(viridityChannel, id)
 {
     var v = viridityChannel;
@@ -42,14 +61,6 @@ var DocumentRenderer = function(viridityChannel, id)
         {
             dataBridge.sendData({
                 action: "contentUpdate",
-                itemName: itemName
-            });
-        },
-
-        trigger: function(element, itemName)
-        {
-            dataBridge.sendData({
-                action: "clicked",
                 itemName: itemName
             });
         },
@@ -143,8 +154,13 @@ var DocumentRenderer = function(viridityChannel, id)
     viridityChannel.on("sessionReattached", c.dataBridgeGlobal.subscribe);
 
     // Data bridge for the session logic
-    c.dataBridgeSession = new DataBridge(viridityChannel, id + "Session");
+    var sessionTargetId = id + "Session";
+    c.dataBridgeSession = new DataBridge(viridityChannel, sessionTargetId);
     c.dataBridgeSession.onDataReceived = function(input) { return c.handleDataReceived(c.dataBridgeSession, input); };
+
+    DR.documentRenderers.push(c);
+    DR.dataBridges[id] = c.dataBridgeGlobal;
+    DR.dataBridges[sessionTargetId] = c.dataBridgeSession;
 
     return c;
 }

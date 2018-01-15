@@ -9,9 +9,9 @@ ViridityHTMLSegment {
 
     name: "button"
     contentMarkerElement: "button"
-    contentMarkerAttributes: ({
-        onclick: "documentRenderer.trigger(this, '" + name + "')"
-    })
+    contentMarkerAttributes: topLevelTemplateRenderer ? ({
+        onclick: "DR.a('clicked', '" + name + "', '" + topLevelTemplateRenderer.targetId + "', this)"
+    }) : ({})
 
     template: '${title}';
 
@@ -25,7 +25,7 @@ ViridityHTMLSegment {
         onDataReceived: // input
         {
             if (input.action === "clicked" &&
-                input.itemName === renderer.name)
+                input.itemName === button.name)
             {
                 button.clicked();
             }

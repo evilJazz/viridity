@@ -1,4 +1,4 @@
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
 #include <QApplication>
 #else
 #include <QGuiApplication>
@@ -29,7 +29,7 @@
 
 int main(int argc, char *argv[])
 {
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     QApplication a(argc, argv);
 #else
     QGuiApplication a(argc, argv);

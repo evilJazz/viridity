@@ -14,11 +14,9 @@ TEMPLATE = app
 
 SOURCES += main.cpp
 
-CONFIG += viridity_module_display_areafingerprints
-
+CONFIG += viridity_module_display viridity_module_display_areafingerprints
+CONFIG  += kcl_enable_ccache
 include(../../viridity-static.pri)
-
-DEFINES += USE_MOVE_ANALYZER USE_MOVE_ANALYZER_FINEGRAINED
 
 RESOURCES += \
     ../testdata/resources.qrc

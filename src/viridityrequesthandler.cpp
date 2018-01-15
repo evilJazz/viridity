@@ -103,6 +103,10 @@ ViridityBaseRequestHandler::~ViridityBaseRequestHandler()
 {
 }
 
+void ViridityBaseRequestHandler::filterRequestResponse(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
+{
+}
+
 bool ViridityBaseRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     return false;

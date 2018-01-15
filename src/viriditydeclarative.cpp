@@ -29,7 +29,7 @@
 #include "viridityqmlrequesthandler.h"
 #include "viriditydatabridge.h"
 
-#ifdef USE_QTQUICK1
+#ifdef VIRIDITY_USE_QTQUICK1
     #include <QtDeclarative>
     #include <QDeclarativeEngine>
     #include <QDeclarativeContext>
