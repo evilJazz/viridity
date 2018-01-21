@@ -9,17 +9,17 @@
 #include <QDir>
 
 #include <Viridity/ViridityWebServer>
-#include "viriditydeclarative.h"
-#include "viridityqmlsessionmanager.h"
-#include "viriditydatabridge.h"
-#include "handlers/filerequesthandler.h"
+#include <Viridity/Declarative>
+#include <Viridity/ViridityQmlSessionManager>
+#include <Viridity/ViridityNativeDataBridge>
+#include <Viridity/FileRequestHandler>
 
 #ifdef VIRIDITY_DEBUG
 #define VIRIDITY_DEBUG_REQUESTHANDLER
 #endif
 
 #ifdef VIRIDITY_DEBUG_REQUESTHANDLER
-#include "handlers/debugrequesthandler.h"
+#include <Viridity/DebugRequestHandler>
 #endif
 
 #include "kclplugin.h"

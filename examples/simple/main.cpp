@@ -1,7 +1,7 @@
 #include <QCoreApplication>
 
-#include "viridityqmlappcore.h"
-#include "handlers/filerequesthandler.h"
+#include <Viridity/ViridityQmlExtendedAppCore>
+#include <Viridity/FileRequestHandler>
 
 int main(int argc, char *argv[])
 {
