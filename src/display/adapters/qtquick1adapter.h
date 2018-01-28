@@ -36,6 +36,8 @@ public:
 
     virtual void setSize(int width, int height, qreal ratio);
 
+    QDeclarativeItem *rootItem() const { return rootItem_; }
+
 private:
     QDeclarativeItem *rootItem_;
 };
