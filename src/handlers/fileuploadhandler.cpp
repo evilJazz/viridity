@@ -363,7 +363,7 @@ private:
 
 FileUploadHandler::FileUploadHandler(const QString &urlEndPoint, ViridityWebServer *server, QObject *parent) :
     ViridityBaseRequestHandler(server, parent),
-    urlRe_(urlEndPoint)
+    urlEndPoint_(urlEndPoint)
 {
 }
 
@@ -373,7 +373,8 @@ FileUploadHandler::~FileUploadHandler()
 
 bool FileUploadHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
-    return QString::fromUtf8(request->url()).indexOf(urlRe_) > -1;
+    QRegExp urlRe(urlEndPoint_);
+    return QString::fromUtf8(request->url()).indexOf(urlRe) > -1;
 }
 
 void FileUploadHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
