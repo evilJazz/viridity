@@ -641,6 +641,14 @@ var ViridityDisplayEvents = {
                 dr.resize(containerElement.width(), containerElement.height(), force);
             },
 
+            getCanvasRelativePosFromMouseEvent: function(event)
+            {
+                var offset = $(dr.frontCanvas).offset();
+                var posX = (event.pageX - offset.left) * dr.ratio;
+                var posY = (event.pageY - offset.top) * dr.ratio;
+                return { x: posX, y: posY };
+            },
+
             _requestNewDisplay: function()
             {
                 if (v.connected)
@@ -763,14 +771,6 @@ var ViridityDisplayEvents = {
                 //dr.useBlobBuilder = BlobBuilder && URL;
                 dr.useBlobBuilder = false;
 
-                function getCanvasPos(event)
-                {
-                    var offset = $(dr.frontCanvas).offset();
-                    var posX = (event.pageX - offset.left) * dr.ratio;
-                    var posY = (event.pageY - offset.top) * dr.ratio;
-                    return { x: posX, y: posY };
-                }
-
                 function getModifiers(event)
                 {
                     var modifiers = 0;
@@ -795,7 +795,7 @@ var ViridityDisplayEvents = {
                     if (!v.connected)
                         return;
 
-                    var pos = getCanvasPos(event);
+                    var pos = dr.getCanvasRelativePosFromMouseEvent(event);
 
                     // Round coordinates, because IE is sending floats...
                     pos.x = Math.round(pos.x);
