@@ -286,16 +286,21 @@ GraphicsSceneFramePatch *GraphicsSceneDisplay::createPatch(const QRect &rect)
 void GraphicsSceneDisplay::updateCheckTimerTimeout()
 {
     DGUARDMETHODTIMED;
-    QMutexLocker l(&patchesMutex_);
 
-    DPRINTF("display: %p thread: %p id: %s UPDATE AVAILABLE! clientReady_: %s  patches_.count(): %d", this, this->thread(), id().toUtf8().constData(), clientReady_ ? "true" : "false", patches_.count());
-    updateCheckTimer_->stop();
-
-    if (clientReady_ && patches_.count() == 0)
+    if (patchesMutex_.tryLock())
     {
-        l.unlock();
-        updateAvailable_ = true;
-        emit updateAvailable();
+        patchesMutex_.unlock();
+        QMutexLocker l(&patchesMutex_);
+
+        DPRINTF("display: %p thread: %p id: %s UPDATE AVAILABLE! clientReady_: %s  patches_.count(): %d", this, this->thread(), id().toUtf8().constData(), clientReady_ ? "true" : "false", patches_.count());
+        updateCheckTimer_->stop();
+
+        if (clientReady_ && patches_.count() == 0)
+        {
+            l.unlock();
+            updateAvailable_ = true;
+            emit updateAvailable();
+        }
     }
 }
 
