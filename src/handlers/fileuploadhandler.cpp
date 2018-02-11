@@ -327,6 +327,14 @@ private slots:
 
         parts_.clear();
         filenameToParts_.clear();
+
+        if (request_)
+        {
+            disconnect(request_.data(), SIGNAL(data(QByteArray)), this, SLOT(onData(QByteArray)));
+            disconnect(request_.data(), SIGNAL(end()), this, SLOT(onEnd()));
+        }
+
+        deleteLater();
     }
 
 private:
