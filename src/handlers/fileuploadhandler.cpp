@@ -39,7 +39,7 @@ class FileUploadDataHandler : public QObject
     Q_OBJECT
 public:
     explicit FileUploadDataHandler(FileUploadHandler *parent, QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response) :
-        QObject(parent),
+        QObject(),
         parent_(parent),
         request_(request),
         response_(response),
