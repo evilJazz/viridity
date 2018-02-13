@@ -129,6 +129,10 @@ void QGraphicsSceneAdapter::handleMouseEvent(QEvent::Type type, const QPointF &s
     }
     else if (type == QEvent::MouseButtonPress)
     {
+        // Synthesize at least one mouse move event for when hover/move events are disabled in client
+        // to prevent mouse grabber issues in the scene...
+        handleMouseEvent(QEvent::MouseMove, scenePos, button, buttons, modifiers);
+
         type = QEvent::GraphicsSceneMousePress;
         lastButtonDownScenePos_ = scenePos;
         lastButtonDownScreenPos_ = screenPos;
