@@ -169,6 +169,40 @@ String.prototype.removeTrailingSlash = function()
     return this.replace(/\/$/, "");
 }
 
+var ViridityHelper = {
+    parseOriginUri: function(originUri)
+    {
+        var parser;
+        if (typeof(originUri) !== "undefined")
+        {
+            parser = document.createElement('a');
+            parser.href = originUri;
+        }
+        else
+            parser = window.location;
+
+        var pathnameNoFilename = String(parser.pathname);
+        pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/")).removeTrailingSlash();
+
+        var hostWithPath = parser.host.removeTrailingSlash();
+        if (pathnameNoFilename.length > 0)
+            hostWithPath += "/" + pathnameNoFilename.removeLeadingSlash();
+
+        return {
+            location: hostWithPath,
+            fullLocation: parser.protocol + "//" + hostWithPath
+        }
+    },
+
+    getCurrentScriptUri: function()
+    {
+        // Read from the document where we loaded this script from...
+        var allScripts = document.getElementsByTagName('script');
+        var lastLoadedScript = allScripts[allScripts.length - 1]; // Note: We can do this because scripts are guaranteed to be loaded and executed in order unless loaded async.
+        return lastLoadedScript.src;
+    }
+}
+
 var Viridity = function(options)
 {
     var v =
@@ -736,24 +770,10 @@ var Viridity = function(options)
             if (typeof(options.sessionId) != "undefined" && options.sessionId != "")
                 v.sessionId = options.sessionId;
 
-            var parser;
-            if (typeof(options.originUri) !== "undefined")
-            {
-                parser = document.createElement('a');
-                parser.href = options.originUri;
-            }
-            else
-                parser = window.location;
+            var l = ViridityHelper.parseOriginUri(options.originUri);
 
-            var pathnameNoFilename = String(parser.pathname);
-            pathnameNoFilename = pathnameNoFilename.substring(0, pathnameNoFilename.lastIndexOf("/")).removeTrailingSlash();
-
-            var hostWithPath = parser.host.removeTrailingSlash();
-            if (pathnameNoFilename.length > 0)
-                hostWithPath += "/" + pathnameNoFilename.removeLeadingSlash();
-
-            v.location = hostWithPath;
-            v.fullLocation = parser.protocol + "//" + v.location;
+            v.location = l.location;
+            v.fullLocation = l.fullLocation;
 
             if (v.debugVerbosity > 0)
             {
