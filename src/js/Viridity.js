@@ -332,6 +332,10 @@ var Viridity = function(options)
                     cache: false,
                     timeout: v.timeout,
                     data: data,
+                    crossDomain: true,
+                    xhrFields: {
+                        withCredentials: true
+                    },
 
                     success: function(data)
                     {
@@ -374,11 +378,13 @@ var Viridity = function(options)
             {
                 type: "GET",
                 url: v.fullLocation + "/" + v.sessionId + "/v" + param,
-
                 async: true,
                 cache: false,
-
                 timeout: v.timeout,
+                crossDomain: true,
+                xhrFields: {
+                    withCredentials: true
+                },
 
                 success: function(data)
                 {

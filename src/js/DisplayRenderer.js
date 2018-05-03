@@ -480,12 +480,12 @@ var ViridityDisplayEvents = {
 
                     if (t.dataAsString(0, 3) === "fb:")
                     {
-                        img.crossOrigin = "Anonymous";
+                        img.crossOrigin = "use-credentials";
                         img.src = v.fullLocation + "/" + v.sessionId + "/p/" + t.dataAsString(3);
                     }
                     else if (t.dataAsString(0, 4) === "http")
                     {
-                        img.crossOrigin = "Anonymous";
+                        img.crossOrigin = "use-credentials";
                         img.src = t.dataAsString();
                     }
                     else if (dr.useBlobBuilder)
