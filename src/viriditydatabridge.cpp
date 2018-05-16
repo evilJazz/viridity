@@ -110,6 +110,17 @@ void ViridityNativeDataBridge::unregisterMessageHandler()
         sessionManager_->unregisterMessageHandler(this);
 }
 
+void ViridityNativeDataBridge::subscribeSession(const QString &subscribingSessionId)
+{
+    if (!subscriberSessionIds_.contains(subscribingSessionId))
+        subscriberSessionIds_.insert(subscribingSessionId);
+}
+
+void ViridityNativeDataBridge::unsubscribeSession(const QString &unsubscribingSessionId)
+{
+    subscriberSessionIds_.remove(unsubscribingSessionId);
+}
+
 AbstractViriditySessionManager *ViridityNativeDataBridge::sessionManager() const
 {
     return session_ ? session_->sessionManager() : sessionManager_.data();
@@ -141,7 +152,18 @@ QVariant ViridityNativeDataBridge::sendData(const QString &data, const QString &
     {
         // Send data only to subscribers, i.e. when this data bridge is not in context of a specific owner session...
         foreach (const QString &sessionId, subscriberSessionIds_)
-            dispatched = sessionManager()->dispatchMessageToClient(message.toUtf8(), sessionId, targetId_);
+        {
+            ViriditySession *session = sessionManager()->getSession(sessionId);
+            if (session && session->isAttached())
+            {
+                dispatched = sessionManager()->dispatchMessageToClient(message.toUtf8(), sessionId, targetId_);
+            }
+            else
+            {
+                unsubscribeSession(sessionId);
+                dispatched = false;
+            }
+        }
     }
 
     return dispatched ? result : false;
@@ -149,7 +171,7 @@ QVariant ViridityNativeDataBridge::sendData(const QString &data, const QString &
 
 bool ViridityNativeDataBridge::canHandleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
 {
-    return targetId == targetId_ && (message.startsWith("dataResponse") || message.startsWith("data") || message.startsWith("dataSubscribe"));
+    return targetId == targetId_ && message.startsWith("data");
 }
 
 bool ViridityNativeDataBridge::handleMessage(const QByteArray &message, const QString &sessionId, const QString &targetId)
@@ -208,11 +230,23 @@ bool ViridityNativeDataBridge::localHandleMessage(const QByteArray &message, con
             setResponse(QString::null);
             emit sessionSubscribed(responseId, subscribingSessionId);
 
-            if (response() != "false" && !subscriberSessionIds_.contains(subscribingSessionId))
-                subscriberSessionIds_.insert(subscribingSessionId);
+            if (response() != "false")
+                subscribeSession(subscribingSessionId);
 
             QString message = QString("dataResponse(%1):%2").arg(responseId).arg(response());
             sessionManager()->dispatchMessageToClient(message.toUtf8(), subscribingSessionId, targetId);
+            return true;
+        }
+        else if (params.length() == 2 && command == "dataUnsubscribe")
+        {
+            QString responseId = params.at(0);
+            QString unsubscribingSessionId = params.at(1);
+
+            emit sessionUnsubscribed(responseId, unsubscribingSessionId);
+            unsubscribeSession(unsubscribingSessionId);
+
+            QString message = QString("dataResponse(%1):%2").arg(responseId).arg("true");
+            sessionManager()->dispatchMessageToClient(message.toUtf8(), unsubscribingSessionId, targetId);
             return true;
         }
     }

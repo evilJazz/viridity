@@ -70,6 +70,7 @@ signals:
     void dataReceived(const QString &responseId, const QString &input);
     void responseReceived(const QString &responseId, const QString &response, const QString &sessionId);
     void sessionSubscribed(const QString &responseId, const QString &subscribingSessionId);
+    void sessionUnsubscribed(const QString &responseId, const QString &subscribingSessionId);
 
     void sessionManagerChanged();
     void sessionChanged();
@@ -92,6 +93,9 @@ private:
 
     void registerMessageHandler();
     void unregisterMessageHandler();
+
+    void subscribeSession(const QString &sessionId);
+    void unsubscribeSession(const QString &unsubscribingSessionId);
 };
 
 #endif // VIRIDITYDATABRIDGE_H
