@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/">
+        <file>test.template.html</file>
+        <file>ReactiveGlobalLogic.qml</file>
+        <file>ReactiveSessionLogic.qml</file>
+    </qresource>
+</RCC>
