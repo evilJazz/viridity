@@ -48,7 +48,7 @@ signals:
     void newFilesUploaded(const QVariantList &files);
 
 private:
-    QRegExp urlRe_;
+    QString urlEndPoint_;
 };
 
 #endif // FILEUPLOADHANDLER_H

@@ -62,6 +62,8 @@ public:
     void render(QPainter *painter, const QRect &rect);
     void render(QPainter *painter, const QVector<QRect> &rects);
 
+    QQuickItem *rootItem() const { return rootItem_; }
+
 private slots:
     void detachFromRootItem();
 

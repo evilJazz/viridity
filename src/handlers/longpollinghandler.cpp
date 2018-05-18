@@ -117,6 +117,12 @@ void LongPollingHandler::doHandleRequest(QSharedPointer<ViridityHttpServerReques
             InputPostHandler *handler = new InputPostHandler(request, response, session);
             return;
         }
+        else if (request->method() == "OPTIONS") // to allow CORS pre check
+        {
+            response->writeHead(200);
+            response->end("OK");
+            return;
+        }
     }
     else // start new connection
     {

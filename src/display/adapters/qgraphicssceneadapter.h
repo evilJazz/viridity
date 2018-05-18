@@ -49,6 +49,8 @@ public:
     void render(QPainter *painter, const QRect &rect);
     void render(QPainter *painter, const QVector<QRect> &rects);
 
+    QGraphicsScene *scene() const { return scene_; }
+
 private:
     QGraphicsScene *scene_;
     SynchronizedSceneChangedHandler *sceneChangedHandler_;
