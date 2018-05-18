@@ -164,3 +164,18 @@ var DocumentRenderer = function(viridityChannel, id)
 
     return c;
 }
+
+var DocumentRendererGlobal = {
+    autoAttach: function(channel)
+    {
+        var targetId = $("body").attr("data-vdr-targetId");
+
+        if (typeof(targetId) != "undefined")
+        {
+            if (typeof(channel) == "undefined" && typeof(ViridityChannel) != "undefined")
+                channel = ViridityChannel;
+
+            var dr = new DocumentRenderer(channel, targetId);
+        }
+    }
+}

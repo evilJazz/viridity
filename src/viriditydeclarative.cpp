@@ -25,6 +25,7 @@
 #include "viriditydeclarative.h"
 
 #include "viriditysessionmanager.h"
+#include "viridityqmlsessionmanager.h"
 #include "viriditywebserver.h"
 #include "viridityqmlrequesthandler.h"
 #include "viriditydatabridge.h"
@@ -64,6 +65,8 @@ void ViridityDeclarative::registerTypes()
 {
     qmlRegisterType<ViridityQmlRequestHandler>("Viridity", 1, 0, "ViridityRequestHandler");
     qmlRegisterType<ViridityNativeDataBridge>("Viridity", 1, 0, "ViridityNativeDataBridge");
+    qmlRegisterUncreatableType<AbstractViriditySessionManager>("Viridity", 1, 0, "AbstractViriditySessionManager", "Can't create a session manager out of thin air.");
+    qmlRegisterUncreatableType<ViridityQmlSessionManager>("Viridity", 1, 0, "ViridityQmlSessionManager", "Can't create a session manager out of thin air.");
     qmlRegisterUncreatableType<ViriditySession>("Viridity", 1, 0, "ViriditySession", "Can't create a session out of thin air.");
 
 #ifdef VIRIDITY_MODULE_DISPLAY

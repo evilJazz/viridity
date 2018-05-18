@@ -11,27 +11,9 @@
     <script src="Viridity.js"></script>
     <script src="DataBridge.js"></script>
     <script src="DocumentRenderer.js"></script>
-
-    <script type="text/javascript">
-        $(document).ready(function($) {
-            var channel = new Viridity({ connectionMethod: ConnectionMethod.WebSockets, sessionId: $.cookie("vsessionId") });
-            //channel.debugVerbosity = 4;
-
-            channel.on("sessionStart", function(sessionId)
-            {
-                $.cookie("vsessionId", sessionId); // Save session id in cookie so we can re-attach again...
-            });
-
-            channel.on("sessionReattached", function(sessionId)
-            {
-                $.cookie("vsessionId", sessionId); // Save session id to cookie in case it changed...
-            });
-
-            var documentRenderer = new DocumentRenderer(channel, "${targetId}");
-        });
-    </script>
+    <script src="ViridityAuto.js"></script>
   </head>
-  <body>
+  <body data-vdr-targetId="${targetId}">
     <div>${test}</div><span>${test2}</span>
     ${segment1}
   </body>

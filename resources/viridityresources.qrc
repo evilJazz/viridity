@@ -16,5 +16,6 @@
         <file alias="DisplayRenderer.js">../src/js/DisplayRenderer.js</file>
         <file alias="DocumentRenderer.js">../src/js/DocumentRenderer.js</file>
         <file alias="jquery.mousewheel.js">../src/js/jquery.mousewheel.js</file>
+        <file>ViridityAuto.js</file>
     </qresource>
 </RCC>
