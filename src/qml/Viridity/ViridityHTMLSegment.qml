@@ -146,6 +146,7 @@ TemplateRenderer {
         topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
             action: "update",
             property: renderer.name + propertyName,
+            parentName: renderer.parentRenderer ? renderer.parentRenderer.name : null,
             value: renderer[propertyName]
         });
     }

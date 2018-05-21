@@ -70,9 +70,17 @@ var DocumentRenderer = function(viridityChannel, id)
             if (input.action == "update")
             {
                 var item = $("#" + input.property);
-                item.html(input.value);
-                if (input.hasOwnProperty("generation"))
-                    item.attr("generation", input.generation);
+
+                if (item.length == 0)
+                {
+                    c.requestContentUpdate(dataBridge, input.parentName);
+                }
+                else
+                {
+                    item.html(input.value);
+                    if (input.hasOwnProperty("generation"))
+                        item.attr("generation", input.generation);
+                }
             }
             else if (input.action == "show")
             {

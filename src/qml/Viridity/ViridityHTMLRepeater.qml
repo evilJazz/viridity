@@ -17,7 +17,7 @@ ViridityHTMLColumn {
 
     property int generation: 0
 
-    property variant _ViridityHTMLRepeater_ignoredPropertyNames: _ViridityHTMLColumn_ignoredPropertyNames.concat(["model", "count", "generation"])
+    property variant _ViridityHTMLRepeater_ignoredPropertyNames: _ViridityHTMLColumn_ignoredPropertyNames.concat(["model", "count", "generation", "debug"])
     ignoredPropertyNames: _ViridityHTMLRepeater_ignoredPropertyNames
 
     property bool debug: false
@@ -26,39 +26,41 @@ ViridityHTMLColumn {
     {
         try
         {
-            if (debug) console.log("BEGINNING UPDATE");
+            if (debug) Debug.print("BEGINNING UPDATE");
             beginUpdate();
-            if (debug) console.log("BEGIN UPDATE");
+            if (debug) Debug.print("BEGIN UPDATE");
 
-            if (debug) console.log("UPDATE ITEMS -> NEW COUNT: " + count);
+            if (debug) Debug.print("UPDATE ITEMS -> NEW COUNT: " + count);
 
             var newChildren = [];
 
+            var child;
+
             for (var i = 0; i < children.length; ++i)
             {
-                var child = children[i];
+                child = children[i];
                 if (!isTemplateRenderer(child))
                     newChildren.push(children[i]);
             }
 
             for (var i = 0; i < dummyContainer.children.length; ++i)
             {
-                var child = dummyContainer.children[i];
+                child = dummyContainer.children[i];
                 if (child.hasOwnProperty("item") && child.item)
                 {
-                    child.item.topLevelTemplateRenderer = column.topLevelTemplateRenderer;
+                    child.item.parentRenderer = column;
                     newChildren.push(child.item);
                 }
             }
 
             children = newChildren;
-            if (debug) console.log("UPDATE ITEMS -> DONE: " + count);
+            if (debug) Debug.print("UPDATE ITEMS -> DONE: " + count);
         }
         finally
         {
-            if (debug) console.log("ENDING UPDATE");
+            if (debug) Debug.print("ENDING UPDATE");
             endUpdate();
-            if (debug) console.log("END UPDATE");
+            if (debug) Debug.print("END UPDATE");
         }
 
         _sendDifferentialUpdates();
@@ -88,11 +90,12 @@ ViridityHTMLColumn {
                 updates.push(action);
             }
 
-            if (debug) console.log("updates: " + JSON.stringify(updates, null, "  "));
+            if (debug) Debug.print("updates: " + JSON.stringify(updates, null, "  "));
 
             topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
                 action: "updateChildren",
                 itemName: column.name,
+                parentName: column.parentRenderer ? column.parentRenderer.name : null,
                 generation: generation,
                 updates: updates
             });
@@ -110,6 +113,7 @@ ViridityHTMLColumn {
             action: "update",
             property: column.name,
             generation: generation,
+            parentName: column.parentRenderer ? column.parentRenderer.name : null,
             value: column.content
         });
 
@@ -166,13 +170,14 @@ ViridityHTMLColumn {
 
             onItemAdded: // index, item
             {
-                if (column.debug) console.log("Repeater ITEM ADDED-> " + index + ": " + item);
+                if (column.debug) Debug.print("Repeater ITEM ADDED-> " + index + ": " + item);
                 column._addItem(index, item);
             }
 
             onItemRemoved: // index, item
             {
-                if (column.debug) console.log("Repeater ITEM REMOVED-> " + index + ": " + item);
+                if (!column) return;
+                if (column.debug) Debug.print("Repeater ITEM REMOVED-> " + index + ": " + item);
                 column._removeItem(index, item);
             }
 
@@ -185,11 +190,15 @@ ViridityHTMLColumn {
                 onItemChanged:
                 {
                     if (item)
-                        item.name = item.name + "_" + currentSessionManager.createUniqueID().substr(0, 10)
+                    {
+                        item.name = item.name + "_" + currentSessionManager.createUniqueID().substr(0, 10);
+                        item.parentRenderer = column;
+                    }
                 }
 
                 Connections {
                     target: column
+                    onParentRendererChanged: item.parentRenderer = column;
                     onTopLevelTemplateRendererChanged: item.topLevelTemplateRenderer = column.topLevelTemplateRenderer;
                 }
 
