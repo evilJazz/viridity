@@ -4,9 +4,14 @@
 #include <Viridity/FileRequestHandler>
 #include <Viridity/RewriteRequestHandler>
 
+#include "KCL/debug.h"
+
 int main(int argc, char *argv[])
 {
     QCoreApplication a(argc, argv);
+
+    forceEnableQtDebugOutput();
+    setDiagnosticOutputEnabled(true);
 
     ViridityQmlExtendedAppCore appCore;
 

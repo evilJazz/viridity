@@ -20,7 +20,7 @@ ViridityDataBridge {
         targetId: "myTestDocSession"
         name: "sessionSegment"
 
-        template: globalLogic.slow
+        templateText: globalLogic.slow
     }
 
     Component.onCompleted: Debug.print("Logic created.")

@@ -38,7 +38,7 @@ QtObjectWithChildren {
 
             ViridityHTMLSegment {
                 name: "segment2"
-                template: "<button>${blah}</button>"
+                templateText: "<button>${blah}</button>"
                 property string blah: global.test + 10
             }
 
@@ -74,7 +74,7 @@ QtObjectWithChildren {
                 ViridityHTMLSegment {
                     name: "listElement"
                     contentMarkerElement: "li"
-                    template: "<strong>${slow} -> ${title}</strong>"
+                    templateText: "<strong>${slow} -> ${title}</strong>"
 
                     property int slow: currentIndex
                     property string title: currentModelData
