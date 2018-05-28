@@ -9,10 +9,10 @@ ViridityHTMLSegment {
     property variant _ViridityHTMLColumn_ignoredPropertyNames: _TemplateRenderer_ignoredPropertyNames.concat(["columnTemplate", "blockUpdates"])
     ignoredPropertyNames: _ViridityHTMLColumn_ignoredPropertyNames
 
-    template: columnTemplate
+    templateText: columnTemplate
     property string columnTemplate
 
-    onChildrenChanged: if (!blockUpdates) _updateColumnTemplate(children)
+    onSubRenderersChanged: if (!blockUpdates) _updateColumnTemplate(subRenderers)
 
     function _updateColumnTemplate(children)
     {

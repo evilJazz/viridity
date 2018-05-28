@@ -9,18 +9,18 @@ ViridityHTMLSegment {
 
     name: "button"
     contentMarkerElement: "button"
-    contentMarkerAttributes: topLevelTemplateRenderer ? ({
-        onclick: "DR.a('clicked', '" + name + "', '" + topLevelTemplateRenderer.targetId + "', this)"
+    contentMarkerAttributes: topLevelRenderer ? ({
+        onclick: "DR.a('clicked', '" + name + "', '" + topLevelRenderer.targetId + "', this)"
     }) : ({})
 
-    template: '${title}';
+    templateText: '${title}';
 
     property string title
     signal clicked()
 
     Connections {
-        target: topLevelTemplateRenderer &&
-                topLevelTemplateRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelTemplateRenderer : null
+        target: topLevelRenderer &&
+                topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelRenderer : null
 
         onDataReceived: // input
         {

@@ -9,8 +9,6 @@ TemplateRenderer {
 
     renderDelay: -1
 
-    property string name
-
     property string propertyMarkerElement: "span"
     property variant propertyMarkerAttributes: ({})
 
@@ -48,7 +46,7 @@ TemplateRenderer {
     {
         if (propertyName !== "targetId")
         {
-            var id = renderer.name + propertyName;
+            var id = renderer.identifier + propertyName;
             var attrs = formatAttributes(getPropertyMarkerAttributes());
 
             return '<' + propertyMarkerElement + ' id="' + id + '"' + attrs + '>' +
@@ -61,7 +59,7 @@ TemplateRenderer {
 
     function replaceMarkerForContent()
     {
-        var id = renderer.name;
+        var id = renderer.identifier;
         var attrs = formatAttributes(getContentMarkerAttributes());
 
         return '<' + contentMarkerElement + ' id="' + id + '"' + attrs + '>' +
@@ -70,25 +68,25 @@ TemplateRenderer {
     }
 
     Connections {
-        target: topLevelTemplateRenderer &&
-                topLevelTemplateRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelTemplateRenderer : null
+        target: topLevelRenderer &&
+                topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelRenderer : null
 
         onDataReceived: // input
         {
             if (input.action === "contentUpdate")
             {
-                if (input.itemName === renderer.name)
+                if (input.itemName === renderer.identifier)
                     _sendContentUpdate();
             }
         }
     }
 
     Connections {
-        target: topLevelTemplateRenderer &&
-                topLevelTemplateRenderer.hasOwnProperty("changeNotificatorDataBridge") ? renderer : null
+        target: topLevelRenderer &&
+                topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? renderer : null
 
         onPropertyChanged: renderer._sendPropertyUpdate(propertyName)
-        onTemplateChanged: renderer._handleTemplateChanged();
+        onTemplateTextChanged: renderer._handleTemplateChanged();
     }
 
     // Overrideable functions
@@ -127,9 +125,9 @@ TemplateRenderer {
         if (renderer.contentDirty)
             renderer.updateContent();
 
-        topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
+        topLevelRenderer.changeNotificatorDataBridge.sendData({
             action: "update",
-            property: renderer.name,
+            property: renderer.identifier,
             value: renderer.content
         });
 
@@ -143,12 +141,15 @@ TemplateRenderer {
 
     function _ViridityHTMLSegment_sendPropertyUpdate(propertyName)
     {
-        topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
-            action: "update",
-            property: renderer.name + propertyName,
-            parentName: renderer.parentRenderer ? renderer.parentRenderer.name : null,
-            value: renderer[propertyName]
-        });
+        if (isMarkerUsedInTemplate(propertyName))
+        {
+            topLevelRenderer.changeNotificatorDataBridge.sendData({
+                action: "update",
+                property: renderer.identifier + propertyName,
+                parentName: (renderer.parentRenderer ? renderer.parentRenderer.identifier : null),
+                value: renderer[propertyName]
+            });
+        }
     }
 
     function _sendPropertyUpdate(propertyName)
@@ -158,9 +159,9 @@ TemplateRenderer {
 
     function _ViridityHTMLSegment_sendVisibilityStatus()
     {
-        topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
+        topLevelRenderer.changeNotificatorDataBridge.sendData({
             action: visible ? "show" : "hide",
-            itemName: renderer.name
+            itemName: renderer.identifier
         });
     }
 

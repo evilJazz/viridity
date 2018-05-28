@@ -11,6 +11,8 @@ ViridityHTMLColumn {
     id: column
     objectName: "repeater"
 
+    childPrefix: currentSessionManager.createUniqueID().substr(0, 10)
+
     default property Component delegate
     property alias model: repeater.model
     property alias count: repeater.count
@@ -36,11 +38,11 @@ ViridityHTMLColumn {
 
             var child;
 
-            for (var i = 0; i < children.length; ++i)
+            for (var i = 0; i < subRenderers.length; ++i)
             {
-                child = children[i];
+                child = subRenderers[i];
                 if (!isTemplateRenderer(child))
-                    newChildren.push(children[i]);
+                    newChildren.push(subRenderers[i]);
             }
 
             for (var i = 0; i < dummyContainer.children.length; ++i)
@@ -76,7 +78,7 @@ ViridityHTMLColumn {
             for (var i = 0; i < Private.actions.length; ++i)
             {
                 var action = Private.actions[i];
-                action.parentName = column.name;
+                action.parentName = column.identifier;
 
                 if (action.item)
                 {
@@ -92,10 +94,10 @@ ViridityHTMLColumn {
 
             if (debug) Debug.print("updates: " + JSON.stringify(updates, null, "  "));
 
-            topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
+            topLevelRenderer.changeNotificatorDataBridge.sendData({
                 action: "updateChildren",
-                itemName: column.name,
-                parentName: column.parentRenderer ? column.parentRenderer.name : null,
+                itemName: column.identifier,
+                parentName: column.parentRenderer ? column.parentRenderer.identifier : null,
                 generation: generation,
                 updates: updates
             });
@@ -109,11 +111,11 @@ ViridityHTMLColumn {
         if (column.contentDirty)
             column.updateContent();
 
-        topLevelTemplateRenderer.changeNotificatorDataBridge.sendData({
+        topLevelRenderer.changeNotificatorDataBridge.sendData({
             action: "update",
-            property: column.name,
+            property: column.identifier,
             generation: generation,
-            parentName: column.parentRenderer ? column.parentRenderer.name : null,
+            parentName: column.parentRenderer ? column.parentRenderer.identifier : null,
             value: column.content
         });
 
@@ -191,7 +193,8 @@ ViridityHTMLColumn {
                 {
                     if (item)
                     {
-                        item.name = item.name + "_" + currentSessionManager.createUniqueID().substr(0, 10);
+                        item.childPrefix = currentSessionManager.createUniqueID().substr(0, 10);
+                        item.name = item.name + "_" + item.childPrefix;
                         item.parentRenderer = column;
                     }
                 }
@@ -199,7 +202,7 @@ ViridityHTMLColumn {
                 Connections {
                     target: column
                     onParentRendererChanged: item.parentRenderer = column;
-                    onTopLevelTemplateRendererChanged: item.topLevelTemplateRenderer = column.topLevelTemplateRenderer;
+                    onTopLevelRendererChanged: item.topLevelRenderer = column.topLevelRenderer;
                 }
 
                 property int currentIndex: index
