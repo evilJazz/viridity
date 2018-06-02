@@ -11,6 +11,9 @@
 #include <QSharedPointer>
 #include <QPointer>
 
+#include <QReadLocker>
+#include <QWriteLocker>
+
 #include "viriditywebserver.h"
 #include "viridityconnection.h"
 
@@ -57,7 +60,10 @@ class PrivateViridityResponseWrapper : public QObject
 public:
     PrivateViridityResponseWrapper(QSharedPointer<ViridityHttpServerResponse> response) :
         QObject(),
-        response_(response)
+        response_(response),
+        captureOutput_(false),
+        newContent_(),
+        statusCode_(0)
     {
         DGUARDMETHODTIMED;
         connect(response_.data(), SIGNAL(finished()), this, SLOT(deleteLater()));
@@ -69,6 +75,13 @@ public:
         DGUARDMETHODTIMED;
     }
 
+    QSharedPointer<ViridityHttpServerResponse> response() { return response_; }
+
+    void setCaptureOutputEnabled(bool enabled) { captureOutput_ = enabled; }
+    QByteArray content() const { return newContent_; }
+    ViridityHttpHeaders headers() const { return headers_; }
+    int statusCode() const { return statusCode_; }
+
 public slots:
 
     void end(const QByteArray &chunk = QByteArray())
@@ -76,6 +89,11 @@ public slots:
         DGUARDMETHODTIMED;
         if (response_)
             QMetaObject::invokeMethod(response_.data(), "end", Qt::QueuedConnection, Q_ARG(QByteArray, chunk));
+
+        if (captureOutput_)
+            newContent_ += chunk;
+
+        emit done(this);
     }
 
     void write(const QByteArray &chunk)
@@ -83,6 +101,9 @@ public slots:
         DGUARDMETHODTIMED;
         if (response_)
             QMetaObject::invokeMethod(response_.data(), "write", Qt::QueuedConnection, Q_ARG(QByteArray, chunk));
+
+        if (captureOutput_)
+            newContent_ += chunk;
     }
 
     void writeHead(int statusCode)
@@ -90,10 +111,54 @@ public slots:
         DGUARDMETHODTIMED;
         if (response_)
             QMetaObject::invokeMethod(response_.data(), "writeHead", Qt::QueuedConnection, Q_ARG(int, statusCode));
+
+        if (captureOutput_)
+            statusCode_ = statusCode;
     }
+
+    void addHeader(const QByteArray &key, const QByteArray &value)
+    {
+        DGUARDMETHODTIMED;
+
+        if (response_)
+            response_->headers().insert(key, value);
+
+        if (captureOutput_)
+            headers_.insert(key, value);
+    }
+
+    void removeHeader(const QByteArray &key, const QByteArray &value)
+    {
+        DGUARDMETHODTIMED;
+
+        if (response_)
+            response_->headers().remove(key, value);
+
+        if (captureOutput_)
+            headers_.remove(key);
+    }
+
+    void removeHeader(const QByteArray &key)
+    {
+        DGUARDMETHODTIMED;
+
+        if (response_)
+            response_->headers().remove(key);
+
+        if (captureOutput_)
+            headers_.remove(key);
+    }
+
+signals:
+    void done(PrivateViridityResponseWrapper *);
 
 private:
     QSharedPointer<ViridityHttpServerResponse> response_;
+
+    bool captureOutput_;
+    QByteArray newContent_;
+    ViridityHttpHeaders headers_;
+    int statusCode_;
 };
 
 /* PrivateQmlRequestHandler */
@@ -120,7 +185,7 @@ public:
     {
         DGUARDMETHODTIMED;
 
-        if (!proxy_) return;
+        if (!proxy_ || proxy_->contentCachingEnabled()) return;
 
         if (proxy_->metaObject()->indexOfMethod("filterRequestResponse(QVariant,QVariant)") == -1)
             return;
@@ -148,6 +213,13 @@ public:
 
         if (!proxy_) return false;
 
+        if (!proxy_->handlesUrl().isEmpty())
+        {
+            QRegExp re(proxy_->handlesUrl());
+            re.setMinimal(true);
+            return re.indexIn(request->url()) > -1;
+        }
+
         QVariant result = false;
 
         PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
@@ -174,23 +246,49 @@ public:
 
         if (!proxy_) return;
 
-        PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
-        requestWrapper->moveToThread(proxy_->thread());
-        QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
-
-        PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
-        responseWrapper->moveToThread(proxy_->thread());
-        QVariant responseVar = ObjectUtils::objectToVariant(responseWrapper);
-
-        if (!QMetaObject::invokeMethod(
-                proxy_,
-                "handleRequest",
-                Qt::QueuedConnection,
-                Q_ARG(QVariant, requestVar),
-                Q_ARG(QVariant, responseVar)
-            ))
+        if (proxy_->contentCachingEnabled() && proxy_->cachedContentValid())
         {
-            qDebug("Please implement the function handleRequest(request, response) in ViridityQmlRequestHandler instance.");
+            response->writeHead(proxy_->cachedStatusCode(), proxy_->cachedHeaders());
+            response->end(proxy_->cachedContent());
+        }
+        else
+        {
+            PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
+            requestWrapper->moveToThread(proxy_->thread());
+            QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
+
+            PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
+
+            if (proxy_->contentCachingEnabled())
+            {
+                responseWrapper->setCaptureOutputEnabled(true);
+                connect(responseWrapper, SIGNAL(done(PrivateViridityResponseWrapper *)), this, SLOT(responseWrapperDone(PrivateViridityResponseWrapper *)));
+            }
+
+            responseWrapper->moveToThread(proxy_->thread());
+            QVariant responseVar = ObjectUtils::objectToVariant(responseWrapper);
+
+            if (!QMetaObject::invokeMethod(
+                    proxy_,
+                    "handleRequest",
+                    Qt::QueuedConnection,
+                    Q_ARG(QVariant, requestVar),
+                    Q_ARG(QVariant, responseVar)
+                ))
+            {
+                qDebug("Please implement the function handleRequest(request, response) in ViridityQmlRequestHandler instance.");
+            }
+        }
+    }
+
+private slots:
+    void responseWrapperDone(PrivateViridityResponseWrapper *responseWrapper)
+    {
+        if (proxy_ && proxy_->contentCachingEnabled())
+        {
+            proxy_->setCachedContent(responseWrapper->content());
+            proxy_->setCachedStatusCode(responseWrapper->statusCode() != 0 ? responseWrapper->statusCode() : 200);
+            proxy_->setCachedHeaders(responseWrapper->headers());
         }
     }
 
@@ -202,7 +300,11 @@ private:
 
 ViridityQmlRequestHandler::ViridityQmlRequestHandler(QObject *parent) :
     ViridityDeclarativeBaseObject(parent),
-    requestHandler_(NULL)
+    requestHandler_(NULL),
+    cachedContentMREW_(QReadWriteLock::Recursive),
+    cachedContentValid_(false),
+    cachedContent_(),
+    handlesUrl_()
 {
     DGUARDMETHODTIMED;
 }
@@ -227,6 +329,105 @@ void ViridityQmlRequestHandler::componentComplete()
     }
     else
         qDebug("Can't determine engine context for object.");
+}
+
+bool ViridityQmlRequestHandler::contentCachingEnabled() const
+{
+    QReadLocker rl(&cachedContentMREW_);
+    return contentCachingEnabled_;
+}
+
+void ViridityQmlRequestHandler::setContentCachingEnabled(bool enabled)
+{
+    QWriteLocker wl(&cachedContentMREW_);
+    if (enabled != contentCachingEnabled_)
+    {
+        contentCachingEnabled_ = enabled;
+        emit contentCachingEnabledChanged();
+    }
+}
+
+bool ViridityQmlRequestHandler::cachedContentValid() const
+{
+    QReadLocker rl(&cachedContentMREW_);
+    return cachedContentValid_;
+}
+
+void ViridityQmlRequestHandler::setCachedContentValid(bool valid)
+{
+    QWriteLocker wl(&cachedContentMREW_);
+    if (valid != cachedContentValid_)
+    {
+        cachedContentValid_ = valid;
+        emit cachedContentValidChanged();
+    }
+}
+
+QByteArray ViridityQmlRequestHandler::cachedContent() const
+{
+    QReadLocker rl(&cachedContentMREW_);
+    return cachedContent_;
+}
+
+void ViridityQmlRequestHandler::setCachedContent(const QByteArray &content)
+{
+    QWriteLocker wl(&cachedContentMREW_);
+    if (content != cachedContent_)
+    {
+        cachedContent_ = content;
+        emit cachedContentChanged();
+    }
+}
+
+QString ViridityQmlRequestHandler::handlesUrl() const
+{
+    QReadLocker rl(&cachedContentMREW_);
+    return handlesUrl_;
+}
+
+void ViridityQmlRequestHandler::setHandlesUrl(const QString &regex)
+{
+    QWriteLocker wl(&cachedContentMREW_);
+    if (regex != handlesUrl_)
+    {
+        handlesUrl_ = regex;
+        emit handlesUrlChanged();
+    }
+}
+
+ViridityHttpHeaders ViridityQmlRequestHandler::cachedHeaders()
+{
+    QReadLocker rl(&cachedContentMREW_);
+    return cachedHeaders_;
+}
+
+void ViridityQmlRequestHandler::setCachedHeaders(ViridityHttpHeaders headers)
+{
+    QWriteLocker wl(&cachedContentMREW_);
+    if (headers != cachedHeaders_)
+    {
+        cachedHeaders_ = headers;
+#ifdef VIRIDITY_DEBUG
+        cachedHeaders_.insert("X-Viridity-Cached", "true");
+#endif
+        emit cachedHeadersChanged();
+    }
+}
+
+int ViridityQmlRequestHandler::cachedStatusCode() const
+{
+    QReadLocker rl(&cachedContentMREW_);
+    return cachedStatusCode_;
+}
+
+void ViridityQmlRequestHandler::setCachedStatusCode(int statusCode)
+{
+    QWriteLocker wl(&cachedContentMREW_);
+    if (statusCode != cachedStatusCode_)
+    {
+        cachedStatusCode_ = statusCode;
+        emit cachedStatusCodeChanged();
+    }
 }
 
 #include "viridityqmlrequesthandler.moc"

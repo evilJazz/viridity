@@ -75,6 +75,8 @@ private:
  * The current implementation is based on Tufao::HttpServerResponse and might be replaced in a source-compatible manner in the future.
  */
 
+typedef Tufao::Headers ViridityHttpHeaders;
+
 class ViridityHttpServerResponse : public Tufao::HttpServerResponse
 {
     Q_OBJECT

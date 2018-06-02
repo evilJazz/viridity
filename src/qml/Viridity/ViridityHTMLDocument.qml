@@ -17,10 +17,10 @@ ViridityHTMLSegment {
     ViridityRequestHandler {
         id: requestHandler
 
-        function doesHandleRequest(request)
-        {
-            return renderer.publishAtUrl.length > 0 && request.url == renderer.publishAtUrl
-        }
+        contentCachingEnabled: true
+
+        cachedContentValid: !renderer.contentDirty
+        handlesUrl: renderer.publishAtUrl.length > 0 ? "^" + renderer.publishAtUrl : ""
 
         function handleRequest(request, response)
         {
