@@ -22,6 +22,11 @@ ViridityHTMLSegment {
         cachedContentValid: !renderer.contentDirty
         handlesUrl: renderer.publishAtUrl.length > 0 ? "^" + renderer.publishAtUrl : ""
 
+        function doesHandleRequest(request)
+        {
+            return false; // default, if publishAtUrl is empty...
+        }
+
         function handleRequest(request, response)
         {
             if (renderer.contentDirty)
