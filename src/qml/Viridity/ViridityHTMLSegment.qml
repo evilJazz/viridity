@@ -4,7 +4,7 @@ import QtQuick 2.0
 import KCL 1.0
 import Viridity 1.0
 
-TemplateRenderer {
+NativeTemplateRenderer {
     id: renderer
 
     renderDelay: -1
