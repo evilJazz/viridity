@@ -210,6 +210,7 @@ var Viridity = function(options)
         debugVerbosity: 0,
 
         connectionMethod: ConnectionMethod.Auto,
+        useBinaryProtocol: true,
 
         socket: null,
 
@@ -485,7 +486,7 @@ var Viridity = function(options)
                 dataIsBinary: isBinary
             }
 
-            if (v.debugVerbosity > 2)
+            if (v.debugVerbosity > 3)
                 console.log("t: " + JSON.stringify(t, null, " "));
 
             return t;
@@ -737,7 +738,7 @@ var Viridity = function(options)
 
                 try
                 {
-                    if (v.supportsBinaryWebSockets)
+                    if (v.useBinaryProtocol && v.supportsBinaryWebSockets)
                     {
                         v.socket = new WebSocket(add + "b");
                         v.socket.binaryType = "arraybuffer";
@@ -767,6 +768,9 @@ var Viridity = function(options)
 
             if (typeof(options.debugVerbosity) !== "undefined")
                 v.debugVerbosity = options.debugVerbosity;
+
+            if (typeof(options.useBinaryProtocol) !== "undefined")
+                v.useBinaryProtocol = options.useBinaryProtocol;
 
             if (v.debugVerbosity > 0)
                 console.log("Initializing: " + JSON.stringify(options));
