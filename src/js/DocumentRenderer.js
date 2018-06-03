@@ -118,7 +118,13 @@ var DocumentRenderer = function(viridityChannel, id)
                             if (target.length == 1)
                                 target.remove();
                             else
+                            {
+                                if (v.debugVerbosity > 2)
+                                    console.log("updateChildren " + i + " remove -> " + update.itemName + " not found.");
+
                                 c.requestContentUpdate(dataBridge, update.parentName);
+                                break;
+                            }
                         }
                         else if (update.action == "prepend")
                         {
@@ -126,7 +132,13 @@ var DocumentRenderer = function(viridityChannel, id)
                             if (parent.length == 1)
                                 parent.prepend(update.content);
                             else
+                            {
+                                if (v.debugVerbosity > 2)
+                                    console.log("updateChildren " + i + " prepend -> " + update.parentName + " not found.");
+
                                 c.requestContentUpdate(dataBridge, update.parentName);
+                                break;
+                            }
                         }
                         else if (update.action == "append")
                         {
@@ -134,7 +146,13 @@ var DocumentRenderer = function(viridityChannel, id)
                             if (parent.length == 1)
                                 parent.append(update.content);
                             else
+                            {
+                                if (v.debugVerbosity > 2)
+                                    console.log("updateChildren " + i + " append -> " + update.parentName + " not found.");
+
                                 c.requestContentUpdate(dataBridge, update.parentName);
+                                break;
+                            }
                         }
                         else if (update.action == "insertAfter")
                         {
@@ -142,7 +160,13 @@ var DocumentRenderer = function(viridityChannel, id)
                             if (afterItem.length == 1)
                                 $(update.content).insertAfter(afterItem);
                             else
+                            {
+                                if (v.debugVerbosity > 2)
+                                    console.log("updateChildren " + i + " insertAfter -> " + update.afterItemName + " not found.");
+
                                 c.requestContentUpdate(dataBridge, update.parentName);
+                                break;
+                            }
                         }
                     }
 

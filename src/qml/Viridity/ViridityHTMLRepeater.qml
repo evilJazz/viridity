@@ -30,9 +30,12 @@ ViridityHTMLColumn {
         {
             if (debug) Debug.print("BEGINNING UPDATE");
             beginUpdate();
-            if (debug) Debug.print("BEGIN UPDATE");
-
-            if (debug) Debug.print("UPDATE ITEMS -> NEW COUNT: " + count);
+            if (debug)
+            {
+                Debug.print("BEGIN UPDATE");
+                Debug.print("UPDATE ITEMS -> NEW COUNT: " + count);
+                topLevelRenderer.dumpRendererStructure();
+            }
 
             var newChildren = [];
 
@@ -80,16 +83,31 @@ ViridityHTMLColumn {
                 var action = Private.actions[i];
                 action.parentName = column.identifier;
 
-                if (action.item)
+                // Does this action contain an item pointer?
+                // We need to grab the content of the item and remove the item pointer from the action...
+                if (action.hasOwnProperty("item"))
                 {
+                    if (!isTemplateRenderer(action.item))
+                        continue;
+
                     if (action.item.contentDirty)
                         action.item.updateContent();
 
                     action.content = action.item.replaceMarkerForContent();
+                    action.itemName = action.item.identifier;
                     delete action.item;
                 }
 
-                updates.push(action);
+                if (action.hasOwnProperty("afterItem"))
+                {
+                    if (!isTemplateRenderer(action.afterItem))
+                        continue;
+
+                    action.afterItemName = action.afterItem.identifier;
+                    delete action.afterItem;
+                }
+
+               updates.push(action);
             }
 
             if (debug) Debug.print("updates: " + JSON.stringify(updates, null, "  "));
@@ -170,6 +188,7 @@ ViridityHTMLColumn {
 
             //onCountChanged: column.updateChildren()
 
+            // Note: Loader.itemChanged is executed before onItemAdded...
             onItemAdded: // index, item
             {
                 if (column.debug) Debug.print("Repeater ITEM ADDED-> " + index + ": " + item);
@@ -191,6 +210,7 @@ ViridityHTMLColumn {
 
                 onItemChanged:
                 {
+                    if (column.debug) Debug.print("Loader ITEM CHANGED: " + item);
                     if (item)
                     {
                         item.childPrefix = currentSessionManager.createUniqueID().substr(0, 10);
