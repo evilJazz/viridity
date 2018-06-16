@@ -45,12 +45,11 @@ RUNSH
 chmod +x run.sh
 
 cat > Dockerfile << DOCKER
-FROM ubuntu-debootstrap:14.04
+FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y install \
-    fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl1-mesa \
-    libxslt1.1 libgstreamer0.10-0 libgstreamer-plugins-base0.10-0 \
-    libxi6 libfontconfig1 git
+    fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl1-mesa libxslt1.1 libxi6 libfontconfig1 libglib2.0-0 \
+    libdbus-1-3 libicu60 libasound2 libpulse-mainloop-glib0 libpulse0 libssl1.0.0 libssl1.0-dev ca-certificates
 
 RUN mkdir /data
 RUN mkdir /config
