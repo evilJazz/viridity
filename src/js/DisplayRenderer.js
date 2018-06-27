@@ -39,6 +39,7 @@ var ViridityDisplayEvents = {
     MouseWheel: 1 << 12,
 
     Touch: 1 << 16,
+    TouchMove: 1 << 17,
 
     ContextMenu: 1 << 24
 };
@@ -64,6 +65,7 @@ var ViridityDisplayEvents = {
                 ViridityDisplayEvents.MouseHover |
                 ViridityDisplayEvents.MouseWheel |
                 ViridityDisplayEvents.Touch |
+                ViridityDisplayEvents.TouchMove |
                 ViridityDisplayEvents.ContextMenu,
 
             targetId: undefined,
@@ -855,7 +857,7 @@ var ViridityDisplayEvents = {
                 $(dr.frontCanvas).mouseout(function(event)   { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseExit", event); }});
                 $(dr.frontCanvas).mouseenter(function(event) { if (dr.enabledEvents & ViridityDisplayEvents.MouseHover) { sendMouseEvent("mouseEnter", event); }});
                 $(dr.frontCanvas).dblclick(function(event)   { if (dr.enabledEvents & ViridityDisplayEvents.MouseDoubleClick) { sendMouseEvent("mouseDblClick", event); }});
-                $(dr.frontCanvas).bind("contextmenu", function (event) { if (dr.enabledEvents & ViridityDisplayEvents.ContextMenu) { sendMouseEvent("contextMenu", event); }});
+                $(dr.frontCanvas).contextmenu(function (event) { if (dr.enabledEvents & ViridityDisplayEvents.ContextMenu) { sendMouseEvent("contextMenu", event); }});
 
                 function handleTouchEvent(event)
                 {
@@ -871,7 +873,7 @@ var ViridityDisplayEvents = {
                     switch(event.type)
                     {
                         case "touchstart": type = "mouseDown"; break;
-                        case "touchmove":  type = "mouseMove"; break;
+                        case "touchmove":  if (!(dr.enabledEvents & ViridityDisplayEvents.TouchMove)) return; type = "mouseMove"; break;
                         case "touchend":   type = "mouseUp";   break;
                         default:           type = "mouseUp";   break;
                     }
