@@ -864,6 +864,8 @@ var ViridityDisplayEvents = {
                     if ((dr.enabledEvents & ViridityDisplayEvents.Touch) == 0)
                         return;
 
+                    var touchMoveEnabled = dr.enabledEvents & ViridityDisplayEvents.TouchMove;
+
                     event = event.originalEvent;
 
                     var touchPoints = event.changedTouches;
@@ -873,7 +875,7 @@ var ViridityDisplayEvents = {
                     switch(event.type)
                     {
                         case "touchstart": type = "mouseDown"; break;
-                        case "touchmove":  if (!(dr.enabledEvents & ViridityDisplayEvents.TouchMove)) return; type = "mouseMove"; break;
+                        case "touchmove":  if (!touchMoveEnabled) return; type = "mouseMove"; break;
                         case "touchend":   type = "mouseUp";   break;
                         default:           type = "mouseUp";   break;
                     }
@@ -890,7 +892,9 @@ var ViridityDisplayEvents = {
                     dr.focus();
                     sendMouseEvent(type, simulatedEvent);
 
-                    event.preventDefault();
+                    // Only prevent default (swiping) when TouchMove is set...
+                    if (touchMoveEnabled)
+                        event.preventDefault();
                 }
 
                 $(dr.frontCanvas).on("touchstart", handleTouchEvent);
