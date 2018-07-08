@@ -211,3 +211,8 @@ var DocumentRendererGlobal = {
         }
     }
 }
+
+if (typeof(ViridityAuto) != "undefined")
+{
+    ViridityAuto.on("autoAttach", DocumentRendererGlobal.autoAttach);
+}
