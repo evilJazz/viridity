@@ -604,7 +604,7 @@ ViriditySession *AbstractViriditySessionManager::getSession(const QString &id)
         if (!sessionInKillGracePeriod_.contains(id))
             sessionInKillGracePeriod_.insert(id);
 
-        return sessions_[id];
+        return sessions_.value(id);
     }
 
     return NULL;
@@ -670,13 +670,17 @@ QStringList AbstractViriditySessionManager::sessionIds(QObject *logic)
 
 bool AbstractViriditySessionManager::dispatchMessageToHandlers(const QByteArray &message, const QString &sessionId)
 {
-    QReadLocker l(&sessionMREW_);
-
     bool result = false;
 
     if (sessionId.isEmpty())
     {
-        foreach (ViriditySession *session, sessions_.values())
+        QList<ViriditySession *> sessions;
+        {
+            QReadLocker l(&sessionMREW_);
+            sessions = sessions_.values();
+        }
+
+        foreach (ViriditySession *session, sessions)
             QMetaObject::invokeMethod(
                 session, "dispatchMessageToHandlers",
                 session->thread() == QThread::currentThread() ? Qt::DirectConnection : Qt::BlockingQueuedConnection,
