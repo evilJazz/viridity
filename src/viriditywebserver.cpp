@@ -109,6 +109,7 @@ bool ViridityWebServer::close()
 {
     QTcpServer::close();
     closeAllConnections(2000);
+    return true;
 }
 
 AbstractViriditySessionManager *ViridityWebServer::sessionManager()
