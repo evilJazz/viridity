@@ -7,15 +7,19 @@ function usage()
     echo "Usage: $0 [--bundle-libs] [TARGETROOT] [filename of output tar.gz]"
     echo
     echo "  --bundle-libs    Bundle Qt libraries with tarball"
+    echo "                   NOTE: Requires the QTDIR environment variable to be defined."
+    echo
     echo "  TARGETROOT, e.g. /opt/qmlwebviewer"
     echo
-    echo "NOTE: Required the QTDIR environment variable to be defined."
     echo
 }
 
 BUNDLE_LIBS=0
 if [ "$1" == "--bundle-libs" ]; then
-    BUNDLE_LIBS=1
+    BUNDLE_LIBS=1   
+    [ -z $QTDIR ] && echo "Please define QTDIR environment variable" && exit 1
+    export PATH=$QTDIR/bin:$PATH
+    
     shift 1
 fi
 
@@ -25,12 +29,9 @@ OUTPUTNAME="$2"
 [ -z $TARGETROOT ] && usage && exit 1
 [ -z $OUTPUTNAME ] && usage && exit 1
 
-[ -z $QTDIR ] && echo "Please define QTDIR environment variable" && exit 1
 [ -z $CPUCOUNT ] && CPUCOUNT=$(nproc --all)
 
 set -e
-
-export PATH=$QTDIR/bin:$PATH
 
 echo "Compiling package..."
 

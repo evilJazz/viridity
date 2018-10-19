@@ -7,10 +7,11 @@ function usage()
     echo $0 [--bundle-libs] [TARGETROOT] [TARGETNAME] {filename of docker image}
     echo
     echo "  --bundle-libs    Bundle Qt libraries with tarball"
+    echo "                   NOTE: Requires the QTDIR environment variable to be defined."
+    echo 
     echo "  TARGETROOT = the install path defined in the .pro/Makefile, e.g. /opt/qmlwebviewer"
     echo "  TARGETNAME = the name of the binary, e.g. qmlwebviewer"
     echo
-    echo "NOTE: Required the QTDIR environment variable to be defined."
     echo
 }
 
@@ -60,12 +61,12 @@ FROM ubuntu:18.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y install \
     fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl1-mesa libxslt1.1 libxi6 libfontconfig1 libglib2.0-0 \
-    libdbus-1-3 libicu60 libasound2 libpulse-mainloop-glib0 libpulse0 libssl1.0.0 libssl1.0-dev ca-certificates
+    libdbus-1-3 libicu60 libasound2 libpulse-mainloop-glib0 libpulse0 libssl1.0.0 ca-certificates
 DOCKER
 
 if [ -z "$BUNDLE_LIBS_PARAM" ]; then
     cat >> Dockerfile << DOCKER
-RUN apt-get -y install qt5-default qml libqt5qml5 libqt5quick5 libjpeg
+RUN apt-get -y install qt5-default qml libqt5qml5 libqt5quick5 qtdeclarative5-qtquick2-plugin
 DOCKER
 fi
 
