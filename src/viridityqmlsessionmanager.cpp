@@ -42,8 +42,9 @@ void ViridityQmlSessionManager::initSession(ViriditySession *session)
     // RUNS IN MAIN THREAD! session already is in different thread!
 
     QObject *gl = globalLogic();
+    DeclarativeContext *globalContext = DeclarativeEngine::contextForObject(gl);
 
-    DeclarativeContext *context = new DeclarativeContext(engine()->rootContext());
+    DeclarativeContext *context = new DeclarativeContext(globalContext);
 
     DeclarativeComponent component(engine(), sessionLogicUrl_);
 
