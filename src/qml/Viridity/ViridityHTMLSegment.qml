@@ -5,6 +5,7 @@ import KCL 1.0
 import Viridity 1.0
 
 NativeTemplateRenderer {
+//TemplateRenderer {
     id: renderer
 
     renderDelay: -1

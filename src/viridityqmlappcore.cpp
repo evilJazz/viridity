@@ -2,6 +2,8 @@
 
 #include <QCoreApplication>
 
+#define DIAGNOSTIC_OUTPUT
+
 #ifdef VIRIDITY_USE_QTQUICK1
     #include <QtDeclarative>
     #include <QDeclarativeEngine>

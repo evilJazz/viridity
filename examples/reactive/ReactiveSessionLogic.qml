@@ -2,27 +2,45 @@ import QtQuick 2.0
 import Viridity 1.0
 import KCL 1.0
 
-ViridityDataBridge {
-    session: currentSession // context property pointing to ViriditySession instance set when setting up the QML engine + logic in AbstractViriditySessionManager::initSession
-    targetId: "test"
+QtObjectWithChildren {
 
-    Connections {
-        target: currentSession
+    ViridityHTMLSessionSegment {
+        targetHTMLDocument: myReactiveDoc
+        name: "sessionSegmentTop"
 
-        onAttached: Debug.print("Client attached.");
-        onInitialized: Debug.print("Session initialized.");
-        onDetached: Debug.print("Client detached.")
-        onDeinitializing: Debug.print("Session deinitializing.")
+        ViridityHTMLButton {
+            name: "buttonClear"
+            title: "Clear List"
+            onClicked: listModel.clear()
+        }
+
+        ViridityHTMLButton {
+            name: "buttonAdd"
+            title: "Add new item"
+            onClicked:
+            {
+                listModel.append({ title: "This is sparta! " + (new Date).getTime() });
+                ++sessionInfoSegment.totalItemsCreatedInSession;
+            }
+        }
+
+        ViridityHTMLButton {
+            name: "buttonDelete"
+            title: "Remove first item"
+            onClicked: listModel.remove(0);
+        }
     }
 
-    ViridityHTMLDocument {
-        id: doc
-        targetId: "myTestDocSession"
-        name: "sessionSegment"
+    ViridityHTMLSessionSegment {
+        targetHTMLDocument: myReactiveDoc
+        name: "sessionSegmentBottom"
 
-        templateText: globalLogic.slow
+        ViridityHTMLSegment {
+            id: sessionInfoSegment
+            templateText: "<div>Items created in this session: ${totalItemsCreatedInSession}</div>"
+
+            property int totalItemsCreatedInSession: 0
+        }
     }
 
-    Component.onCompleted: Debug.print("Logic created.")
-    Component.onDestruction: Debug.print("Killing logic.")
 }

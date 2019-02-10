@@ -9,6 +9,8 @@
         <file alias="ViridityHTMLRepeater.js">../src/qml/Viridity/ViridityHTMLRepeater.js</file>
         <file alias="ViridityHTMLRepeater.qml">../src/qml/Viridity/ViridityHTMLRepeater.qml</file>
         <file alias="ViridityHTMLSegment.qml">../src/qml/Viridity/ViridityHTMLSegment.qml</file>
+        <file alias="ViridityHTMLColumnWithChangeNotificator.qml">../src/qml/Viridity/ViridityHTMLColumnWithChangeNotificator.qml</file>
+        <file alias="ViridityHTMLSessionSegment.qml">../src/qml/Viridity/ViridityHTMLSessionSegment.qml</file>
     </qresource>
     <qresource prefix="/Client">
         <file alias="Viridity.js">../src/js/Viridity.js</file>
@@ -16,6 +18,6 @@
         <file alias="DisplayRenderer.js">../src/js/DisplayRenderer.js</file>
         <file alias="DocumentRenderer.js">../src/js/DocumentRenderer.js</file>
         <file alias="jquery.mousewheel.js">../src/js/jquery.mousewheel.js</file>
-        <file>ViridityAuto.js</file>
+        <file alias="ViridityAuto.js">../src/js/ViridityAuto.js</file>
     </qresource>
 </RCC>

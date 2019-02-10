@@ -5,68 +5,35 @@ import Viridity 1.0
 QtObjectWithChildren {
     id: global
 
-    Timer {
-        interval: 1000
-        running: true
-        repeat: true
-        onTriggered: global.test = global.test + 1;
-    }
-
-    property int test: 20
-
-    Timer {
-        interval: 5000
-        running: true
-        repeat: true
-        onTriggered: global.slow = global.slow + 1;
-    }
-
-    property int slow: 1
-
     ViridityHTMLDocument {
-        id: testDoc
-        targetId: "myTestDoc"
+        id: myReactiveDoc
+        targetId: "myReactiveDoc"
 
         templateSource: Qt.resolvedUrl("test.template.html")
         publishAtUrl: "/test.html"
 
-        property int test: global.test
-        property string test2: '<font color="#F00">' + (test + Math.random()) + '</font>'
-
         ViridityHTMLColumn {
-            name: "segment1"
+            name: "columnSegment"
 
             ViridityHTMLSegment {
-                name: "segment2"
-                templateText: "<button>${blah}</button>"
-                property string blah: global.test + 10
+                name: "sessionSegmentTop" // Specified in ReactiveSessionLogic
             }
 
             ViridityHTMLSegment {
-                name: "sessionSegment"
+                id: infoSegment
+                name: "infoSegment"
+                templateText: "<div>Items in list: ${listModelCount}, total items created over lifetime: ${totalItemsCreated}</div>"
+                property alias listModelCount: listModel.count
+                property int totalItemsCreated: 0
             }
 
-            ViridityHTMLButton {
-                name: "buttonClear"
-                title: "Clear List"
-                onClicked: listModel.clear()
-            }
-
-            ViridityHTMLButton {
-                name: "buttonAdd"
-                title: "Add new item"
-                onClicked: listModel.append({ title: "This is sparta!" });
-            }
-
-            ViridityHTMLButton {
-                name: "buttonDelete"
-                title: "Remove first item"
-                onClicked: listModel.remove(0);
+            ViridityHTMLSegment {
+                name: "sessionSegmentBottom" // Specified in ReactiveSessionLogic
             }
 
             ViridityHTMLRepeater {
                 id: htmlRepeater
-                name: "repeaterTest"
+                name: "itemList"
                 model: listModel
 
                 contentMarkerElement: "ul"
@@ -74,15 +41,16 @@ QtObjectWithChildren {
                 ViridityHTMLSegment {
                     name: "listElement"
                     contentMarkerElement: "li"
-                    templateText: "<strong>${slow} -> ${title}</strong>"
+                    templateText: "<strong>${index} -> ${title}</strong>"
 
-                    property int slow: currentIndex
+                    property int index: currentIndex
                     property string title: currentModelData
                 }
             }
 
             ListModel {
                 id: listModel
+                onRowsInserted: ++infoSegment.totalItemsCreated;
             }
 
             Timer {
@@ -91,7 +59,7 @@ QtObjectWithChildren {
                 running: true
                 onTriggered:
                 {
-                    if (listModel.count > 10)
+                    if (listModel.count >= 10)
                         listModel.remove(0);
 
                     var index = Math.round(Math.random() * listModel.count);

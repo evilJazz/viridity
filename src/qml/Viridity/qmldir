@@ -3,6 +3,8 @@ ViridityDataBridge 1.0 ViridityDataBridge.qml
 ViridityHTMLDocument 1.0 ViridityHTMLDocument.qml
 ViridityHTMLSegment 1.0 ViridityHTMLSegment.qml
 ViridityHTMLColumn 1.0 ViridityHTMLColumn.qml
+ViridityHTMLColumnWithChangeNotificator 1.0 ViridityHTMLColumnWithChangeNotificator.qml
+ViridityHTMLSessionSegment 1.0 ViridityHTMLSessionSegment.qml
 ViridityHTMLRepeater 1.0 ViridityHTMLRepeater.qml
 
 ViridityHTMLButton 1.0 ViridityHTMLButton.qml

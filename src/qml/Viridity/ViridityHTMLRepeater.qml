@@ -11,7 +11,7 @@ ViridityHTMLColumn {
     id: column
     objectName: "repeater"
 
-    childPrefix: currentSessionManager.createUniqueID().substr(0, 10)
+    childPrefix: createUniqueID()
 
     default property Component delegate
     property alias model: repeater.model
@@ -213,7 +213,7 @@ ViridityHTMLColumn {
                     if (column.debug) Debug.print("Loader ITEM CHANGED: " + item);
                     if (item)
                     {
-                        item.childPrefix = currentSessionManager.createUniqueID().substr(0, 10);
+                        item.childPrefix = column.createUniqueID();
                         item.name = item.name + "_" + item.childPrefix;
                         item.parentRenderer = column;
                     }

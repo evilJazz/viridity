@@ -5,6 +5,12 @@ var ViridityAuto = {
     debugVerbosity: 0,
     alreadyAttached: false,
 
+    options: {
+        connectionMethod: ConnectionMethod.Auto,
+        useBinaryProtocol: true,
+        debugVerbosity: 0
+    },
+
     callbacks: {
         autoAttach: []
     },
@@ -52,16 +58,10 @@ var ViridityAuto = {
     {
         var useCookies = typeof($.cookie) != "undefined";
 
-        var options = {
-            connectionMethod: ConnectionMethod.Auto,
-            useBinaryProtocol: false,
-            debugVerbosity: 3
-        };
-
         if (useCookies)
             options.sessionId = $.cookie("vsessionId");
 
-        ViridityChannel = new Viridity(options);
+        ViridityChannel = new Viridity(ViridityAuto.options);
 
         if (useCookies)
         {
