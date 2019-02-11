@@ -34,8 +34,7 @@ For more details, please refer to the included projects in the "examples" and "t
 
 #
 ## License
-This library is licensed under either a separately available commercial license or the GNU Affero General Public License Version 3.0, published 19 November 2007.
 
-See https://www.gnu.org/licenses/agpl-3.0.html or LICENSE-agpl-3.0.txt for details.
+Please refer to the file "LICENSE" and "LICENSE-agpl-3.0-txt" for all details.
 
 If you wish to use and distribute the Viridity library in your commercial product without making your sourcecode available to the public, please contact us for a commercial license at info@meteorasoftworks.com
