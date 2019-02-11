@@ -8,7 +8,7 @@ import "qrc:/KCL/DeferredExecution.js" as DeferredExecution
 import "ViridityHTMLRepeater.js" as Private
 
 ViridityHTMLColumn {
-    id: column
+    id: columnRenderer
     objectName: "repeater"
 
     childPrefix: createUniqueID()
@@ -53,7 +53,7 @@ ViridityHTMLColumn {
                 child = dummyContainer.children[i];
                 if (child.hasOwnProperty("item") && child.item)
                 {
-                    child.item.parentRenderer = column;
+                    child.item.parentRenderer = columnRenderer;
                     newChildren.push(child.item);
                 }
             }
@@ -76,12 +76,12 @@ ViridityHTMLColumn {
         if (Private.actions.length > 0)
         {
             var updates = [];
-            column.generation = column.generation + 1;
+            columnRenderer.generation = columnRenderer.generation + 1;
 
             for (var i = 0; i < Private.actions.length; ++i)
             {
                 var action = Private.actions[i];
-                action.parentName = column.identifier;
+                action.parentName = columnRenderer.identifier;
 
                 // Does this action contain an item pointer?
                 // We need to grab the content of the item and remove the item pointer from the action...
@@ -114,8 +114,8 @@ ViridityHTMLColumn {
 
             topLevelRenderer.changeNotificatorDataBridge.sendData({
                 action: "updateChildren",
-                itemName: column.identifier,
-                parentName: column.parentRenderer ? column.parentRenderer.identifier : null,
+                itemName: columnRenderer.identifier,
+                parentName: columnRenderer.parentRenderer ? columnRenderer.parentRenderer.identifier : null,
                 generation: generation,
                 updates: updates
             });
@@ -126,15 +126,15 @@ ViridityHTMLColumn {
 
     function _sendContentUpdate() // override
     {
-        if (column.contentDirty)
-            column.updateContent();
+        if (columnRenderer.contentDirty)
+            columnRenderer.updateContent();
 
         topLevelRenderer.changeNotificatorDataBridge.sendData({
             action: "update",
-            property: column.identifier,
+            property: columnRenderer.identifier,
             generation: generation,
-            parentName: column.parentRenderer ? column.parentRenderer.identifier : null,
-            value: column.content
+            parentName: columnRenderer.parentRenderer ? columnRenderer.parentRenderer.identifier : null,
+            value: columnRenderer.content
         });
 
         _sendVisibilityStatus();
@@ -144,7 +144,7 @@ ViridityHTMLColumn {
     {
         beginUpdate();
         children = []; // drop all references to children
-        DeferredExecution.invoke(column.updateChildren, "updateChildren", column);
+        DeferredExecution.invoke(columnRenderer.updateChildren, "updateChildren", columnRenderer);
     }
 
     function _handleTemplateChanged() // override
@@ -169,13 +169,13 @@ ViridityHTMLColumn {
         else
             Private.itemInsertedAfter(item.item, dummyContainer.children[index - 1].item);
 
-        column._scheduleUpdateChildren();
+        columnRenderer._scheduleUpdateChildren();
     }
 
     function _removeItem(index, item)
     {
         Private.itemRemoved(item.item);
-        column._scheduleUpdateChildren();
+        columnRenderer._scheduleUpdateChildren();
     }
 
     // Why is this dummyContainer here?
@@ -191,38 +191,38 @@ ViridityHTMLColumn {
             // Note: Loader.itemChanged is executed before onItemAdded...
             onItemAdded: // index, item
             {
-                if (column.debug) Debug.print("Repeater ITEM ADDED-> " + index + ": " + item);
-                column._addItem(index, item);
+                if (columnRenderer.debug) Debug.print("Repeater ITEM ADDED-> " + index + ": " + item);
+                columnRenderer._addItem(index, item);
             }
 
             onItemRemoved: // index, item
             {
-                if (!column) return;
-                if (column.debug) Debug.print("Repeater ITEM REMOVED-> " + index + ": " + item);
-                column._removeItem(index, item);
+                if (!columnRenderer) return;
+                if (columnRenderer.debug) Debug.print("Repeater ITEM REMOVED-> " + index + ": " + item);
+                columnRenderer._removeItem(index, item);
             }
 
             // Since Repeater can't natively repeat QtObjects (yet), we use Loader
             // which can instantiate QtObject-based components since QML 2.x
             // TODO: As for QML 1.x we also need to wrap the sourceComponent in an Item...
             Loader {
-                sourceComponent: column.delegate
+                sourceComponent: columnRenderer.delegate
 
                 onItemChanged:
                 {
-                    if (column.debug) Debug.print("Loader ITEM CHANGED: " + item);
+                    if (columnRenderer.debug) Debug.print("Loader ITEM CHANGED: " + item);
                     if (item)
                     {
-                        item.childPrefix = column.createUniqueID();
+                        item.childPrefix = columnRenderer.createUniqueID();
                         item.name = item.name + "_" + item.childPrefix;
-                        item.parentRenderer = column;
+                        item.parentRenderer = columnRenderer;
                     }
                 }
 
                 Connections {
-                    target: column
-                    onParentRendererChanged: item.parentRenderer = column;
-                    onTopLevelRendererChanged: item.topLevelRenderer = column.topLevelRenderer;
+                    target: columnRenderer
+                    onParentRendererChanged: item.parentRenderer = columnRenderer;
+                    onTopLevelRendererChanged: item.topLevelRenderer = columnRenderer.topLevelRenderer;
                 }
 
                 property int currentIndex: index
