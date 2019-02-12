@@ -5,10 +5,9 @@ import KCL 1.0
 import Viridity 1.0
 
 NativeTemplateRenderer {
-//TemplateRenderer {
     id: renderer
 
-    renderDelay: -1
+    renderDelay: -1 // Disable auto-updating
 
     property string propertyMarkerElement: "span"
     property variant propertyMarkerAttributes: ({})
@@ -68,27 +67,29 @@ NativeTemplateRenderer {
                 '</' + contentMarkerElement + '>\n';
     }
 
-    Connections {
-        target: topLevelRenderer &&
-                topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelRenderer : null
+    property QtObject connectionsTopLevelRenderer:
+        Connections {
+            target: topLevelRenderer &&
+                    topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelRenderer : null
 
-        onDataReceived: // input
-        {
-            if (input.action === "contentUpdate")
+            onDataReceived: // input
             {
-                if (input.itemName === renderer.identifier)
-                    _sendContentUpdate();
+                if (input.action === "contentUpdate")
+                {
+                    if (input.itemName === renderer.identifier)
+                        _sendContentUpdate();
+                }
             }
         }
-    }
 
-    Connections {
-        target: topLevelRenderer &&
-                topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? renderer : null
+    property QtObject connectionsRenderer:
+        Connections {
+            target: topLevelRenderer &&
+                    topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? renderer : null
 
-        onPropertyChanged: renderer._sendPropertyUpdate(propertyName)
-        onTemplateTextChanged: renderer._handleTemplateChanged();
-    }
+            onPropertyChanged: renderer._sendPropertyUpdate(propertyName)
+            onTemplateTextChanged: renderer._handleTemplateChanged();
+        }
 
     // Overrideable functions
     function _ViridityHTMLSegment_getPropertyMarkerAttributes()

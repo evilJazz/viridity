@@ -19,39 +19,16 @@ ViridityHTMLColumn {
         renderer._sendContentUpdate();
     }
 
-    ViridityRequestHandler {
-        id: requestHandler
+    property QtObject changeNotificatorDataBridge:
+        ViridityDataBridge {
+            id: changeNotificatorDataBridge
+            sessionManager: typeof(currentSessionManager) != "undefined" ? currentSessionManager : null
+            session: typeof(currentSession) != "undefined" ? currentSession : null
 
-        contentCachingEnabled: true
-
-        cachedContentValid: !renderer.contentDirty
-        handlesUrl: renderer.publishAtUrl.length > 0 ? "^" + renderer.publishAtUrl : ""
-
-        function doesHandleRequest(request)
-        {
-            return false; // default, if publishAtUrl is empty...
+            function onDataReceived(input)
+            {
+                dataReceived(input);
+                return true;
+            }
         }
-
-        function handleRequest(request, response)
-        {
-            if (renderer.contentDirty)
-                renderer.updateContent();
-
-            response.writeHead(200);
-            response.end(renderer.content);
-        }
-    }
-
-    property alias changeNotificatorDataBridge: changeNotificatorDataBridge
-    ViridityDataBridge {
-        id: changeNotificatorDataBridge
-        sessionManager: typeof(currentSessionManager) != "undefined" ? currentSessionManager : null
-        session: typeof(currentSession) != "undefined" ? currentSession : null
-
-        function onDataReceived(input)
-        {
-            dataReceived(input);
-            return true;
-        }
-    }
 }

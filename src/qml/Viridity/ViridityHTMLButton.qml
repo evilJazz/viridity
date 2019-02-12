@@ -7,7 +7,6 @@ import Viridity 1.0
 ViridityHTMLSegment {
     id: button
 
-    name: "button"
     contentMarkerElement: "button"
     contentMarkerAttributes: topLevelRenderer ? ({
         onclick: "DR.a('clicked', '" + name + "', '" + topLevelRenderer.targetId + "', this)"

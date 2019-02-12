@@ -9,26 +9,27 @@ ViridityHTMLColumnWithChangeNotificator {
 
     property string publishAtUrl: ""
 
-    ViridityRequestHandler {
-        id: requestHandler
+    property QtObject requestHandler:
+        ViridityRequestHandler {
+            id: requestHandler
 
-        contentCachingEnabled: true
+            contentCachingEnabled: true
 
-        cachedContentValid: !renderer.contentDirty
-        handlesUrl: renderer.publishAtUrl.length > 0 ? "^" + renderer.publishAtUrl : ""
+            cachedContentValid: !renderer.contentDirty
+            handlesUrl: renderer.publishAtUrl.length > 0 ? "^" + renderer.publishAtUrl : ""
 
-        function doesHandleRequest(request)
-        {
-            return false; // default, if publishAtUrl is empty...
+            function doesHandleRequest(request)
+            {
+                return false; // default, if publishAtUrl is empty...
+            }
+
+            function handleRequest(request, response)
+            {
+                if (renderer.contentDirty)
+                    renderer.updateContent();
+
+                response.writeHead(200);
+                response.end(renderer.content);
+            }
         }
-
-        function handleRequest(request, response)
-        {
-            if (renderer.contentDirty)
-                renderer.updateContent();
-
-            response.writeHead(200);
-            response.end(renderer.content);
-        }
-    }
 }
