@@ -18,7 +18,7 @@ NativeTemplateRenderer {
     property bool visible: true
     onVisibleChanged: _sendVisibilityStatus()
 
-    function formatAttributes(attrs)
+    function formatAttributes(attrs, forContent)
     {
         var result = "";
 
@@ -28,7 +28,7 @@ NativeTemplateRenderer {
         for (var key in attrs)
             pattrs[key] = attrs[key];
 
-        if (!visible)
+        if (forContent && !visible)
         {
             if (pattrs.hasOwnProperty("style"))
                 pattrs["style"] += attrs["style"] + ";display: none;";
@@ -47,7 +47,7 @@ NativeTemplateRenderer {
         if (propertyName !== "targetId")
         {
             var id = renderer.identifier + propertyName;
-            var attrs = formatAttributes(getPropertyMarkerAttributes());
+            var attrs = formatAttributes(getPropertyMarkerAttributes(), false);
 
             return '<' + propertyMarkerElement + ' id="' + id + '"' + attrs + '>' +
                 _TemplateRenderer_replaceMarkerForProperty(propertyName) +
@@ -60,7 +60,7 @@ NativeTemplateRenderer {
     function replaceMarkerForContent()
     {
         var id = renderer.identifier;
-        var attrs = formatAttributes(getContentMarkerAttributes());
+        var attrs = formatAttributes(getContentMarkerAttributes(), true);
 
         return '<' + contentMarkerElement + ' id="' + id + '"' + attrs + '>' +
                 _TemplateRenderer_replaceMarkerForContent() +
