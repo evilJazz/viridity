@@ -200,10 +200,15 @@ var DocumentRenderer = function(viridityChannel, id)
 var DocumentRendererGlobal = {
     autoAttach: function(channel)
     {
-        var targetId = $("body").attr("data-vdr-targetId");
+        var element = $("body");
 
-        if (typeof(targetId) != "undefined")
+        var isAlreadyAttached = element.attr("data-vdr-attached") == 1;
+        var targetId = element.attr("data-vdr-targetId");
+
+        if (!isAlreadyAttached && typeof(targetId) != "undefined")
         {
+            element.attr("data-vdr-attached", 1);
+
             if (typeof(channel) == "undefined" && typeof(ViridityChannel) != "undefined")
                 channel = ViridityChannel;
 

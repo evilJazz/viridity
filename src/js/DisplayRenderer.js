@@ -1100,3 +1100,37 @@ var ViridityDisplayEvents = {
         return dr;
     };
 })(jQuery);
+
+var DisplayRendererGlobal = {
+    displayRenderers: [],
+
+    autoAttach: function(channel)
+    {
+        var elements = $("[data-vdisp-targetId]");
+
+        elements.each(function (index)
+        {
+            var element = $(this);
+
+            var isAlreadyAttached = element.attr("data-vdisp-attached") == 1;
+            var targetId = element.attr("data-vdisp-targetId");
+
+            if (!isAlreadyAttached && typeof(targetId) != "undefined")
+            {
+                element.attr("data-vdisp-attached", 1);
+
+                if (typeof(channel) == "undefined" && typeof(ViridityChannel) != "undefined")
+                    channel = ViridityChannel;
+
+                var display = element.viridity(channel, targetId);
+                DisplayRendererGlobal.displayRenderers.push(display);
+            }
+        });
+
+    }
+}
+
+if (typeof(ViridityAuto) != "undefined")
+{
+    ViridityAuto.on("autoAttach", DisplayRendererGlobal.autoAttach);
+}

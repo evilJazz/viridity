@@ -56,6 +56,8 @@ var ViridityAuto = {
 
     autoAttach: function()
     {
+        if (!ViridityAuto.alreadyAttached)
+        {
         var useCookies = typeof($.cookie) != "undefined";
 
         if (useCookies)
@@ -76,8 +78,10 @@ var ViridityAuto = {
             });
         }
 
+            ViridityAuto.alreadyAttached = true;
+        }
+
         ViridityAuto._triggerCallback("autoAttach");
-        ViridityAuto.alreadyAttached = true;
     }
 };
 
