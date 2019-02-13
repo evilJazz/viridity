@@ -5,7 +5,16 @@ An application server for Qt that streams data and scenes (QGraphicsScene/QtQuic
  * Designed with low-power, low-performance devices in mind (Raspberry Pi Zero and up, old Symbian devices, etc.);
  * Support for running the application server in Docker containers (check examples/qmlwebviewer/makedistro-docker.sh)
 
-## Installation:
+### Requirements:
+
+ * Qt 4.8 or Qt 5.0 and up
+ * Linux, macOS, Windows (with Cygwin set up to execute bash scripts, WSL currently untested)
+
+### Installation:
+
+Viridity requires the KCL ([Katastrophos.net Component Library](https://github.com/evilJazz/kcl)), which can be bootstrapped via the command:
+
+    ./bootstrap.sh
 
 This library is developed to be statically linked to the resulting binary. You can easily include it in your applications .pro file:
 
