@@ -7,7 +7,8 @@ import Viridity 1.0
 ViridityHTMLColumnWithChangeNotificator {
     id: renderer
 
-    property ViridityHTMLDocument targetHTMLDocument: null
+    //property QtObject targetHTMLDocument: null //@QtQuick1
+    property ViridityHTMLDocument targetHTMLDocument: null //@QtQuick2
 
     targetId: targetHTMLDocument != null ? targetHTMLDocument.targetId + "Session" : ""
 
