@@ -38,6 +38,8 @@
 
 #include <QInputMethodEvent>
 
+#include <QGuiApplication>
+
 #include <QThread>
 
 #ifndef VIRIDITY_DEBUG
@@ -97,16 +99,19 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
 
 void QtQuick2Adapter::init()
 {
+    if (!qobject_cast<QGuiApplication *>(qApp))
+        qFatal("Can not initialize QtQuick2Adapter. Make sure your application is based on QGuiApplication.");
+
     QSurfaceFormat format;
     // Qt Quick may need a depth and stencil buffer. Always make sure these are available.
     format.setDepthBufferSize(16);
     format.setStencilBufferSize(8);
 
-    context_ = new QOpenGLContext;
+    context_ = new QOpenGLContext();
     context_->setFormat(format);
-    context_->create();
+    context_->create(); // Will segfault without QGuiApplication
 
-    offscreenSurface_ = new QOffscreenSurface;
+    offscreenSurface_ = new QOffscreenSurface();
     // Pass context_->format(), not format. Format does not specify and color buffer
     // sizes, while the context, that has just been created, reports a format that has
     // these values filled in. Pass this to the offscreen surface to make sure it will be
