@@ -7,4 +7,6 @@ ViridityHTMLColumnWithChangeNotificator 1.0 ViridityHTMLColumnWithChangeNotifica
 ViridityHTMLSessionSegment 1.0 ViridityHTMLSessionSegment.qml
 ViridityHTMLRepeater 1.0 ViridityHTMLRepeater.qml
 
+ViridityHTMLInlineJavaScript 1.0 ViridityHTMLInlineJavaScript.qml
 ViridityHTMLButton 1.0 ViridityHTMLButton.qml
+ViridityHTMLQtQuickDisplay 1.0 ViridityHTMLQtQuickDisplay.qml

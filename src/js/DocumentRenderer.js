@@ -45,6 +45,11 @@ var DR = {
         }
         else
             console.log("Target databridge '" + targetId + "' not found while sending action '" + actionName + "' from element '" + itemName + "'.");
+    },
+
+    remove: function(itemName)
+    {
+        $("#" + itemName).remove();
     }
 };
 

@@ -11,6 +11,8 @@
         <file alias="ViridityHTMLSegment.qml">../src/qml/Viridity/ViridityHTMLSegment.qml</file>
         <file alias="ViridityHTMLColumnWithChangeNotificator.qml">../src/qml/Viridity/ViridityHTMLColumnWithChangeNotificator.qml</file>
         <file alias="ViridityHTMLSessionSegment.qml">../src/qml/Viridity/ViridityHTMLSessionSegment.qml</file>
+        <file alias="ViridityHTMLQtQuickDisplay.qml">../src/qml/Viridity/ViridityHTMLQtQuickDisplay.qml</file>
+        <file alias="ViridityHTMLInlineJavaScript.qml">../src/qml/Viridity/ViridityHTMLInlineJavaScript.qml</file>
     </qresource>
     <qresource prefix="/Client">
         <file alias="Viridity.js">../src/js/Viridity.js</file>
