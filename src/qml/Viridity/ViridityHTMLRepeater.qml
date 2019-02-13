@@ -14,12 +14,15 @@ ViridityHTMLColumn {
     childPrefix: createUniqueID()
 
     default property Component delegate
+
+    //property QtObject repeater: repeaterContainer.repeater //@QtQuick1: Required to see and access the repeater
+
     property alias model: repeater.model
     property alias count: repeater.count
 
     property int generation: 0
 
-    property variant _ViridityHTMLRepeater_ignoredPropertyNames: _ViridityHTMLColumn_ignoredPropertyNames.concat(["model", "count", "generation", "debug"])
+    property variant _ViridityHTMLRepeater_ignoredPropertyNames: _ViridityHTMLColumn_ignoredPropertyNames.concat(["model", "count", "generation", "debug", "itemRepeater", "repeaterContainer"])
     ignoredPropertyNames: _ViridityHTMLRepeater_ignoredPropertyNames
 
     property bool debug: false
@@ -41,16 +44,18 @@ ViridityHTMLColumn {
 
             var child;
 
+            // Add external sub renderers
             for (var i = 0; i < subRenderers.length; ++i)
             {
                 child = subRenderers[i];
-                if (!isTemplateRenderer(child))
-                    newChildren.push(subRenderers[i]);
+                newChildren.push(subRenderers[i]);
             }
 
-            for (var i = 0; i < dummyContainer.children.length; ++i)
+            // The order of how child items are added changed between Qt Quick 1 and 2, so account for that...
+            //for (var i = 0; i < repeaterContainer.children.length; ++i) //@QtQuick1
+            for (var i = repeaterContainer.children.length - 1; i >= 0; --i) //@QtQuick2
             {
-                child = dummyContainer.children[i];
+                child = repeaterContainer.children[i];
                 if (child.hasOwnProperty("item") && child.item)
                 {
                     child.item.parentRenderer = columnRenderer;
@@ -167,7 +172,7 @@ ViridityHTMLColumn {
         else if (index == repeater.count - 1)
             Private.itemAppended(item.item);
         else
-            Private.itemInsertedAfter(item.item, dummyContainer.children[index - 1].item);
+            Private.itemInsertedAfter(item.item, repeaterContainer.children[index - 1].item);
 
         columnRenderer._scheduleUpdateChildren();
     }
@@ -178,56 +183,56 @@ ViridityHTMLColumn {
         columnRenderer._scheduleUpdateChildren();
     }
 
-    // Why is this dummyContainer here?
-    // Repeater can only repeat Item-based components inside an Item-derived object.
-    Item {
-        id: dummyContainer
+    // Why is this repeaterContainer here?
+    // Qt Quick's Repeater can only repeat Item-based components inside an Item-derived object.
 
-        Repeater {
-            id: repeater
+    //property variant repeaterContainer: //@QtQuick1: Required to see and access the repeater
+        Item {
+            id: repeaterContainer
 
-            //onCountChanged: column.updateChildren()
+            //property alias repeater: repeater //@QtQuick1: Required to see and access the repeater
+            Repeater {
+                id: repeater
 
-            // Note: Loader.itemChanged is executed before onItemAdded...
-            onItemAdded: // index, item
-            {
-                if (columnRenderer.debug) Debug.print("Repeater ITEM ADDED-> " + index + ": " + item);
-                columnRenderer._addItem(index, item);
-            }
+                model: columnRenderer.model
 
-            onItemRemoved: // index, item
-            {
-                if (!columnRenderer) return;
-                if (columnRenderer.debug) Debug.print("Repeater ITEM REMOVED-> " + index + ": " + item);
-                columnRenderer._removeItem(index, item);
-            }
-
-            // Since Repeater can't natively repeat QtObjects (yet), we use Loader
-            // which can instantiate QtObject-based components since QML 2.x
-            // TODO: As for QML 1.x we also need to wrap the sourceComponent in an Item...
-            Loader {
-                sourceComponent: columnRenderer.delegate
-
-                onItemChanged:
+                onItemAdded: // index, item
                 {
-                    if (columnRenderer.debug) Debug.print("Loader ITEM CHANGED: " + item);
-                    if (item)
+                    if (columnRenderer.debug) Debug.print("Repeater ITEM ADDED-> " + index + ": " + item);
+                    columnRenderer._addItem(index, item);
+                }
+
+                onItemRemoved: // index, item
+                {
+                    if (!columnRenderer) return;
+                    if (columnRenderer.debug) Debug.print("Repeater ITEM REMOVED-> " + index + ": " + item);
+                    columnRenderer._removeItem(index, item);
+                }
+
+                Item {
+                    id: itemWrapper
+
+                    property int currentIndex: index
+                    property variant currentModelData: modelData
+
+                    property QtObject item: null
+
+                    Component.onCompleted:
                     {
+                        // Instantiate object and set context object to itemWrapper, so we can access currentIndex and currentModelData.
+                        item = EngineUtils.createObjectWithContextObject(columnRenderer.delegate, itemWrapper);
+
                         item.childPrefix = columnRenderer.createUniqueID();
                         item.name = item.name + "_" + item.childPrefix;
                         item.parentRenderer = columnRenderer;
                     }
-                }
 
-                Connections {
-                    target: columnRenderer
-                    onParentRendererChanged: item.parentRenderer = columnRenderer;
-                    onTopLevelRendererChanged: item.topLevelRenderer = columnRenderer.topLevelRenderer;
+                    Component.onDestruction:
+                    {
+                        if (item)
+                            item.destroy();
+                    }
                 }
-
-                property int currentIndex: index
-                property variant currentModelData: modelData
             }
         }
-    }
 }
