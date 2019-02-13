@@ -20,13 +20,10 @@ ViridityHTMLSegment {
 
         var newTemplate = "";
 
-        for (var i = 0; i < children.length; ++i)
+        for (var i = 0; i < subRenderers.length; ++i)
         {
-            var child = children[i];
-            if (isTemplateRenderer(child))
-            {
-                newTemplate += "${" + child.name + "}";
-            }
+            var child = subRenderers[i];
+            newTemplate += "${" + child.name + "}";
         }
 
         columnTemplate = newTemplate;
