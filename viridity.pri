@@ -83,7 +83,7 @@ viridity_declarative {
         DEFINES += VIRIDITY_USE_QTQUICK1
         DEFINES -= VIRIDITY_USE_QTQUICK2
 
-        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml/Viridity, @QtQuick1, 1.0)
+        qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml/Viridity, @QtQuick1, 1.1)
     }
 
     viridity_qtquick2 {
