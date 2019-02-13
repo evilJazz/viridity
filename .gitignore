@@ -1,5 +1,8 @@
 /3rdparty/kcl
 **~
-**.pro.user
+**.pro.user*
 **-Release
 **-Debug
+**.qmlc
+/examples/**/docker
+**/compile_commands.json
