@@ -10,6 +10,7 @@
 
 #include <QSharedPointer>
 #include <QPointer>
+#include <QRegExp>
 
 #include <QReadLocker>
 #include <QWriteLocker>

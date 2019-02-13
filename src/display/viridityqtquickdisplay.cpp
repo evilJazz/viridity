@@ -1,5 +1,7 @@
 #include "viridityqtquickdisplay.h"
 
+#include <QHash>
+
 #ifdef VIRIDITY_USE_QTQUICK1
     #include <QGraphicsScene>
     #include <QDeclarativeEngine>
@@ -36,6 +38,8 @@
 
 /* PrivateQtQuickDisplayManager */
 
+static QHash< QObject *, QPointer<AbstractGraphicsSceneAdapter> > adaptersByItem_;
+
 class PrivateQtQuickDisplayManager : public AbstractMultiGraphicsSceneDisplayManager
 {
     Q_OBJECT
@@ -59,8 +63,10 @@ protected slots:
     {
         DGUARDMETHODTIMED;
 
-        AbstractGraphicsSceneAdapter *adapter = NULL;
         QObject *objectToWatch = NULL;
+
+        // Check if we can reuse an existing adapter for the item...
+        AbstractGraphicsSceneAdapter *adapter = adaptersByItem_[item].data();
 
         /*
         // Try to resolve Loader->item...
@@ -76,39 +82,44 @@ protected slots:
         }
         */
 
+        if (!adapter)
+        {
 #ifdef VIRIDITY_USE_QTQUICK1
-        QDeclarativeItem *rootItem = qobject_cast<QDeclarativeItem *>(item);
+            QDeclarativeItem *rootItem = qobject_cast<QDeclarativeItem *>(item);
 
-        if (rootItem)
-        {
-            QGraphicsScene *scene = new QGraphicsScene();
-            scene->addItem(rootItem);
-
-            objectToWatch = rootItem;
-            QObject::connect(objectToWatch, SIGNAL(destroyed()), scene, SLOT(deleteLater()));
-
-            adapter = new QtQuick1Adapter(rootItem);
-        }
-#else
-        QQuickItem *rootItem = qobject_cast<QQuickItem *>(item);
-
-        if (!rootItem)
-        {
-            QQuickWindow *window = qobject_cast<QQuickWindow *>(item);
-            if (window)
+            if (rootItem)
             {
-                adapter = new QtQuick2Adapter(window);
-                objectToWatch = window;
+                QGraphicsScene *scene = new QGraphicsScene();
+                scene->addItem(rootItem);
+
+                objectToWatch = rootItem;
+                QObject::connect(objectToWatch, SIGNAL(destroyed()), scene, SLOT(deleteLater()));
+
+                adapter = new QtQuick1Adapter(rootItem);
+            }
+#else
+            QQuickItem *rootItem = qobject_cast<QQuickItem *>(item);
+
+            if (!rootItem)
+            {
+                QQuickWindow *window = qobject_cast<QQuickWindow *>(item);
+                if (window)
+                {
+                    adapter = new QtQuick2Adapter(window);
+                    objectToWatch = window;
+                }
+                else
+                    adapter = NULL;
             }
             else
-                adapter = NULL;
-        }
-        else
-        {
-            adapter = new QtQuick2Adapter(rootItem);
-            objectToWatch = rootItem;
-        }
+            {
+                adapter = new QtQuick2Adapter(rootItem);
+                objectToWatch = rootItem;
+            }
 #endif
+            if (adapter)
+                adaptersByItem_.insert(item, QPointer<AbstractGraphicsSceneAdapter>(adapter));
+        }
 
         if (!adapter)
         {
@@ -173,7 +184,7 @@ void ViridityQtQuickDisplay::componentComplete()
         qDebug("currentSession is %p", session);
     }
     else
-        qDebug("Can't determine engine context for object.");
+        qDebug("ViridityDisplay requires a session context and no session was found. Did you instantiate in a global context? Move it to the session context.");
 }
 
 QObject *ViridityQtQuickDisplay::displayItem()
