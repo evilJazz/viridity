@@ -25,7 +25,7 @@
 import QtQuick 2.0
 import Viridity 1.0
 
-import "ViridityDataBridge.js" as Private
+import "private/ViridityDataBridge.js" as Private
 
 /*!
     The ViridityDataBridge declarative/QML component provides an easy way to send and receive data on the Viridity communication channel in the context of a ViriditySession and a target.

@@ -5,7 +5,7 @@ import KCL 1.0
 import Viridity 1.0
 
 import "qrc:/KCL/DeferredExecution.js" as DeferredExecution
-import "ViridityHTMLRepeater.js" as Private
+import "private/ViridityHTMLRepeater.js" as Private
 
 ViridityHTMLColumn {
     id: columnRenderer

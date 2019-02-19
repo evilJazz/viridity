@@ -1,18 +1,26 @@
 <RCC>
     <qresource prefix="/Viridity">
-        <file alias="ViridityDataBridge.js">../src/qml/Viridity/ViridityDataBridge.js</file>
+        <file alias="private/ViridityDataBridge.js">../src/qml/Viridity/private/ViridityDataBridge.js</file>
         <file alias="ViridityDataBridge.qml">../src/qml/Viridity/ViridityDataBridge.qml</file>
         <file alias="qmldir">../src/qml/Viridity/qmldir</file>
         <file alias="ViridityHTMLButton.qml">../src/qml/Viridity/ViridityHTMLButton.qml</file>
         <file alias="ViridityHTMLColumn.qml">../src/qml/Viridity/ViridityHTMLColumn.qml</file>
         <file alias="ViridityHTMLDocument.qml">../src/qml/Viridity/ViridityHTMLDocument.qml</file>
-        <file alias="ViridityHTMLRepeater.js">../src/qml/Viridity/ViridityHTMLRepeater.js</file>
+        <file alias="private/ViridityHTMLRepeater.js">../src/qml/Viridity/private/ViridityHTMLRepeater.js</file>
         <file alias="ViridityHTMLRepeater.qml">../src/qml/Viridity/ViridityHTMLRepeater.qml</file>
         <file alias="ViridityHTMLSegment.qml">../src/qml/Viridity/ViridityHTMLSegment.qml</file>
         <file alias="ViridityHTMLColumnWithChangeNotificator.qml">../src/qml/Viridity/ViridityHTMLColumnWithChangeNotificator.qml</file>
         <file alias="ViridityHTMLSessionSegment.qml">../src/qml/Viridity/ViridityHTMLSessionSegment.qml</file>
         <file alias="ViridityHTMLQtQuickDisplay.qml">../src/qml/Viridity/ViridityHTMLQtQuickDisplay.qml</file>
         <file alias="ViridityHTMLInlineJavaScript.qml">../src/qml/Viridity/ViridityHTMLInlineJavaScript.qml</file>
+        <file alias="ViridityHTMLTextArea.qml">../src/qml/Viridity/ViridityHTMLTextArea.qml</file>
+        <file alias="private/ViridityHTMLHelpers.js">../src/qml/Viridity/private/ViridityHTMLHelpers.js</file>
+        <file alias="ViridityHTMLScriptCallbacks.qml">../src/qml/Viridity/ViridityHTMLScriptCallbacks.qml</file>
+        <file alias="private/ViridityHTMLScriptCallbacks.js">../src/qml/Viridity/private/ViridityHTMLScriptCallbacks.js</file>
+        <file alias="ViridityHTMLDependencies.qml">../src/qml/Viridity/ViridityHTMLDependencies.qml</file>
+        <file alias="ViridityHTMLDocumentConnection.qml">../src/qml/Viridity/ViridityHTMLDocumentConnection.qml</file>
+        <file alias="private/ViridityHTMLDocumentDependencyRegistry.qml">../src/qml/Viridity/private/ViridityHTMLDocumentDependencyRegistry.qml</file>
+        <file alias="private/qmldir">../src/qml/Viridity/private/qmldir</file>
     </qresource>
     <qresource prefix="/Client">
         <file alias="Viridity.js">../src/js/Viridity.js</file>

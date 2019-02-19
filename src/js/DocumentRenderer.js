@@ -33,6 +33,39 @@ var DR = {
     documentRenderers: [],
     dataBridges: {},
 
+    dependencies: {},
+
+    requires: function(depArray)
+    {
+        for (var i = 0; i < depArray.length; ++i)
+        {
+            var url = depArray[i];
+
+            if (!DR.dependencies[url])
+            {
+                if (/.css/.test(url))
+                {
+                    DR.dependencies[url] = $('<link>')
+                        .appendTo('head')
+                        .attr({
+                            type: 'text/css',
+                            rel: 'stylesheet',
+                            href: url
+                        });
+                }
+                else if (/.js/.test(url))
+                {
+                    DR.dependencies[url] = $('<script>')
+                        .appendTo('head')
+                        .attr({
+                            type: 'text/javascript',
+                            src: url
+                        });
+                }
+            }
+        }
+    },
+
     a: function(actionName, itemName, targetId, element)
     {
         var dataBridge = DR.dataBridges[targetId];

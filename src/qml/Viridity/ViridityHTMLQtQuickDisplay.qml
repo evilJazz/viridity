@@ -20,9 +20,11 @@ ViridityHTMLColumn {
         "style": renderer._styleString
     })
 
-    ViridityHTMLInlineJavaScript {
-        script: 'if (ViridityAuto) { ViridityAuto.autoAttach(); }'
-        removeAfterExecution: true
+    ViridityHTMLDependencies {
+        dependencies: [
+            "/DisplayRenderer.js"
+        ]
+        runAutoAttachment: true
     }
 
     ViridityDisplay {

@@ -9,6 +9,8 @@ NativeTemplateRenderer {
 
     renderDelay: -1 // Disable auto-updating
 
+    property bool inSessionContext: typeof(currentSession) != "undefined"
+
     property string propertyMarkerElement: "span"
     property variant propertyMarkerAttributes: ({})
 
@@ -44,6 +46,11 @@ NativeTemplateRenderer {
 
     function replaceMarkerForProperty(propertyName)
     {
+        return _ViridityHTMLSegment_replaceMarkerForProperty(propertyName);
+    }
+
+    function _ViridityHTMLSegment_replaceMarkerForProperty(propertyName)
+    {
         if (propertyName !== "targetId")
         {
             var id = renderer.identifier + propertyName;
@@ -58,6 +65,11 @@ NativeTemplateRenderer {
     }
 
     function replaceMarkerForContent()
+    {
+        return _ViridityHTMLSegment_replaceMarkerForContent();
+    }
+
+    function _ViridityHTMLSegment_replaceMarkerForContent()
     {
         var id = renderer.identifier;
         var attrs = formatAttributes(getContentMarkerAttributes(), true);
