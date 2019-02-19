@@ -10,7 +10,10 @@ QtObjectWithChildren {
         targetId: "myReactiveDoc"
 
         templateSource: Qt.resolvedUrl("test.template.html")
-        publishAtUrl: "/test.html"
+
+        title: "Viridity Reactive Example"
+
+        publishAtUrl: "/index.html"
 
         ViridityHTMLColumn {
             name: "columnSegment"
@@ -41,29 +44,90 @@ QtObjectWithChildren {
                 ViridityHTMLSegment {
                     name: "listElement"
                     contentMarkerElement: "li"
-                    templateText: "<strong>${index} -> ${title}</strong>"
+                    templateText: "<strong>${index} -> ${title} - ${name}</strong>"
 
                     property int index: currentIndex
                     property string title: currentModelData
                 }
             }
 
+            Rectangle {
+                id: testRectangle
+                color: "red"
+                width: 100
+                height: 200
+
+                Rectangle {
+                    id: rect
+                    width: 111
+                    height: 200
+                    color: "gray"
+
+                    x: 80
+                    y: 200
+                }
+
+                MouseArea {
+                    id: mouseArea
+
+                    anchors.fill: parent
+
+                    property variant startX
+                    property variant startY
+
+                    property variant mousePressX
+                    property variant mousePressY
+
+                    onPressed:
+                    {
+                        forceActiveFocus();
+
+                        mousePressX = mouse.x;
+                        mousePressY = mouse.y;
+
+                        startX = rect.x;
+                        startY = rect.y;
+                    }
+
+                    onPositionChanged:
+                    {
+                        if (pressed)
+                        {
+                            rect.x = startX - (mousePressX - mouse.x);
+                            rect.y = startY - (mousePressY - mouse.y);
+                        }
+                    }
+                }
+            }
+
             ListModel {
                 id: listModel
-                onRowsInserted: ++infoSegment.totalItemsCreated;
+
+                function appendData(data)
+                {
+                    append({ title: data });
+                    ++infoSegment.totalItemsCreated;
+                }
+
+                function insertData(index, data)
+                {
+                    insert(index, { title: data });
+                    ++infoSegment.totalItemsCreated;
+                }
             }
 
             Timer {
+                id: autoAddTimer
                 repeat: true
                 interval: 500
-                running: true
+                //running: true
                 onTriggered:
                 {
                     if (listModel.count >= 10)
                         listModel.remove(0);
 
                     var index = Math.round(Math.random() * listModel.count);
-                    listModel.insert(index, { title: "Value: " + Math.random() });
+                    listModel.insertData(index, "Value: " + Math.random());
                 }
             }
         }

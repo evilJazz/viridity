@@ -15,11 +15,21 @@ QtObjectWithChildren {
         }
 
         ViridityHTMLButton {
-            name: "buttonAdd"
-            title: "Add new item"
+            name: "buttonAppend"
+            title: "Append new item"
             onClicked:
             {
-                listModel.append({ title: "This is sparta! " + (new Date).getTime() });
+                listModel.appendData("This is sparta! " + (new Date).getTime());
+                ++sessionInfoSegment.totalItemsCreatedInSession;
+            }
+        }
+
+        ViridityHTMLButton {
+            name: "buttonPrepend"
+            title: "Prepend new item"
+            onClicked:
+            {
+                listModel.insertData(0, "This is sparta! " + (new Date).getTime());
                 ++sessionInfoSegment.totalItemsCreatedInSession;
             }
         }
@@ -29,6 +39,42 @@ QtObjectWithChildren {
             title: "Remove first item"
             onClicked: listModel.remove(0);
         }
+
+        ViridityHTMLColumn {
+            ViridityHTMLButton {
+                name: "dumpStructure"
+                title: "Dump structure"
+                onClicked: myReactiveDoc.dumpRendererStructure();
+            }
+
+            ViridityHTMLButton {
+                name: "detachListModel"
+                title: "Detach Model"
+                onClicked: htmlRepeater.model = null;
+            }
+
+            ViridityHTMLButton {
+                name: "attachListModel"
+                title: "Attach Model"
+                onClicked: htmlRepeater.model = listModel;
+            }
+        }
+
+        ViridityHTMLColumn {
+            ViridityHTMLButton {
+                name: "enableTimer"
+                title: "Start auto-add items"
+                onClicked: autoAddTimer.running = true;
+                visible: !autoAddTimer.running
+            }
+
+            ViridityHTMLButton {
+                name: "disableTimer"
+                title: "Stop auto-add items"
+                onClicked: autoAddTimer.running = false;
+                visible: autoAddTimer.running
+            }
+        }
     }
 
     ViridityHTMLSessionSegment {
@@ -36,10 +82,18 @@ QtObjectWithChildren {
         name: "sessionSegmentBottom"
 
         ViridityHTMLSegment {
+            name: "sessionInfoSegment"
             id: sessionInfoSegment
-            templateText: "<div>Items created in this session: ${totalItemsCreatedInSession}</div>"
+            templateText: "Items created in this session: ${totalItemsCreatedInSession}"
 
             property int totalItemsCreatedInSession: 0
+        }
+
+        ViridityHTMLQtQuickDisplay {
+            name: "qtQuickDisplay"
+            width: 300
+            height: 300
+            displayItem: testRectangle
         }
     }
 

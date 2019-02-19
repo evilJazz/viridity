@@ -1,4 +1,8 @@
-#include <QCoreApplication>
+#ifdef VIRIDITY_USE_QTQUICK1
+#include <QApplication>
+#else
+#include <QGuiApplication>
+#endif
 
 #include <Viridity/ViridityQmlExtendedAppCore>
 #include <Viridity/FileRequestHandler>
@@ -8,7 +12,12 @@
 
 int main(int argc, char *argv[])
 {
-    QCoreApplication a(argc, argv);
+#ifdef VIRIDITY_USE_QTQUICK1
+    QApplication a(argc, argv);
+#else
+    QGuiApplication a(argc, argv);
+    a.setQuitOnLastWindowClosed(false);
+#endif
 
     forceEnableQtDebugOutput();
     setDiagnosticOutputEnabled(true);
@@ -21,12 +30,12 @@ int main(int argc, char *argv[])
         QString() // No data location since we don't use it
     );
 
-    appCore.rewriteRequestHandler()->addRule("^/$ /test.html [R]");
+    appCore.rewriteRequestHandler()->addRule("^/$ /index.html [R]");
 
     // Read port from command line arguments...
     const int dataPort = a.arguments().count() > 1 ? a.arguments().at(1).toInt() : 8080;
 
-    if (appCore.startWebServer(QHostAddress::LocalHost, dataPort))
+    if (appCore.startWebServer(QHostAddress::Any, dataPort))
         qDebug("Server is now listening on http://127.0.0.1:%d", dataPort);
     else
         qFatal("Could not setup server on http://127.0.0.1:%d", dataPort);
