@@ -5,20 +5,20 @@ An application server for Qt that streams data and scenes (QGraphicsScene/QtQuic
 ## Features
 
 * Full declarative interface for QML and Qt Quick;
-* Multi-threaded HTTP/1.1 server
-  * Support for persistent connection (keep-alive) and chunked transfer encoding, WebSocket hand-off;
+* Multi-threaded HTTP/1.1 application server:
+  * Support for persistent connections (keep-alive), chunked transfer encoding and WebSocket hand-off;
   * File upload support;
-  * Transparent data channel using either WebSocket, Server Sent Events (SSE) and Long-Polling with automatic fallback;
-  * Session Manager.
+  * Transparent data channel using either WebSocket, Server Sent Events (SSE) or Long-Polling with automatic fallback, proxies supported;
+  * Integrated Session Manager.
 * Framework to develop custom request handlers / routes:
   * Use QML + JavaScript for maximum flexibility and ease-of-use (single-threaded only);
   * Use C++ for maximum performance, multi-threading support baked in;
-* HTML template system:
+* Declarative HTML template system:
   * Generates both static and dynamic pages;
-  * Leveraging the QML engine and Qt Property/Signal/Slot system to do the heavy lifting similar to React or Angular, but on the server instead of the client;
+  * Leveraging the QML engine and Qt's Signal/Slot/Property system to do the heavy lifting;
   * Automatic change propagation to web browser via QML to JS "DataBridge":
     Changes in your QML document structure (content / bound properties) are transformed to HTML and streamed to the attached clients in real-time.
-  * Write HTML components in QML: Various QML components generating HTML primitives are already included
+  * Write HTML components in QML: Various QML components generating HTML5 primitives are already included;
   * High-performance caching system for static and dynamic pages;
 * Embed Qt Quick scenes with a view lines of code:
   * Rendered on the server, streamed to the browser via a technique similar to VNC or RDP, fully multi-threaded;
@@ -31,7 +31,7 @@ An application server for Qt that streams data and scenes (QGraphicsScene/QtQuic
 
 ## TODO
 
-* HTTPS/TLS support - For now use a reverse proxy configuration (HAProxy, Apache or nginx)
+* HTTPS/TLS or HTTP/2 support - For now use a reverse proxy configuration (HAProxy, Apache or nginx)
 
 ## Requirements
 
