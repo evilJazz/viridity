@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/Client">
+        <file alias="Viridity.js">../src/js/Viridity.js</file>
+        <file alias="DataBridge.js">../src/js/DataBridge.js</file>
+        <file alias="DisplayRenderer.js">../src/js/DisplayRenderer.js</file>
+        <file alias="DocumentRenderer.js">../src/js/DocumentRenderer.js</file>
+        <file alias="jquery.mousewheel.js">../src/js/jquery.mousewheel.js</file>
+        <file alias="ViridityAuto.js">../src/js/ViridityAuto.js</file>
+    </qresource>
+</RCC>

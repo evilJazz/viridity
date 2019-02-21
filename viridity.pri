@@ -74,6 +74,12 @@ SOURCES += \
     $$VIRIDITY_SRC_PATH/handlers/debugrequesthandler.cpp \
     $$VIRIDITY_SRC_PATH/handlers/rewriterequesthandler.cpp
 
+RESOURCES += \
+    $$VIRIDITY_RES_PATH/viridityclient.qrc
+
+QTQUICK_COMPILER_SKIPPED_RESOURCES += \
+    $$VIRIDITY_RES_PATH/viridityclient.qrc
+
 viridity_declarative {
     include($$PWD/3rdparty/kcl/qmlpp/src/qmlpp.pri)
 
@@ -106,6 +112,9 @@ viridity_declarative {
         $$VIRIDITY_SRC_PATH/viridityqmlappcore.cpp \
         $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.cpp \
         $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.cpp
+
+    RESOURCES += \
+        $$VIRIDITY_RES_PATH/viridityqml.qrc
 }
 
 # Display related
@@ -252,6 +261,3 @@ viridity_module_display {
 }
 
 QML_IMPORT_PATH += $$VIRIDITY_SRC_PATH/qml/
-
-RESOURCES += \
-    $$VIRIDITY_RES_PATH/viridityresources.qrc
