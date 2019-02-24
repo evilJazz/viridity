@@ -51,9 +51,7 @@ ViridityHTMLColumn {
                 newChildren.push(subRenderers[i]);
             }
 
-            // The order of how child items are added changed between Qt Quick 1 and 2, so account for that...
-            //for (var i = 0; i < repeaterContainer.children.length; ++i) //@QtQuick1
-            for (var i = repeaterContainer.children.length - 1; i >= 0; --i) //@QtQuick2
+            for (var i = 0; i < repeaterContainer.children.length; ++i)
             {
                 child = repeaterContainer.children[i];
                 if (child.hasOwnProperty("item") && child.item)
