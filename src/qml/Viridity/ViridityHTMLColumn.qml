@@ -12,9 +12,9 @@ ViridityHTMLSegment {
     templateText: columnTemplate
     property string columnTemplate
 
-    onSubRenderersChanged: if (!blockUpdates) _updateColumnTemplate(subRenderers)
+    onSubRenderersChanged: if (!blockUpdates) _updateColumnTemplate()
 
-    function _updateColumnTemplate(children)
+    function _updateColumnTemplate()
     {
         if (blockUpdates) return;
 
@@ -39,6 +39,6 @@ ViridityHTMLSegment {
     function endUpdate()
     {
         blockUpdates = false;
-        _updateColumnTemplate(children)
+        _updateColumnTemplate()
     }
 }
