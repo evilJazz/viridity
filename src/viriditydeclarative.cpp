@@ -71,6 +71,8 @@ void ViridityDeclarative::registerTypes()
 
 #ifdef VIRIDITY_MODULE_DISPLAY
     qmlRegisterType<ViridityQtQuickDisplay>("Viridity", 1, 0, "ViridityDisplay");
+    qmlRegisterUncreatableType<ViridityEncoderSettings>("Viridity", 1, 0, "ViridityEncoderSettings", "Can't create encoder settings.");
+    qmlRegisterUncreatableType<ViridityComparerSettings>("Viridity", 1, 0, "ViridityComparerSettings", "Can't create encoder settings.");
 #endif
 }
 

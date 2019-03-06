@@ -12,6 +12,10 @@ ViridityHTMLColumn {
     property int width: 0
     property int height: 0
 
+    property alias autoSize: display.autoSize
+    property alias encoderSettings: display.encoderSettings
+    property alias comparerSettings: display.comparerSettings
+
     property string _styleString: (width > 0 ? "width:" + width + "px;" : "") + (height > 0 ? "height:" + height + "px;": "")
 
     contentMarkerElement: "div"
@@ -27,7 +31,7 @@ ViridityHTMLColumn {
         runAutoAttachment: true
     }
 
-    ViridityDisplay {
+    property ViridityDisplay display: ViridityDisplay {
         id: display
         targetId: renderer.name
         autoSize: true

@@ -36,6 +36,160 @@
 #endif
 #include "KCL/debug.h"
 
+/* ViridityEncoderSettings */
+
+ViridityEncoderSettings::ViridityEncoderSettings(QObject *parent) :
+    QObject(parent),
+    settings_()
+{
+}
+
+ViridityEncoderSettings::~ViridityEncoderSettings()
+{
+}
+
+void ViridityEncoderSettings::setUseMultithreading(bool value)
+{
+    if (settings_.useMultithreading != value)
+    {
+        settings_.useMultithreading = value;
+        emit useMultithreadingChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityEncoderSettings::setPatchEncodingFormat(EncodingFormat format)
+{
+    if (settings_.patchEncodingFormat != format)
+    {
+        settings_.patchEncodingFormat = static_cast<EncoderSettings::EncodingFormat>(format);
+        emit patchEncodingFormatChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityEncoderSettings::setAlphaChannelEnabled(bool value)
+{
+    if (settings_.alphaChannelEnabled != value)
+    {
+        settings_.alphaChannelEnabled = value;
+        emit alphaChannelEnabledChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityEncoderSettings::setJpegQuality(int value)
+{
+    if (settings_.jpegQuality != value)
+    {
+        settings_.jpegQuality = value;
+        emit jpegQualityChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityEncoderSettings::setCompressionLevel(int value)
+{
+    if (settings_.compressionLevel != value)
+    {
+        settings_.compressionLevel = value;
+        emit compressionLevelChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityEncoderSettings::setInlineMaxBytes(int value)
+{
+    if (settings_.inlineMaxBytes != value)
+    {
+        settings_.inlineMaxBytes = value;
+        emit inlineMaxBytesChanged();
+        emit settingsChanged();
+    }
+}
+
+/* ViridityComparerSettings */
+
+ViridityComparerSettings::ViridityComparerSettings(QObject *parent) :
+    QObject(parent),
+    settings_()
+{
+}
+
+ViridityComparerSettings::~ViridityComparerSettings()
+{
+}
+
+void ViridityComparerSettings::setTileWidth(int value)
+{
+    if (settings_.tileWidth != value)
+    {
+        settings_.tileWidth = value;
+        emit tileWidthChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityComparerSettings::setUseMultithreading(bool value)
+{
+    if (settings_.useMultithreading != value)
+    {
+        settings_.useMultithreading = value;
+        emit useMultithreadingChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityComparerSettings::setMinifyTiles(bool value)
+{
+    if (settings_.minifyTiles != value)
+    {
+        settings_.minifyTiles = value;
+        emit minifyTilesChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityComparerSettings::setMinifyTileCountThreshold(int value)
+{
+    if (settings_.minifyTileCountThreshold != value)
+    {
+        settings_.minifyTileCountThreshold = value;
+        emit minifyTileCountThresholdChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityComparerSettings::setAnalyzeFills(bool value)
+{
+    if (settings_.analyzeFills != value)
+    {
+        settings_.analyzeFills = value;
+        emit analyzeFillsChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityComparerSettings::setAnalyzeMoves(bool value)
+{
+    if (settings_.analyzeMoves != value)
+    {
+        settings_.analyzeMoves = value;
+        emit analyzeMovesChanged();
+        emit settingsChanged();
+    }
+}
+
+void ViridityComparerSettings::setFineGrainedMoves(bool value)
+{
+    if (settings_.fineGrainedMoves != value)
+    {
+        settings_.fineGrainedMoves = value;
+        emit fineGrainedMovesChanged();
+        emit settingsChanged();
+    }
+}
+
 /* PrivateQtQuickDisplayManager */
 
 static QHash< QObject *, QPointer<AbstractGraphicsSceneAdapter> > adaptersByItem_;
@@ -150,6 +304,19 @@ protected slots:
         }
     }
 
+    virtual GraphicsSceneDisplay *createDisplayInstance(const QString &id, const QStringList &params)
+    {
+        GraphicsSceneDisplay *result = AbstractMultiGraphicsSceneDisplayManager::createDisplayInstance(id, params);
+
+        if (result)
+        {
+            result->setEncoderSettings(parent_->encoderSettings()->encoderSettings());
+            result->setComparerSettings(parent_->comparerSettings()->comparerSettings());
+        }
+
+        return result;
+    }
+
 private:
     QPointer<ViridityQtQuickDisplay> parent_;
 };
@@ -165,6 +332,12 @@ ViridityQtQuickDisplay::ViridityQtQuickDisplay(QObject *parent) :
     autoSize_(true)
 {
     DGUARDMETHODTIMED;
+
+    encoderSettings_ = new ViridityEncoderSettings(this);
+    comparerSettings_ = new ViridityComparerSettings(this);
+
+    connect(encoderSettings_, SIGNAL(settingsChanged()), this, SIGNAL(encoderSettingsChanged()));
+    connect(comparerSettings_, SIGNAL(settingsChanged()), this, SIGNAL(comparerSettingsChanged()));
 }
 
 ViridityQtQuickDisplay::~ViridityQtQuickDisplay()
@@ -200,6 +373,16 @@ void ViridityQtQuickDisplay::setDisplayItem(QObject *displayItem)
 bool ViridityQtQuickDisplay::autoSize() const
 {
     return autoSize_;
+}
+
+ViridityEncoderSettings *ViridityQtQuickDisplay::encoderSettings()
+{
+    return encoderSettings_;
+}
+
+ViridityComparerSettings *ViridityQtQuickDisplay::comparerSettings()
+{
+    return comparerSettings_;
 }
 
 QString ViridityQtQuickDisplay::targetId() const
