@@ -66,11 +66,15 @@ manifest:
   stage: manifest
   tags:
     - shell-executor
-    - armhf
+    - amd64
   variables:
     DOCKER_CLI_EXPERIMENTAL: enabled
     IMAGE_NAME: $CI_REGISTRY_IMAGE/qmlwebviewer
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+    - docker pull "${IMAGE_NAME}-amd64" 
+    - docker pull "${IMAGE_NAME}-armhf"
+    - docker manifest push --purge "$IMAGE_NAME" || true
     - docker manifest create -a "$IMAGE_NAME" "${IMAGE_NAME}-amd64" "${IMAGE_NAME}-armhf"
-    - docker manifest push "$IMAGE_NAME"
+    - docker manifest inspect "$IMAGE_NAME"
+    - docker manifest push --purge "$IMAGE_NAME"
