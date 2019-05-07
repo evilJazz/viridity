@@ -29,20 +29,7 @@
     <script type="text/javascript">
         $(document).ready(function() {
             var channel = new Viridity({ connectionMethod: ConnectionMethod.Auto });
-
             var display = $("#displayContainer").viridity(channel, "main");
-
-            var initScene = function(sessionId)
-            {
-                // Add custom session code here...
-            };
-
-            channel.on("sessionStart", initScene);
-            channel.on("sessionReattached", initScene);
-            channel.on("sessionInUse", function(sessionId)
-            {
-                alert("This session is already in use in another tab or window.");
-            });
         });
     </script>
   </head>
