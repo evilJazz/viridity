@@ -49,7 +49,7 @@ struct ComparerSettings
         minifyTiles(true),
         minifyTileCountThreshold(10),
         analyzeFills(true),
-        analyzeMoves(true),
+        analyzeMoves(false),
         fineGrainedMoves(false)
     {}
 
