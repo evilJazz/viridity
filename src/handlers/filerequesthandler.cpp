@@ -118,10 +118,14 @@ QByteArray FileRequestHandler::determineMimeType(const QString &fileName)
     QByteArray ext = QFileInfo(fileName).suffix().toLower().toLatin1();
     if (ext == "js")
         return "application/javascript";
+    else if (ext == "css")
+        return "text/css";
     else if (ext == "jpeg" || ext == "jpg")
         return "image/jpeg";
     else if (ext == "png")
         return "image/png";
+    else if (ext == "svg")
+        return "image/svg+xml";
     else if (ext == "html" || ext == "htm")
         return "text/html";
     else if (ext == "css")
