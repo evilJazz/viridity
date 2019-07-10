@@ -18,6 +18,8 @@
 #include "viriditywebserver.h"
 #include "viridityconnection.h"
 
+#include "handlers/posthandler.h"
+
 #include "KCL/objectutils.h"
 
 #ifndef VIRIDITY_DEBUG
@@ -32,13 +34,23 @@ class PrivateViridityRequestWrapper : public QObject
     Q_OBJECT
     Q_PROPERTY(QString method READ method CONSTANT)
     Q_PROPERTY(QString url READ url CONSTANT)
+    Q_PROPERTY(PostHandler *post READ post CONSTANT)
 public:
-    PrivateViridityRequestWrapper(QSharedPointer<ViridityHttpServerRequest> request) :
+    PrivateViridityRequestWrapper(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response = QSharedPointer<ViridityHttpServerResponse>()) :
         QObject(),
-        request_(request)
+        request_(request),
+        response_(response),
+        postHandler_()
     {
         DGUARDMETHODTIMED;
         connect(request_->socket().data(), SIGNAL(disconnected()), this, SLOT(deleteLater()));
+
+        if (!response.isNull() && request_->method() == "POST")
+        {
+            // Only instantiate PostHandler if we actually have a response object, i.e. we are called from handleRequest method
+            // Parent PostHandler to this wrapper which is moved to the proxies thread after instantiation, so PostHandler also lives in the same thread.
+            postHandler_ = QPointer<PostHandler>(new PostHandler(request_, response_, this));
+        }
     }
 
     virtual ~PrivateViridityRequestWrapper()
@@ -49,8 +61,13 @@ public:
     QString method() const { return request_ ? QString::fromLatin1(request_->method()) : QString::null; }
     QString url() const { return request_ ? QString::fromUtf8(request_->url()) : QString::null; }
 
+    PostHandler *post() { return postHandler_.data(); }
+
 private:
     QSharedPointer<ViridityHttpServerRequest> request_;
+    QSharedPointer<ViridityHttpServerResponse> response_;
+
+    QPointer<PostHandler> postHandler_;
 };
 
 /* PrivateViridityResponseWrapper */
@@ -191,20 +208,15 @@ public:
         if (proxy_->metaObject()->indexOfMethod("filterRequestResponse(QVariant,QVariant)") == -1)
             return;
 
-        PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
-        requestWrapper->moveToThread(proxy_->thread());
-        QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
-
-        PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
-        responseWrapper->moveToThread(proxy_->thread());
-        QVariant responseVar = ObjectUtils::objectToVariant(responseWrapper);
+        PrivateViridityRequestWrapper *requestWrapper = getWrapperForRequest(request);
+        PrivateViridityResponseWrapper *responseWrapper = getWrapperForResponse(response);
 
         QMetaObject::invokeMethod(
             proxy_,
             "filterRequestResponse",
             Qt::QueuedConnection,
-            Q_ARG(QVariant, requestVar),
-            Q_ARG(QVariant, responseVar)
+            Q_ARG(QVariant, ObjectUtils::objectToVariant(requestWrapper)),
+            Q_ARG(QVariant, ObjectUtils::objectToVariant(responseWrapper))
         );
     }
 
@@ -223,16 +235,14 @@ public:
 
         QVariant result = false;
 
-        PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
-        requestWrapper->moveToThread(proxy_->thread());
-        QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
+        PrivateViridityRequestWrapper *requestWrapper = getWrapperForRequest(request);
 
         if (!QMetaObject::invokeMethod(
                 proxy_,
                 "doesHandleRequest",
                 Qt::BlockingQueuedConnection,
                 Q_RETURN_ARG(QVariant, result),
-                Q_ARG(QVariant, requestVar)
+                Q_ARG(QVariant, ObjectUtils::objectToVariant(requestWrapper))
             ))
         {
             qDebug("Please implement the function doesHandleRequest(request) in ViridityQmlRequestHandler instance.");
@@ -254,11 +264,7 @@ public:
         }
         else
         {
-            PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request);
-            requestWrapper->moveToThread(proxy_->thread());
-            QVariant requestVar = ObjectUtils::objectToVariant(requestWrapper);
-
-            PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
+            PrivateViridityResponseWrapper *responseWrapper = getWrapperForResponse(response);
 
             if (proxy_->contentCachingEnabled())
             {
@@ -266,15 +272,14 @@ public:
                 connect(responseWrapper, SIGNAL(done(PrivateViridityResponseWrapper *)), this, SLOT(responseWrapperDone(PrivateViridityResponseWrapper *)));
             }
 
-            responseWrapper->moveToThread(proxy_->thread());
-            QVariant responseVar = ObjectUtils::objectToVariant(responseWrapper);
+            PrivateViridityRequestWrapper *requestWrapper = getWrapperForRequest(request, response);
 
             if (!QMetaObject::invokeMethod(
                     proxy_,
                     "handleRequest",
                     Qt::QueuedConnection,
-                    Q_ARG(QVariant, requestVar),
-                    Q_ARG(QVariant, responseVar)
+                    Q_ARG(QVariant, ObjectUtils::objectToVariant(requestWrapper)),
+                    Q_ARG(QVariant, ObjectUtils::objectToVariant(responseWrapper))
                 ))
             {
                 qDebug("Please implement the function handleRequest(request, response) in ViridityQmlRequestHandler instance.");
@@ -295,6 +300,22 @@ private slots:
 
 private:
     QPointer<ViridityQmlRequestHandler> proxy_;
+
+    PrivateViridityRequestWrapper *getWrapperForRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response = QSharedPointer<ViridityHttpServerResponse>())
+    {
+        PrivateViridityRequestWrapper *requestWrapper = new PrivateViridityRequestWrapper(request, response);
+        requestWrapper->moveToThread(proxy_->thread());
+        DeclarativeEngine::setObjectOwnership(requestWrapper, DeclarativeEngine::CppOwnership);
+        return requestWrapper;
+    }
+
+    PrivateViridityResponseWrapper *getWrapperForResponse(QSharedPointer<ViridityHttpServerResponse> response)
+    {
+        PrivateViridityResponseWrapper *responseWrapper = new PrivateViridityResponseWrapper(response);
+        responseWrapper->moveToThread(proxy_->thread());
+        DeclarativeEngine::setObjectOwnership(responseWrapper, DeclarativeEngine::CppOwnership);
+        return responseWrapper;
+    }
 };
 
 /* ViridityQmlRequestHandler */
@@ -329,7 +350,7 @@ void ViridityQmlRequestHandler::componentComplete()
         server->registerRequestHandler(requestHandler_);
     }
     else
-        qDebug("Can't determine engine context for object.");
+        qDebug("ViridityQmlRequestHandler: Can't determine engine context for object.");
 }
 
 bool ViridityQmlRequestHandler::contentCachingEnabled() const

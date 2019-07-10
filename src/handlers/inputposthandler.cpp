@@ -1,6 +1,6 @@
 /****************************************************************************
 **
-** Copyright (C) 2012-2016 Andre Beckedorf, Meteora Softworks
+** Copyright (C) 2012-2019 Andre Beckedorf, Meteora Softworks
 ** Contact: info@meteorasoftworks.com
 **
 ** This file is part of Viridity
@@ -28,19 +28,9 @@
 #include "viriditysessionmanager.h"
 
 InputPostHandler::InputPostHandler(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response, ViriditySession *session, QObject *parent) :
-    QObject(parent),
-    request_(request),
-    response_(response),
+    PostHandler(request, response, parent),
     session_(session)
 {
-    connect(request_.data(), SIGNAL(data(QByteArray)), this, SLOT(handleRequestData(QByteArray)));
-    connect(request_.data(), SIGNAL(end()), this, SLOT(handleRequestEnd()));
-    connect(request_.data(), SIGNAL(close()), this, SLOT(handleRequestClose()));
-}
-
-void InputPostHandler::handleRequestData(const QByteArray &chunk)
-{
-    data_ += chunk;
 }
 
 void InputPostHandler::handleRequestEnd()
@@ -55,13 +45,5 @@ void InputPostHandler::handleRequestEnd()
     response_->writeHead(ViridityHttpServerResponse::OK);
     response_->end();
 
-    handleRequestClose();
-}
-
-void InputPostHandler::handleRequestClose()
-{
-    response_.clear();
-    request_.clear();
-
-    deleteLater();
+    PostHandler::handleRequestEnd();
 }

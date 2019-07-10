@@ -22,27 +22,39 @@
 **
 ****************************************************************************/
 
-#ifndef INPUTPOSTHANDLER_H
-#define INPUTPOSTHANDLER_H
+#ifndef POSTHANDLER_H
+#define POSTHANDLER_H
 
 #include <QObject>
 
 #include "viridityrequesthandler.h"
-#include "handlers/posthandler.h"
 
-class ViriditySession;
-
-class InputPostHandler : public PostHandler
+class PostHandler : public QObject
 {
     Q_OBJECT
+    Q_PROPERTY(QByteArray data READ data NOTIFY dataReceived)
+    Q_PROPERTY(bool isFinished READ isFinished NOTIFY dataFinished)
 public:
-    explicit InputPostHandler(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response, ViriditySession *session, QObject *parent = 0);
+    explicit PostHandler(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response, QObject *parent = 0);
+    virtual ~PostHandler();
 
-private slots:
+    QByteArray data() const { return data_; }
+    bool isFinished() const { return finished_; }
+
+signals:
+    void dataReceived(const QByteArray &chunk);
+    void dataFinished();
+
+protected slots:
+    virtual void handleRequestData(const QByteArray &chunk);
     virtual void handleRequestEnd();
+    virtual void handleRequestClose();
 
-private:
-    ViriditySession *session_;
+protected:
+    QSharedPointer<ViridityHttpServerRequest> request_;
+    QSharedPointer<ViridityHttpServerResponse> response_;
+    QByteArray data_;
+    bool finished_;
 };
 
-#endif // INPUTPOSTHANDLER_H
+#endif // POSTHANDLER_H
