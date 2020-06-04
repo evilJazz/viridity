@@ -58,7 +58,7 @@ int main(int argc, char *argv[])
 
         if (QDir(htmlDirName).exists())
         {
-            FileRequestHandler::publishDirectoryGlobally("/", htmlDirName);
+            FileRequestHandler::publishDirectoryGlobally("/", htmlDirName, true); // Also allow symlinks!
 
             QString indexFileName = FileSystemUtils::pathAppend(htmlDirName, "index.html");
             if (QFileInfo(indexFileName).exists())

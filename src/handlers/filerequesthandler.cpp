@@ -80,13 +80,13 @@ void FileRequestHandler::unpublishFileGlobally(const QByteArray &url)
     globalContentTypes_.remove(url);
 }
 
-void FileRequestHandler::publishDirectoryGlobally(const QByteArray &baseUrl, const QString &directoryName)
+void FileRequestHandler::publishDirectoryGlobally(const QByteArray &baseUrl, const QString &directoryName, bool followSymLinks)
 {
     QDir docDir(directoryName);
 
     if (docDir.exists())
     {
-        QDirIterator it(docDir.absolutePath(), QDir::Files, QDirIterator::Subdirectories);
+        QDirIterator it(docDir.absolutePath(), QDir::Files, followSymLinks ? QDirIterator::FollowSymlinks | QDirIterator::Subdirectories : QDirIterator::Subdirectories);
 
         while (it.hasNext())
         {

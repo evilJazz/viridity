@@ -45,7 +45,7 @@ public:
     static void publishFileGlobally(const QByteArray &url, const QString &fileName, QByteArray mimeType = QByteArray());
     static void unpublishFileGlobally(const QByteArray &url);
 
-    static void publishDirectoryGlobally(const QByteArray &baseUrl, const QString &directoryName);
+    static void publishDirectoryGlobally(const QByteArray &baseUrl, const QString &directoryName, bool followSymLinks = false);
     static void unpublishDirectoryGlobally(const QByteArray &baseUrl);
 
     static void publishViridityFiles();
