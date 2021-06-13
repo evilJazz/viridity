@@ -32,7 +32,13 @@ build-armhf:
     - docker-executor
     - armhf
 
-# Create Docker images for amd64 and armhf
+build-arm64:
+  extends: .build
+  tags:
+    - docker-executor
+    - arm64
+
+# Create Docker images for amd64, armhf and arm64
 .docker:
   stage: docker
   script:
@@ -61,6 +67,16 @@ docker-armhf:
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-armhf
 
+docker-arm64:
+  extends: .docker
+  dependencies:
+    - build-arm64
+  tags:
+    - shell-executor
+    - arm64
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-arm64
+
 # Create combined Docker image manifest so we do not have to differentiate between platforms
 manifest:
   stage: manifest
@@ -74,7 +90,8 @@ manifest:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker pull "${IMAGE_NAME}-amd64" 
     - docker pull "${IMAGE_NAME}-armhf"
+    - docker pull "${IMAGE_NAME}-arm64"
     - docker manifest push --purge "$IMAGE_NAME" || true
-    - docker manifest create -a "$IMAGE_NAME" "${IMAGE_NAME}-amd64" "${IMAGE_NAME}-armhf"
+    - docker manifest create -a "$IMAGE_NAME" "${IMAGE_NAME}-amd64" "${IMAGE_NAME}-armhf" "${IMAGE_NAME}-arm64"
     - docker manifest inspect "$IMAGE_NAME"
     - docker manifest push --purge "$IMAGE_NAME"
