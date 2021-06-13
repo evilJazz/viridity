@@ -49,7 +49,7 @@ build-arm64:
   stage: docker
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build --platform=${PLATFORM} -t qmlwebviewer examples/qmlwebviewer/docker/
+    - docker build --platform "${PLATFORM}" -t qmlwebviewer examples/qmlwebviewer/docker/
     - docker tag qmlwebviewer "$IMAGE_TAG"
     - docker push "$IMAGE_TAG"
 
