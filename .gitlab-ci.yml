@@ -5,7 +5,7 @@ stages:
 
 # Build qmlwebviewer in our dockerized build environment...
 .build:
-  image: $CI_REGISTRY/eviljazz/buildenv-ubuntu-qt5:18.04
+  image: $CI_REGISTRY/meteorasoftworks/buildenv-ubuntu-qt5:18.04-${ARCH}
   stage: build
   variables:
     CCACHE_DIR: $CI_PROJECT_DIR/.ccache
@@ -25,25 +25,31 @@ build-amd64:
   tags:
     - docker-executor
     - amd64
+  variables:
+    ARCH: amd64
 
 build-armhf:
   extends: .build
   tags:
     - docker-executor
     - armhf
+  variables:
+    ARCH: armhf
 
 build-arm64:
   extends: .build
   tags:
     - docker-executor
     - arm64
+  variables:
+    ARCH: arm64
 
 # Create Docker images for amd64, armhf and arm64
 .docker:
   stage: docker
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
-    - docker build -t qmlwebviewer examples/qmlwebviewer/docker/
+    - docker build --platform=${PLATFORM} -t qmlwebviewer examples/qmlwebviewer/docker/
     - docker tag qmlwebviewer "$IMAGE_TAG"
     - docker push "$IMAGE_TAG"
 
@@ -56,6 +62,7 @@ docker-amd64:
     - amd64
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-amd64
+    PLATFORM: "linux/amd64"
 
 docker-armhf:
   extends: .docker
@@ -66,6 +73,7 @@ docker-armhf:
     - armhf
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-armhf
+    PLATFORM: "linux/arm/v7"
 
 docker-arm64:
   extends: .docker
@@ -76,6 +84,7 @@ docker-arm64:
     - arm64
   variables:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-arm64
+    PLATFORM: "linux/arm64"
 
 # Create combined Docker image manifest so we do not have to differentiate between platforms
 manifest:
