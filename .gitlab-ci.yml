@@ -28,13 +28,13 @@ build-amd64:
   variables:
     ARCH: amd64
 
-build-armhf:
+build-armv7:
   extends: .build
   tags:
     - docker-executor
-    - armhf
+    - armv7
   variables:
-    ARCH: armhf
+    ARCH: armv7
 
 build-arm64:
   extends: .build
@@ -64,15 +64,15 @@ docker-amd64:
     IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-amd64
     PLATFORM: "linux/amd64"
 
-docker-armhf:
+docker-armv7:
   extends: .docker
   dependencies:
-    - build-armhf
+    - build-armv7
   tags:
     - shell-executor
-    - armhf
+    - armv7
   variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-armhf
+    IMAGE_TAG: $CI_REGISTRY_IMAGE/qmlwebviewer-armv7
     PLATFORM: "linux/arm/v7"
 
 docker-arm64:
@@ -98,9 +98,9 @@ manifest:
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
     - docker pull "${IMAGE_NAME}-amd64" 
-    - docker pull "${IMAGE_NAME}-armhf"
+    - docker pull "${IMAGE_NAME}-armv7"
     - docker pull "${IMAGE_NAME}-arm64"
     - docker manifest push --purge "$IMAGE_NAME" || true
-    - docker manifest create -a "$IMAGE_NAME" "${IMAGE_NAME}-amd64" "${IMAGE_NAME}-armhf" "${IMAGE_NAME}-arm64"
+    - docker manifest create -a "$IMAGE_NAME" "${IMAGE_NAME}-amd64" "${IMAGE_NAME}-armv7" "${IMAGE_NAME}-arm64"
     - docker manifest inspect "$IMAGE_NAME"
     - docker manifest push --purge "$IMAGE_NAME"
