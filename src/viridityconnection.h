@@ -40,6 +40,10 @@ class ViridityHttpServerResponse;
 class ViridityWebServer;
 class ViridityConnection;
 
+/*!
+    \addtogroup virid
+    @{
+*/
 
 /* ViridityTcpSocket */
 
@@ -83,6 +87,11 @@ public:
 
     ViridityWebServer *server() { return server_; }
 
+    /*!
+     * Returns debug statistics and details of the current connection.
+     * \sa ViridityWebServer::stats
+     * \sa ViriditySession::stats
+     */
     QVariant stats();
 
 public slots:
@@ -124,5 +133,7 @@ private:
 };
 
 Q_DECLARE_METATYPE( QSharedPointer<ViridityConnection> )
+
+/*! @} */
 
 #endif // VIRIDITYCONNECTION_H

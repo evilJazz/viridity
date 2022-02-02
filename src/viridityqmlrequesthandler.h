@@ -9,11 +9,21 @@
 
 class PrivateQmlRequestHandler;
 
+/*!
+ * ViridityQmlRequestHandler allows writing request handlers in QML.
+ * Evaluation happens in the main thread contrary to using a native C++ based ViridityBaseRequestHandler implementation.
+ * It provides optional content caching, which is multi-threaded and boosts performance compared to uncached contents.
+ * \ingroup viridqml
+ */
+
 class ViridityQmlRequestHandler : public ViridityDeclarativeBaseObject
 {
     Q_OBJECT
+    /*! Determines whether content caching is enabled or not. */
     Q_PROPERTY(bool contentCachingEnabled READ contentCachingEnabled WRITE setContentCachingEnabled NOTIFY contentCachingEnabledChanged)
+    /*! Determines whether the content in the cache is still valid. */
     Q_PROPERTY(bool cachedContentValid READ cachedContentValid WRITE setCachedContentValid NOTIFY cachedContentValidChanged)
+    /*! Contains the cached content. */
     Q_PROPERTY(QByteArray cachedContent READ cachedContent WRITE setCachedContent NOTIFY cachedContentChanged)
     Q_PROPERTY(int cachedStatusCode READ cachedStatusCode WRITE setCachedStatusCode NOTIFY cachedStatusCodeChanged)
     Q_PROPERTY(QString handlesUrl READ handlesUrl WRITE setHandlesUrl NOTIFY handlesUrlChanged)

@@ -192,7 +192,9 @@ public:
     bool requestReleaseAndWait(const int timeout = 5000);
 
     /*!
-     * Returns debug statistics and details.
+     * Returns debug statistics and details of the current session.
+     * \sa ViridityWebServer::stats
+     * \sa ViridityConnection::stats
      */
     QVariant stats() const;
 
@@ -438,10 +440,9 @@ public:
     ViriditySession *acquireSession(const QString &id);
 
     /*!
-     * Releases the resources of the session instance identified by ID. When released by all callers having previously acquired this resource, this session is no
+     * Releases the resources of the session instance. When released by all callers having previously acquired this resource, this session is no
      * longer protected from expriring and being disposed of. The mechanism employed is similar to manual reference counting.
-     * \param id The known identifier string.
-     * \return Returns the session instance if it exists. NULL if no matching session was found.
+     * \param session The ViriditySession to dispose.
      */
     void releaseSession(ViriditySession *session);
 
@@ -559,13 +560,13 @@ protected:
 
 protected slots:
     /*!
-     * Cleans up ViriditySession instances known to this session manager that are expired, i.e.
+     * Cleans up and removes all ViriditySession instances known to this session manager that are expired, i.e.
      * ViriditySession::useCount() is zero and the deadline is reached.
      */
     void killExpiredSessions();
 
     /*!
-     * Cleans up all ViriditySession instances known to this session manager.
+     * Cleans up and removes all ViriditySession instances known to this session manager.
      */
     void killAllSessions();
 

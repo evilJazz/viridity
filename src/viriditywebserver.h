@@ -104,6 +104,12 @@ public:
      */
     void unregisterRequestHandler(QSharedPointer<ViridityRequestHandler> handler);
 
+    /*!
+     * Returns statistics of the current internal state.
+     * \return A QVariantMap containing "sessionManager" and "connections" key/values.
+     * \sa ViriditySession::stats
+     * \sa ViridityConnection::stats
+     */
     QVariant stats() const;
 
 private slots:

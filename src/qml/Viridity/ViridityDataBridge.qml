@@ -28,6 +28,7 @@ import Viridity 1.0
 import "private/ViridityDataBridge.js" as Private
 
 /*!
+    \ingroup viridqml
     The ViridityDataBridge declarative/QML component provides an easy way to send and receive data on the Viridity communication channel in the context of a ViriditySession and a target.
     It is a wrapper around the ViridityNativeDataBridge class adding support for JavaScript function callbacks in the ViridityDataBridge::sendData method.
 
@@ -106,22 +107,26 @@ import "private/ViridityDataBridge.js" as Private
 QtObject {
     id: root
 
-    /** type:AbstractViriditySessionManager The associated session manager instance. Only explicitly set this if this databridge will be used in a non-session context, i.e. in a global logic. The client-side has to explicitly subscribe to this data bridge's targetId. */
+    /*!
+     *  type:AbstractViriditySessionManager The associated session manager instance. Only explicitly set this if this databridge will be used in a non-session context,
+     *  i.e. in a global logic. The client-side has to explicitly subscribe to this data bridge's targetId.
+     */
     property alias sessionManager: bridge.sessionManager
 
-    /** type:ViriditySession The associated session instance. null if this data bridge is used in a non-session context. */
+    /*!
+     * type:ViriditySession The associated session instance. null if this data bridge is used in a non-session context. Automatically initialized to currentSession context property.
+     */
     property QtObject session: bridge.session
 
-    /** type:string Specifies the target id on the Viridity communication channel. The remote handler has to listen to this target id. */
+    /*! type:string Specifies the target id on the Viridity communication channel. The remote handler has to listen to this target id. */
     property alias targetId: bridge.targetId
 
-    /**
+    /*!
      * Send data to a specific session or broadcast to all sessions implementing the same logic and wait for the callback to return with the answer.
      * @param type:variant data Data send from the target via the bridge. Can be any JS data type deserializable from JSON.
      * @param type:function callback Callback of signature function(response, sessionId) to be called with the response from the remote handler's onDataReceived handler. Can be null.
      * @param type:string sessionId ID of a specific session or undefined to broadcast to all sessions implementing the same logic.
      */
-
     function sendData(data, callback, sessionId)
     {
         if (typeof(sessionId) == "undefined")
@@ -133,29 +138,30 @@ QtObject {
             Private.pendingResponseCallbacks[responseId] = callback;
     }
 
-    /**
+    /*!
      * Called when data is received via the Viridity Data Bridge channel from a specific target in this session. Override this function to implement your own message handler.
      * @param type:variant input Data send from the target via the bridge. Can be any JS data type deserializable from JSON.
      * @return type:variant Return data to be sent via the bridge to the target receiver's callback. Can be any JS data type serializable to JSON.
      */
-
     function onDataReceived(input)
     {
         return "";
     }
 
-    /**
+    /*!
      * Called when a client is subscribing to this targetId. Subscription is required for data bridges in a non-session context, i.e. in a global logic.
      * @param type:string subscribingSessionId The identifier of the session wanting to subscribe to this data bridge and it's targetId.
      * @return type:variant Return data to be sent via the bridge to the target receiver's callback. Can be any JS data type serializable to JSON. Returning false will deny subscription.
      */
-
     function onSessionSubscribed(subscribingSessionId)
     {
         return true;
     }
 
+    /*! Default property alias to \ref internalChildren */
     default property alias children: root.internalChildren
+
+    /*! This list property contains all nested child objects. */
     property list<QtObject> internalChildren: [
         ViridityNativeDataBridge {
             id: bridge

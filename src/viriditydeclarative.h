@@ -26,7 +26,14 @@
 #define VIRIDITYDECLARATIVE_H
 
 /*!
+ * \defgroup viridqml Viridity QML components
+ * These classes and components provide access to the C++ classes from within a declarative QML context.
+ */
+
+
+/*!
  * Helper class that contains methods used in the declarative/QML context.
+ * \ingroup viridqml
  */
 
 class ViridityDeclarative
@@ -76,27 +83,48 @@ public:
     virtual void componentComplete();
 
 protected:
+    /*! Returns the declarative engined instance this object lives in. */
 #ifdef VIRIDITY_USE_QTQUICK1
     QDeclarativeEngine *engine();
 #else
     QQmlEngine *engine();
 #endif
 
+    /*! Returns the ViridityWebServer instance associated with this object. */
     ViridityWebServer *webServer();
+
+    /*! Returns the AbstractViriditySessionManager instance associated with this object. */
     AbstractViriditySessionManager *sessionManager();
+
+    /*! Returns the ViriditySession instance this object was instantiated by. */
     ViriditySession *currentSession();
 };
 
+
+/*!
+ * Wrapper class that encapsulates a native ViriditySession in a declarative QML context.
+ * \ingroup viridqml
+ */
 
 /* ViridityQmlSessionWrapper */
 
 class ViridityQmlSessionWrapper : public QObject
 {
     Q_OBJECT
+    /*! Specifies the identifier of the current session instance. */
     Q_PROPERTY(QString id READ id CONSTANT)
+
+    /*! Specifies the initial peer address.
+     * \sa AbstractViriditySessionManager::getNewSession()
+     */
     Q_PROPERTY(QByteArray initialPeerAddress READ initialPeerAddress CONSTANT)
+
+    /*! Allows access to custom variant data in the session.
+     * \sa ViriditySession::userData, ViriditySession::setUserData
+     */
     Q_PROPERTY(QVariant userData READ userData WRITE setUserData NOTIFY userDataChanged)
 
+    /*! Returns the native session encapsulated by this QML session wrapper. */
     Q_PROPERTY(ViriditySession *nativeSession READ nativeSession CONSTANT)
 public:
     explicit ViridityQmlSessionWrapper(ViriditySession *session, QObject *parent = 0);
@@ -105,12 +133,53 @@ public:
     ViriditySession *nativeSession() const;
 
 signals:
+    /*!
+     * Signal is emitted when the session was initialized and is ready for action.
+     * This signal is emitted after the initial ViriditySession::attached()
+     */
     void initialized();
+
+    /*!
+     * Signal is emitted when the session is attached to a remote client.
+     * \note For long polling connections, i.e. connections handled by LongPollingHandler,
+     * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
+     *
+     * \sa ViriditySession::isAttached
+     */
     void attached();
+
+    /*!
+     * Signal is emitted when the session has not received any message from a client for some time.
+     * Currently this interval is defined by AbstractViriditySessionManager::sessionTimeout()
+     *
+     * \sa ViriditySession::interactionCheckInterval, ViriditySession::lastUsed
+     */
     void interactionDormant();
+
+    /*!
+     * Signal is emitted when the session requests all users to release this session.
+     */
     void releaseRequired();
+
+    /*!
+     * Signal is emitted when the session is detached from a remote client.
+     * \note For long polling connections, i.e. connections handled by LongPollingHandler,
+     * this signal can bounce due to the nature of the connection, especially with long-running or blocking operations on the client-side.
+     *
+     * \sa ViriditySession::isAttached
+     */
     void detached();
+
+    /*!
+     * Signal is emitted before tearing down the session, when no client is attached,
+     * ViriditySession::useCount() is zero and AbstractViriditySessionManager::killExpiredSessions()
+     * deems it is time to clean up this instance.
+     */
     void deinitializing();
+
+    /*!
+     * Signal is emitted when the userData change.
+     */
     void userDataChanged();
 
 private:

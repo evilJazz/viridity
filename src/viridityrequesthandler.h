@@ -54,12 +54,15 @@ public:
     virtual ~ViridityHttpServerRequest();
 
     /*!
-     Extracts the peer's IP address from the request.
-     \return The IP address as byte array.
-     \sa ViriditySession::initialPeerAddress, AbstractViriditySessionManager::getNewSession
-    */
+     * Extracts the peer's IP address from the request.
+     * \return The IP address as byte array.
+     * \sa ViriditySession::initialPeerAddress, AbstractViriditySessionManager::getNewSession
+     */
     QByteArray getPeerAddressFromRequest() const;
 
+    /*!
+     * Returns the current socket that is used for this request.
+     */
     QSharedPointer<ViridityTcpSocket> socket() const { return socket_; }
 
 protected:
@@ -85,13 +88,16 @@ public:
     virtual ~ViridityHttpServerResponse();
 
     /*!
-     Adds fields to the response's headers that inform the client/browser to not cache any data.
-     Commonly used in a custom class derived from ViridityRequestHandler to control caching behavior of content sent out.
-     \param response The response instance provided by the ViridityRequestHandler::handleRequest method.
-     \sa ViridityRequestHandler ViridityRequestHandler::handleRequest
-    */
+     * Adds fields to the response's headers that inform the client/browser to not cache any data.
+     * Commonly used in a custom class derived from ViridityRequestHandler to control caching behavior of content sent out.
+     * \param response The response instance provided by the ViridityRequestHandler::handleRequest method.
+     * \sa ViridityRequestHandler ViridityRequestHandler::handleRequest
+     */
     void addNoCachingResponseHeaders();
 
+    /*!
+     * Returns the current socket that is used for this response.
+     */
     QSharedPointer<ViridityTcpSocket> socket() const { return socket_; }
 
 protected:
@@ -129,7 +135,8 @@ public:
      */
     virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request) = 0;
 
-    /*! Called to handle an incoming request and send out the response.
+    /*!
+     * Called to handle an incoming request and send out the response.
      * \param request The request instance received from the client/browser via the ViridityWebServer.
      * \param response The pending response instance to the client/browser.
      */
@@ -153,12 +160,34 @@ public:
     virtual bool doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request);
     virtual void handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
+    /*!
+     * Returns the current server this request handler is associated to.
+     */
     ViridityWebServer *server() const { return server_; }
+
+    /*!
+     * Returns whether this request handler is currently handling a request, ie. handleRequest is currently running.
+     * /sa ViridityRequestHandler::handleRequest
+     */
     bool handlingRequest() const { return handlingRequest_; }
 
 protected:
+    /*!
+     * Executed before actually handling the request. Override to setup resources or start logging.
+     * /sa ViridityRequestHandler::handleRequest
+     */
     virtual void beginHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
+
+    /*!
+     * Executed to actually handle the request. Override to implement your logic.
+     * /sa ViridityRequestHandler::handleRequest
+     */
     virtual void doHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
+
+    /*!
+     * Executed after actually handling the request. Override to tear down resources or stop logging.
+     * /sa ViridityRequestHandler::handleRequest
+     */
     virtual void endHandleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response);
 
 private:
