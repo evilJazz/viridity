@@ -194,14 +194,20 @@ void QtQuick2Adapter::handleActiveFocusItemChanged()
 
     if (quickWindow_)
     {
-        QByteArray className = QByteArray(quickWindow_->activeFocusItem() ?
-                quickWindow_->activeFocusItem()->metaObject()->className() : "");
+        QQuickItem *activeFocusItem = quickWindow_->activeFocusItem();
+
+        QByteArray className = QByteArray(activeFocusItem ? activeFocusItem->metaObject()->className() : "");
 
         if (className != lastActiveFocusItemClassName_)
         {
             DPRINTF("Active item: %s", className.constData());
 
-            if (className.contains("TextInput"))
+            bool isTextInputField = activeFocusItem
+                                 ? activeFocusItem->metaObject()->indexOfSignal("inputMethodComposingChanged()") > -1 ||
+                                   activeFocusItem->metaObject()->indexOfSignal("inputMethodHintsChanged()") > -1
+                                 : false;
+
+            if (isTextInputField)
             {
                 emit showInputMethod();
             }
