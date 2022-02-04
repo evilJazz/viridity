@@ -58,6 +58,9 @@ public:
 
 signals:
     void sceneChanged(QList<QRectF> rects);
+
+    void showInputMethod();
+    void hideInputMethod();
 };
 
 #endif // GRAPHICSSCENEADAPTER_H

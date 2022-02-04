@@ -65,6 +65,9 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickItem *rootItem) :
     rootItem_(rootItem),
     window_(NULL),
     fbo_(0),
+    renderControl_(NULL),
+    quickWindow_(NULL),
+    lastActiveFocusItemClassName_(),
     updateRequired_(true),
     buttonDown_(false),
     killedAlready_(false)
@@ -82,6 +85,9 @@ QtQuick2Adapter::QtQuick2Adapter(QQuickWindow *window) :
     rootItem_(NULL),
     window_(window),
     fbo_(0),
+    renderControl_(NULL),
+    quickWindow_(NULL),
+    lastActiveFocusItemClassName_(),
     updateRequired_(true),
     buttonDown_(false)
 {
@@ -131,6 +137,8 @@ void QtQuick2Adapter::init()
     // renderRequested (only render is needed, no sync) and sceneChanged (polish and sync is needed too).
     connect(quickWindow_, SIGNAL(sceneGraphInitialized()), this, SLOT(createFbo()));
     connect(quickWindow_, SIGNAL(sceneGraphInvalidated()), this, SLOT(destroyFbo()));
+    connect(quickWindow_, SIGNAL(activeFocusItemChanged()), this, SLOT(handleActiveFocusItemChanged()));
+
     connect(renderControl_, SIGNAL(renderRequested()), this, SLOT(handleSceneChanged()));
     connect(renderControl_, SIGNAL(sceneChanged()), this, SLOT(handleSceneChanged()));
 
@@ -177,6 +185,33 @@ void QtQuick2Adapter::handleRootItemDestroyed()
         rootItem_ = NULL;
         rootItemPreviousParent_ = NULL;
         window_ = NULL;
+    }
+}
+
+void QtQuick2Adapter::handleActiveFocusItemChanged()
+{
+    DGUARDMETHODTIMED;
+
+    if (quickWindow_)
+    {
+        QByteArray className = QByteArray(quickWindow_->activeFocusItem() ?
+                quickWindow_->activeFocusItem()->metaObject()->className() : "");
+
+        if (className != lastActiveFocusItemClassName_)
+        {
+            DPRINTF("Active item: %s", className.constData());
+
+            if (className.contains("TextInput"))
+            {
+                emit showInputMethod();
+            }
+            else
+            {
+                emit hideInputMethod();
+            }
+
+            lastActiveFocusItemClassName_ = className;
+        }
     }
 }
 

@@ -286,6 +286,9 @@ protected slots:
                 new DeclarativeSceneSizeHandler(session(), parent_->targetId(), adapter, true, objectToWatch);
 
             QObject::connect(objectToWatch, SIGNAL(destroyed()), adapter, SLOT(deleteLater()));
+
+            QObject::connect(adapter, SIGNAL(showInputMethod()), this, SLOT(handleShowInputMethod()));
+            QObject::connect(adapter, SIGNAL(hideInputMethod()), this, SLOT(handleHideInputMethod()));
         }
 
         return adapter;
@@ -315,6 +318,18 @@ protected slots:
         }
 
         return result;
+    }
+
+    void handleShowInputMethod()
+    {
+        if (session())
+            session()->dispatchMessageToClient("showInputMethod()", parent_->targetId());
+    }
+
+    void handleHideInputMethod()
+    {
+        if (session())
+            session()->dispatchMessageToClient("hideInputMethod()", parent_->targetId());
     }
 
 private:

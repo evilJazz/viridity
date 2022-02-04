@@ -598,6 +598,22 @@ var ViridityDisplayEvents = {
                     dr.frameEndReceived = true;
                     dr._determineReadyState();
                 }
+                else if (t.command === "showInputMethod")
+                {
+                    if (dr.debugVerbosity > 0)
+                        console.log("showInputMethod");
+
+                    if (dr.showInputMethodOnFocus)
+                        dr.showInputMethod();
+                }
+                else if (t.command === "hideInputMethod")
+                {
+                    if (dr.debugVerbosity > 0)
+                        console.log("hideInputMethod");
+
+                    if (dr.showInputMethodOnFocus)
+                        dr.hideInputMethod();
+                }
             },
 
             resize: function(width, height, force)
@@ -670,9 +686,6 @@ var ViridityDisplayEvents = {
             {
                 $(document).focus();
                 $(dr.frontCanvas).focus();
-
-                if (dr.showInputMethodOnFocus)
-                    dr.showInputMethod();
             },
 
             showInputMethod: function()

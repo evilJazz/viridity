@@ -72,6 +72,8 @@ private slots:
     void handleSceneChanged();
     void handleRootItemDestroyed();
 
+    void handleActiveFocusItemChanged();
+
     void updateBuffer();
 
 private:
@@ -84,6 +86,7 @@ private:
     QOpenGLFramebufferObject *fbo_;
     QQuickRenderControl *renderControl_;
     QQuickWindow *quickWindow_;
+    QByteArray lastActiveFocusItemClassName_;
 
     QImage buffer_;
     bool updateRequired_;
