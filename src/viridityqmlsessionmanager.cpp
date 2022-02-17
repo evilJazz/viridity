@@ -21,12 +21,25 @@
 
 /* ViridityQmlSessionManager */
 
-ViridityQmlSessionManager::ViridityQmlSessionManager(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, QObject *parent) :
+ViridityQmlSessionManager::ViridityQmlSessionManager(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, QObject *parent, DeclarativeContext *context) :
     AbstractViriditySessionManager(parent),
     engine_(NULL),
+    externalContext_(context),
     globalLogic_(NULL),
     globalLogicUrl_(globalLogicUrl),
     sessionLogicUrl_(sessionLogicUrl)
+{
+    // Make sure, the engine does not take ownership of us if we don't have any parent...
+    DeclarativeEngine::setObjectOwnership(this, DeclarativeEngine::CppOwnership);
+}
+
+ViridityQmlSessionManager::ViridityQmlSessionManager(DeclarativeComponent *globalLogicComponent, DeclarativeComponent *sessionLogicComponent, QObject *parent, DeclarativeContext *context) :
+    AbstractViriditySessionManager(parent),
+    engine_(NULL),
+    externalContext_(context),
+    externalGlobalLogicComponent_(globalLogicComponent),
+    externalSessionLogicComponent_(sessionLogicComponent),
+    globalLogic_(NULL)
 {
     // Make sure, the engine does not take ownership of us if we don't have any parent...
     DeclarativeEngine::setObjectOwnership(this, DeclarativeEngine::CppOwnership);
@@ -38,62 +51,106 @@ ViridityQmlSessionManager::~ViridityQmlSessionManager()
 
 void ViridityQmlSessionManager::initSession(ViriditySession *session)
 {
-    DGUARDMETHODTIMED;
-    // RUNS IN MAIN THREAD! session already is in different thread!
+    if ((sessionLogicUrl_.isValid() || !externalSessionLogicComponent_.isNull()) && session)
+    {
+        DGUARDMETHODTIMED;
 
-    QObject *gl = globalLogic();
-    DeclarativeContext *rootContext = gl ? DeclarativeEngine::contextForObject(gl) : engine()->rootContext();
+        // RUNS IN MAIN THREAD! session already is in different thread!
 
-    DeclarativeContext *context = new DeclarativeContext(rootContext);
+        QObject *gl = globalLogic();
+        DeclarativeContext *rootContext = gl ? DeclarativeEngine::contextForObject(gl) : context();
+        DeclarativeContext *context = new DeclarativeContext(rootContext);
 
-    DeclarativeComponent component(engine(), sessionLogicUrl_);
+        DeclarativeComponent *component = NULL;
 
-    if (component.status() != DeclarativeComponent::Ready)
-        qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
+        // Use external component?
+        if (!externalSessionLogicComponent_.isNull())
+        {
+            component = externalSessionLogicComponent_;
+        }
+        else
+        {
+            component = new DeclarativeComponent(engine(), sessionLogicUrl_);
 
-    ViridityQmlSessionWrapper *sessionWrapper = new ViridityQmlSessionWrapper(session);
-    DeclarativeEngine::setObjectOwnership(sessionWrapper, DeclarativeEngine::JavaScriptOwnership);
+            if (component->status() != DeclarativeComponent::Ready)
+                qFatal("Component is not ready: %s", component->errorString().toUtf8().constData());
+        }
 
-    context->setContextProperty("globalLogic", gl);
-    context->setContextProperty("currentSession", sessionWrapper);
-    context->setContextProperty("sessionManager", this);
-    context->setContextProperty("currentSessionManager", this);
+        if (!component)
+            qFatal("No session logic component set.");
 
-    QObject *sessionLogic = component.create(context);
+        ViridityQmlSessionWrapper *sessionWrapper = new ViridityQmlSessionWrapper(session);
+        DeclarativeEngine::setObjectOwnership(sessionWrapper, DeclarativeEngine::JavaScriptOwnership);
 
-    if (!sessionLogic)
-        qFatal("Could not create instance of component.");
+        context->setContextProperty("globalLogic", gl);
+        context->setContextProperty("currentSession", sessionWrapper);
+        context->setContextProperty("sessionManager", this);
+        context->setContextProperty("currentSessionManager", this);
 
-    sessionLogic->setParent(engine());
+        QObject *sessionLogic = component->create(context);
 
-    connect(session, SIGNAL(destroyed()), sessionLogic, SLOT(deleteLater()));
-    connect(session, SIGNAL(destroyed()), sessionWrapper, SLOT(deleteLater()));
-    connect(sessionLogic, SIGNAL(destroyed()), context, SLOT(deleteLater()));
+        if (!sessionLogic)
+            qFatal("Could not create instance of session logic component.");
 
-    session->setLogic(sessionLogic);
+        sessionLogic->setParent(engine());
+
+        // Component created here instead of externally? Clean up.
+        if (externalSessionLogicComponent_.isNull())
+        {
+            component->deleteLater();
+            component = NULL;
+        }
+
+        connect(session, SIGNAL(destroyed()), sessionLogic, SLOT(deleteLater()));
+        connect(session, SIGNAL(destroyed()), sessionWrapper, SLOT(deleteLater()));
+        connect(sessionLogic, SIGNAL(destroyed()), context, SLOT(deleteLater()));
+
+        session->setLogic(sessionLogic);
+    }
 }
 
 QObject *ViridityQmlSessionManager::globalLogic()
 {
-    if (globalLogicUrl_.isValid() && !globalLogic_)
+    if ((globalLogicUrl_.isValid() || !externalGlobalLogicComponent_.isNull()) && !globalLogic_)
     {
         DGUARDMETHODTIMED;
-        DeclarativeComponent component(engine(), globalLogicUrl_);
 
-        if (component.status() != DeclarativeComponent::Ready)
-            qFatal("Component is not ready: %s", component.errorString().toUtf8().constData());
+        DeclarativeComponent *component = NULL;
 
-        engine()->rootContext()->setContextProperty("sessionManager", this);
-        engine()->rootContext()->setContextProperty("currentSessionManager", this);
+        // Use external component?
+        if (!externalGlobalLogicComponent_.isNull())
+        {
+            component = externalGlobalLogicComponent_;
+        }
+        else if (globalLogicUrl_.isValid())
+        {
+            component = new DeclarativeComponent(engine(), globalLogicUrl_);
 
-        globalLogic_ = component.create(engine()->rootContext());
+            if (component->status() != DeclarativeComponent::Ready)
+                qFatal("Component is not ready: %s", component->errorString().toUtf8().constData());
+        }
+
+        if (!component)
+            qFatal("No global logic component set.");
+
+        context()->setContextProperty("sessionManager", this);
+        context()->setContextProperty("currentSessionManager", this);
+
+        globalLogic_ = component->create(context());
         globalLogic_->setParent(this);
 
         // Make sure, the engine does not take ownership of our global logic...
         DeclarativeEngine::setObjectOwnership(globalLogic_, DeclarativeEngine::CppOwnership);
 
+        // Component created here instead of externally? Clean up.
+        if (externalGlobalLogicComponent_.isNull())
+        {
+            component->deleteLater();
+            component = NULL;
+        }
+
         if (!globalLogic_)
-            qFatal("Could not create instance of component.");
+            qFatal("Could not create instance of global logic component.");
     }
 
     return globalLogic_;
@@ -101,11 +158,26 @@ QObject *ViridityQmlSessionManager::globalLogic()
 
 DeclarativeEngine *ViridityQmlSessionManager::engine()
 {
-    if (!engine_)
+    DGUARDMETHODTIMED;
+
+    if (externalContext_)
     {
-        DGUARDMETHODTIMED;
+        engine_ = externalContext_->engine();
+    }
+    else if (!engine_)
+    {
         engine_ = new DeclarativeEngine(this);
     }
 
     return engine_;
+}
+
+DeclarativeContext *ViridityQmlSessionManager::context()
+{
+    DGUARDMETHODTIMED;
+
+    if (externalContext_)
+        return externalContext_;
+    else
+        return engine()->rootContext();
 }

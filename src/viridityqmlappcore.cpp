@@ -66,7 +66,6 @@ static ViridityQmlBasicAppCore *viridityGlobalAppCore = NULL;
 
 ViridityQmlBasicAppCore::ViridityQmlBasicAppCore(QObject *parent) :
     QObject(parent),
-    sessionManager_(NULL),
     server_(NULL)
 {
     if (!viridityGlobalAppCore)
@@ -97,19 +96,17 @@ bool ViridityQmlBasicAppCore::initialize(const QUrl &globalLogicUrl, const QUrl 
 {
     DGUARDMETHODTIMED;
 
-    if (sessionManager_ || server_)
+    if (server_)
     {
-        qDebug("Session manager and/or server already initialized.");
+        qDebug("Webserver already initialized.");
         return false;
     }
 
-    sessionManager_ = new ViridityQmlSessionManager(
-        globalLogicUrl,
-        sessionLogicUrl,
-        this
-    );
+    server_ = new ViridityQmlWebServer(this);
+    connect(server_, SIGNAL(initialized()), this, SLOT(initEngine()));
 
-    server_ = new ViridityWebServer(this, sessionManager_);
+    server_->setGlobalLogicSource(globalLogicUrl);
+    server_->setSessionLogicSource(sessionLogicUrl);
 
     return true;
 }
@@ -124,16 +121,10 @@ bool ViridityQmlBasicAppCore::startWebServer(const QHostAddress &address, int da
         return false;
     }
 
-    DPRINTF("Initializing web server...");
-    initEngine();
+    server_->setBindAddress(address);
+    server_->setPort(dataPort);
 
-    DPRINTF("Starting up global logic...");
-    sessionManager_->startUpGlobalLogic();
-
-    // Start web server...
-    DPRINTF("Starting web server...");
-
-    return server_->listen(address, dataPort);
+    return server_->listen();
 }
 
 void ViridityQmlBasicAppCore::stopWebServer()
@@ -145,11 +136,8 @@ void ViridityQmlBasicAppCore::stopWebServer()
 void ViridityQmlBasicAppCore::initEngine()
 {
     DGUARDMETHODTIMED;
-    FileRequestHandler::publishViridityFiles();
-    ViridityDeclarative::registerTypes();
-
-    sessionManager_->engine()->setObjectOwnership(this, DeclarativeEngine::CppOwnership);
-    sessionManager_->engine()->rootContext()->setContextProperty("appCore", this);
+    server_->engine()->setObjectOwnership(this, DeclarativeEngine::CppOwnership);
+    server_->context()->setContextProperty("appCore", this);
 }
 
 /* ViridityQmlExtendedAppCore */
@@ -170,10 +158,10 @@ bool ViridityQmlExtendedAppCore::initialize(const QUrl &globalLogicUrl, const QU
         return false;
 
 #ifdef VIRIDITY_DEBUG
-    debugRequestHandler_ = QSharedPointer<DebugRequestHandler>(new DebugRequestHandler(server_));
+    debugRequestHandler_ = QSharedPointer<DebugRequestHandler>(new DebugRequestHandler(server_->webserver()));
 #endif
 
-    rewriteRequestHandler_ = QSharedPointer<RewriteRequestHandler>(new RewriteRequestHandler(server_));
+    rewriteRequestHandler_ = QSharedPointer<RewriteRequestHandler>(new RewriteRequestHandler(server_->webserver()));
 
     // Print version info...
     version_ = QString("%1: %2, Viridity: %3, KCL: %4").arg(qApp->applicationName(), MAIN_COMMIT, VIRIDITY_COMMIT, KCL_COMMIT);
@@ -263,11 +251,11 @@ void ViridityQmlExtendedAppCore::initEngine()
 
     // Initialize static KCL plugin...
     KCLPlugin *kcl = new KCLPlugin();
-    kcl->setParent(sessionManager_->engine());
-    kcl->initializeEngine(sessionManager_->engine(), "KCL");
+    kcl->setParent(server_->engine());
+    kcl->initializeEngine(server_->engine(), "KCL");
     kcl->registerTypes("KCL");
 
-    server_->registerRequestHandler(rewriteRequestHandler_);
+    server_->webserver()->registerRequestHandler(rewriteRequestHandler_);
 
 #ifdef VIRIDITY_DEBUG
     server_->registerRequestHandler(debugRequestHandler_);

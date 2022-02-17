@@ -4,7 +4,7 @@
 #include <QObject>
 #include <QSettings>
 
-#include <Viridity/ViridityWebServer>
+#include "viridityqmlwebserver.h"
 #include "viriditydeclarative.h"
 #include "viridityqmlsessionmanager.h"
 #include "viriditydatabridge.h"
@@ -20,7 +20,7 @@ public:
     explicit ViridityQmlBasicAppCore(QObject *parent = 0);
     virtual ~ViridityQmlBasicAppCore();
 
-    virtual bool initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl);
+    bool initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl);
     virtual void installTrapsForDefaultQuittingSignals();
 
     virtual bool startWebServer(const QHostAddress &address, int dataPort);
@@ -28,11 +28,11 @@ public:
 
     static ViridityQmlBasicAppCore *instance();
 
-protected:
+protected slots:
     virtual void initEngine();
 
-    ViridityWebServer *server_;
-    ViridityQmlSessionManager *sessionManager_;
+protected:
+    ViridityQmlWebServer *server_;
 };
 
 class ViridityQmlExtendedAppCore : public ViridityQmlBasicAppCore
@@ -42,7 +42,7 @@ public:
     explicit ViridityQmlExtendedAppCore(QObject *parent = 0);
     virtual ~ViridityQmlExtendedAppCore();
 
-    virtual bool initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, const QString &dataLocation);
+    bool initialize(const QUrl &globalLogicUrl, const QUrl &sessionLogicUrl, const QString &dataLocation);
 
     QSharedPointer<RewriteRequestHandler> rewriteRequestHandler();
 

@@ -8,6 +8,7 @@ ViridityHTMLSessionSegment 1.0 ViridityHTMLSessionSegment.qml
 ViridityHTMLRepeater 1.0 ViridityHTMLRepeater.qml
 
 ViridityHTMLInlineJavaScript 1.0 ViridityHTMLInlineJavaScript.qml
+ViridityHTMLScriptCallbacks 1.0 ViridityHTMLScriptCallbacks.qml
 ViridityHTMLDocumentConnection 1.0 ViridityHTMLDocumentConnection.qml
 ViridityHTMLDependencies 1.0 ViridityHTMLDependencies.qml
 
