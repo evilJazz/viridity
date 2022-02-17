@@ -40,27 +40,10 @@ ViridityHTMLColumnWithChangeNotificator {
         }
 
     property QtObject requestHandler:
-        ViridityRequestHandler {
-            id: requestHandler
-
-            contentCachingEnabled: true
-
-            cachedContentValid: !document.contentDirty
-            handlesUrl: document.publishAtUrl.length > 0 ? "^" + document.publishAtUrl : ""
-
-            function doesHandleRequest(request)
-            {
-                return false; // default, if publishAtUrl is empty...
-            }
-
-            function handleRequest(request, response)
-            {
-                if (document.contentDirty)
-                    document.updateContent();
-
-                response.writeHead(200);
-                response.end(document.content);
-            }
+        ViridityDocumentRequestHandler {
+            document: document
+            mimeType: "text/html"
+            charset: "utf-8"
         }
 
     function replaceMarkerForProperty(propertyName)

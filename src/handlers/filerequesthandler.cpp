@@ -105,12 +105,12 @@ void FileRequestHandler::unpublishDirectoryGlobally(const QByteArray &baseUrl)
 
 void FileRequestHandler::publishViridityFiles()
 {
-    publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf8");
-    publishFileGlobally("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf8");
-    publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf8");
-    publishFileGlobally("/DocumentRenderer.js", ":/Client/DocumentRenderer.js", "application/javascript; charset=utf8");
-    publishFileGlobally("/ViridityAuto.js", ":/Client/ViridityAuto.js", "application/javascript; charset=utf8");
-    publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf8");
+    publishFileGlobally("/Viridity.js", ":/Client/Viridity.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/DataBridge.js", ":/Client/DataBridge.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/DocumentRenderer.js", ":/Client/DocumentRenderer.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/ViridityAuto.js", ":/Client/ViridityAuto.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf-8");
 }
 
 QByteArray FileRequestHandler::determineMimeType(const QString &fileName)

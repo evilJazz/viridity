@@ -20,6 +20,7 @@
         <file alias="ViridityHTMLDependencies.qml">../src/qml/Viridity/ViridityHTMLDependencies.qml</file>
         <file alias="ViridityHTMLDocumentConnection.qml">../src/qml/Viridity/ViridityHTMLDocumentConnection.qml</file>
         <file alias="private/ViridityHTMLDocumentDependencyRegistry.qml">../src/qml/Viridity/private/ViridityHTMLDocumentDependencyRegistry.qml</file>
+        <file alias="private/ViridityDocumentRequestHandler.qml">../src/qml/Viridity/private/ViridityDocumentRequestHandler.qml</file>
         <file alias="private/qmldir">../src/qml/Viridity/private/qmldir</file>
     </qresource>
 </RCC>

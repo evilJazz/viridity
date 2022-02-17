@@ -205,7 +205,7 @@ void LongPollingHandler::handleSessionDestroyed()
 void LongPollingHandler::pushMessageAndEnd(QSharedPointer<ViridityHttpServerResponse> response, const QByteArray &msg)
 {
     response->writeHead(ViridityHttpServerResponse::OK);
-    response->headers().insert("Content-Type", "text/plain; charset=utf8");
+    response->headers().insert("Content-Type", "text/plain; charset=utf-8");
     response->addNoCachingResponseHeaders();
     response->end(msg);
 
