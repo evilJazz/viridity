@@ -103,19 +103,22 @@ viridity_declarative {
         qmlPreprocessFolder($$VIRIDITY_SRC_PATH/qml/Viridity, @QtQuick2, 2.0)
     }
 
+    INCLUDEPATH += \
+        $$VIRIDITY_SRC_PATH/declarative
+
     HEADERS += \
-        $$VIRIDITY_SRC_PATH/viriditydeclarative.h \
-        $$VIRIDITY_SRC_PATH/viridityqmlappcore.h \
-        $$VIRIDITY_SRC_PATH/viridityqmlwebserver.h \
-        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.h \
-        $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.h
+        $$VIRIDITY_SRC_PATH/declarative/viriditydeclarative.h \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlappcore.h \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlwebserver.h \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlsessionmanager.h \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlrequesthandler.h
 
     SOURCES += \
-        $$VIRIDITY_SRC_PATH/viriditydeclarative.cpp \
-        $$VIRIDITY_SRC_PATH/viridityqmlappcore.cpp \
-        $$VIRIDITY_SRC_PATH/viridityqmlwebserver.cpp \
-        $$VIRIDITY_SRC_PATH/viridityqmlsessionmanager.cpp \
-        $$VIRIDITY_SRC_PATH/viridityqmlrequesthandler.cpp
+        $$VIRIDITY_SRC_PATH/declarative/viriditydeclarative.cpp \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlappcore.cpp \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlwebserver.cpp \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlsessionmanager.cpp \
+        $$VIRIDITY_SRC_PATH/declarative/viridityqmlrequesthandler.cpp
 
     RESOURCES += \
         $$VIRIDITY_RES_PATH/viridityqml.qrc
@@ -238,13 +241,16 @@ viridity_module_display {
                 $$VIRIDITY_SRC_PATH/display/adapters/qtquick2adapter.cpp
         }
 
+        INCLUDEPATH += \
+            $$VIRIDITY_SRC_PATH/declarative
+
         HEADERS += \
             $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.h \
-            $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.h
+            $$VIRIDITY_SRC_PATH/declarative/viridityqtquickdisplay.h
 
         SOURCES += \
             $$VIRIDITY_SRC_PATH/display/declarativescenesizehandler.cpp \
-            $$VIRIDITY_SRC_PATH/display/viridityqtquickdisplay.cpp
+            $$VIRIDITY_SRC_PATH/declarative/viridityqtquickdisplay.cpp
     }
 
     viridity_module_display_qgraphicscene {
