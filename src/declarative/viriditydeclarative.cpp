@@ -50,7 +50,7 @@
 #endif
 
 #ifdef VIRIDITY_MODULE_DISPLAY
-    #include "display/viridityqtquickdisplay.h"
+    #include "viridityqtquickdisplay.h"
 #endif
 
 #include "KCL/objectutils.h"
