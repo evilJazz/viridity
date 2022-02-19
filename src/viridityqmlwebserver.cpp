@@ -87,8 +87,8 @@ bool ViridityQmlWebServer::listen()
         else
             cleanUpContext();
 
-        if (globalLogic_ || sessionLogic_)
-            sessionManager_ = new ViridityQmlSessionManager(globalLogic_.data(), sessionLogic_.data(), this, context_.data());
+        if (globalLogicComponent_ || sessionLogicComponent_)
+            sessionManager_ = new ViridityQmlSessionManager(globalLogicComponent_.data(), sessionLogicComponent_.data(), this, context_.data());
         else
             sessionManager_ = new ViridityQmlSessionManager(globalLogicSource_, sessionLogicSource_, this,  context_.data());
 
@@ -161,27 +161,31 @@ void ViridityQmlWebServer::cleanUp()
     }
 }
 
-void ViridityQmlWebServer::setGlobalLogic(DeclarativeComponent *globalLogic)
+void ViridityQmlWebServer::setGlobalLogicComponent(DeclarativeComponent *globalLogic)
 {
     if (!webServer_.isNull())
         close();
 
-    if (globalLogic_ != globalLogic)
+    if (globalLogicComponent_ != globalLogic)
     {
-        globalLogic_ = globalLogic;
-        emit globalLogicChanged();
+        globalLogicComponent_ = globalLogic;
+        emit globalLogicComponentChanged();
+
+        setGlobalLogicSource(QUrl());
     }
 }
 
-void ViridityQmlWebServer::setSessionLogic(DeclarativeComponent *sessionLogic)
+void ViridityQmlWebServer::setSessionLogicComponent(DeclarativeComponent *sessionLogic)
 {
     if (!webServer_.isNull())
         close();
 
-    if (sessionLogic_ != sessionLogic)
+    if (sessionLogicComponent_ != sessionLogic)
     {
-        sessionLogic_ = sessionLogic;
-        emit sessionLogicChanged();
+        sessionLogicComponent_ = sessionLogic;
+        emit sessionLogicComponentChanged();
+
+        setSessionLogicSource(QUrl());
     }
 }
 
@@ -210,6 +214,8 @@ void ViridityQmlWebServer::setGlobalLogicSource(const QUrl &globalLogicSource)
     {
         globalLogicSource_ = globalLogicSource;
         emit globalLogicSourceChanged();
+
+        setGlobalLogicComponent(NULL);
     }
 }
 
@@ -222,6 +228,8 @@ void ViridityQmlWebServer::setSessionLogicSource(const QUrl &sessionLogicSource)
     {
         sessionLogicSource_ = sessionLogicSource;
         emit sessionLogicSourceChanged();
+
+        setSessionLogicComponent(NULL);
     }
 }
 

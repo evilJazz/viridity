@@ -39,14 +39,19 @@ Window {
 
             publishAtUrl: "/index.html"
 
-            property int counter: 100
+            ViridityHTMLSegment {
+                id: globalClickSegment
+                name: "counter"
+                templateText: "The button was clicked \${buttonClickCount} times overall."
+                property int buttonClickCount: 0
+            }
 
              ViridityHTMLSegment {
-                name: "sessionSegment" // Specified in sessionLogic
+                name: "sessionSegment" // Specified in sessionLogicComponent
             }
         }
 
-        sessionLogic:
+        sessionLogicComponent:
             ViridityHTMLSessionSegment {
                 targetHTMLDocument: myReactiveDoc
                 name: "sessionSegment"
@@ -62,6 +67,7 @@ Window {
                     onClicked:
                     {
                         ++clickSegment.buttonClickCount;
+                        ++globalClickSegment.buttonClickCount;
                     }
                 }
             }

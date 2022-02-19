@@ -26,12 +26,12 @@ class ViridityQmlWebServer :
     Q_OBJECT
 #ifdef VIRIDITY_USE_QTQUICK1
     Q_INTERFACES(QDeclarativeParserStatus)
-    Q_PROPERTY(QDeclarativeComponent *globalLogic READ globalLogic WRITE setGlobalLogic NOTIFY globalLogicChanged)
-    Q_PROPERTY(QDeclarativeComponent *sessionLogic READ sessionLogic WRITE setSessionLogic NOTIFY sessionLogicChanged)
+    Q_PROPERTY(QDeclarativeComponent *globalLogicComponent READ globalLogicComponent WRITE setGlobalLogicComponent NOTIFY globalLogicComponentChanged)
+    Q_PROPERTY(QDeclarativeComponent *sessionLogicComponent READ sessionLogicComponent WRITE setSessionLogicComponent NOTIFY sessionLogicComponentChanged)
 #else
     Q_INTERFACES(QQmlParserStatus)
-    Q_PROPERTY(QQmlComponent *globalLogic READ globalLogic WRITE setGlobalLogic NOTIFY globalLogicChanged)
-    Q_PROPERTY(QQmlComponent *sessionLogic READ sessionLogic WRITE setSessionLogic NOTIFY sessionLogicChanged)
+    Q_PROPERTY(QQmlComponent *globalLogicComponent READ globalLogicComponent WRITE setGlobalLogicComponent NOTIFY globalLogicComponentChanged)
+    Q_PROPERTY(QQmlComponent *sessionLogicComponent READ sessionLogicComponent WRITE setSessionLogicComponent NOTIFY sessionLogicComponentChanged)
 #endif
     Q_PROPERTY(QUrl globalLogicSource READ globalLogicSource WRITE setGlobalLogicSource NOTIFY globalLogicSourceChanged)
     Q_PROPERTY(QUrl sessionLogicSource READ sessionLogicSource WRITE setSessionLogicSource NOTIFY sessionLogicSourceChanged)
@@ -42,7 +42,7 @@ class ViridityQmlWebServer :
 
     Q_PROPERTY(ViridityQmlSessionManager *sessionManager READ sessionManager NOTIFY enabledChanged)
 
-    Q_CLASSINFO("DefaultProperty", "globalLogic")
+    Q_CLASSINFO("DefaultProperty", "globalLogicComponent")
 public:
     explicit ViridityQmlWebServer(QObject *parent = nullptr);
 
@@ -62,20 +62,20 @@ public:
     Q_INVOKABLE bool close();
 
 #ifdef VIRIDITY_USE_QTQUICK1
-    QDeclarativeComponent *globalLogic() { return globalLogic_.data(); }
-    void setGlobalLogic(QDeclarativeComponent *globalLogic);
+    QDeclarativeComponent *globalLogicComponent() { return globalLogic_.data(); }
+    void setGlobalLogicComponent(QDeclarativeComponent *globalLogic);
 
-    QDeclarativeComponent *sessionLogic() { return sessionLogic_.data(); }
-    void setSessionLogic(QDeclarativeComponent *sessionLogic);
+    QDeclarativeComponent *sessionLogicComponent() { return sessionLogic_.data(); }
+    void setSessionLogicComponent(QDeclarativeComponent *sessionLogic);
 
     QDeclarativeEngine *engine();
     QDeclarativeContext *context();
 #else
-    QQmlComponent *globalLogic() { return globalLogic_.data(); }
-    void setGlobalLogic(QQmlComponent *globalLogic);
+    QQmlComponent *globalLogicComponent() { return globalLogicComponent_.data(); }
+    void setGlobalLogicComponent(QQmlComponent *globalLogic);
 
-    QQmlComponent *sessionLogic() { return sessionLogic_.data(); }
-    void setSessionLogic(QQmlComponent *sessionLogic);
+    QQmlComponent *sessionLogicComponent() { return sessionLogicComponent_.data(); }
+    void setSessionLogicComponent(QQmlComponent *sessionLogic);
 
     QQmlEngine *engine();
     QQmlContext *context();
@@ -98,8 +98,8 @@ signals:
     void bindAddressChanged();
     void portChanged();
 
-    void globalLogicChanged();
-    void sessionLogicChanged();
+    void globalLogicComponentChanged();
+    void sessionLogicComponentChanged();
 
     void globalLogicSourceChanged();
     void sessionLogicSourceChanged();
@@ -119,12 +119,12 @@ private:
     int port_;
 
 #ifdef VIRIDITY_USE_QTQUICK1
-    QPointer<QDeclarativeComponent> globalLogic_;
-    QPointer<QDeclarativeComponent> sessionLogic_;
+    QPointer<QDeclarativeComponent> globalLogicComponent_;
+    QPointer<QDeclarativeComponent> sessionLogicComponent_;
     QPointer<QDeclarativeContext> context_;
 #else
-    QPointer<QQmlComponent> globalLogic_;
-    QPointer<QQmlComponent> sessionLogic_;
+    QPointer<QQmlComponent> globalLogicComponent_;
+    QPointer<QQmlComponent> sessionLogicComponent_;
     QPointer<QQmlContext> context_;
 #endif
 
