@@ -21,13 +21,21 @@ QtObject {
         document.invalidateContent();
     }
 
-    function register(item)
+    function register(item, prepend)
     {
         if (dependencyItems.indexOf(item) > -1)
             return;
 
         var deps = dependencyItems;
-        deps.push(item);
+
+        if (prepend)
+        {
+            deps = deps.slice();
+            deps.unshift(item);
+        }
+        else
+            deps.push(item);
+
         dependencyItems = deps;
 
         console.log("registerDependencies: " + item);

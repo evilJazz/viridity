@@ -15,7 +15,7 @@ QtObject {
 
     property Connections _connections: Connections {
         target: renderer
-        onTopLevelRendererChanged: documentConnection.updateAttachment()
+        onTopLevelRendererChanged: documentConnection._updateAttachment()
     }
 
     function _updateAttachment()

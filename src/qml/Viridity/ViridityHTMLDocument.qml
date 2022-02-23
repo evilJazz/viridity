@@ -34,8 +34,8 @@ ViridityHTMLColumnWithChangeNotificator {
 
             Component.onCompleted:
             {
-                register(defaults); // Register document.defaults.dependencies
-                register(document); // Register document.dependencies
+                register(document, true); // Register document.dependencies
+                register(defaults, true); // Register document.defaults.dependencies
             }
         }
 

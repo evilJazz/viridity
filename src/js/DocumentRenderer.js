@@ -66,15 +66,16 @@ var DR = {
         }
     },
 
-    a: function(actionName, itemName, targetId, element)
+    a: function(targetIdOrDataBridge, itemName, actionName, params, callback)
     {
-        var dataBridge = DR.dataBridges[targetId];
+        var dataBridge = typeof(targetIdOrDataBridge) == "string" ? DR.dataBridges[targetIdOrDataBridge] : targetIdOrDataBridge;
         if (dataBridge)
         {
             dataBridge.sendData({
                 action: actionName,
-                itemName: itemName
-            });
+                itemName: itemName,
+                params: params
+            }, callback);
         }
         else
             console.log("Target databridge '" + targetId + "' not found while sending action '" + actionName + "' from element '" + itemName + "'.");
@@ -103,9 +104,10 @@ var DocumentRenderer = function(viridityChannel, id)
             });
         },
 
-        handleDataReceived: function(dataBridge, input)
+
+        actions:
         {
-            if (input.action == "update")
+            update: function(dataBridge, input)
             {
                 var item = $("#" + input.property);
 
@@ -119,20 +121,31 @@ var DocumentRenderer = function(viridityChannel, id)
                     if (input.hasOwnProperty("generation"))
                         item.attr("generation", input.generation);
                 }
-            }
-            else if (input.action == "show")
+            },
+
+            show: function(dataBridge, input)
             {
                 var parentItem = $("#" + input.itemName);
                 if (parentItem.length == 1)
                     parentItem.show();
-            }
-            else if (input.action == "hide")
+            },
+
+            hide: function(dataBridge, input)
             {
                 var parentItem = $("#" + input.itemName);
                 if (parentItem.length == 1)
                     parentItem.hide();
-            }
-            else if (input.action == "updateChildren")
+            },
+
+            requireDependencies: function(dataBridge, input)
+            {
+                DR.requires(input.dependencies);
+
+                if (input.runAutoAttachment && typeof(ViridityAuto) != "undefined")
+                    ViridityAuto.autoAttach();
+            },
+
+            updateChildren: function(dataBridge, input)
             {
                 var parentItem = $("#" + input.itemName);
 
@@ -211,6 +224,12 @@ var DocumentRenderer = function(viridityChannel, id)
                     parentItem.attr("generation", input.generation);
                 }
             }
+        },
+
+        handleDataReceived: function(dataBridge, input)
+        {
+            if (input.action in c.actions)
+                return c.actions[input.action](dataBridge, input);
 
             return true;
         }

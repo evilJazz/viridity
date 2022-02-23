@@ -16,4 +16,6 @@ ViridityHTMLColumnWithChangeNotificator {
         target: currentSession
         onAttached: renderer.sendFullContentUpdate();
     }
+
+    Component.onCompleted: renderer.sendFullContentUpdate();
 }

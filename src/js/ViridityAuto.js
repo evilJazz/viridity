@@ -58,25 +58,25 @@ var ViridityAuto = {
     {
         if (!ViridityAuto.alreadyAttached)
         {
-        var useCookies = typeof($.cookie) != "undefined";
+            var useCookies = typeof($.cookie) != "undefined";
 
-        if (useCookies)
-            options.sessionId = $.cookie("vsessionId");
+            if (useCookies)
+                options.sessionId = $.cookie("vsessionId");
 
-        ViridityChannel = new Viridity(ViridityAuto.options);
+            ViridityChannel = new Viridity(ViridityAuto.options);
 
-        if (useCookies)
-        {
-            ViridityChannel.on("sessionStart", function(sessionId)
+            if (useCookies)
             {
-                $.cookie("vsessionId", sessionId); // Save session id in cookie so we can re-attach again...
-            });
+                ViridityChannel.on("sessionStart", function(sessionId)
+                {
+                    $.cookie("vsessionId", sessionId); // Save session id in cookie so we can re-attach again...
+                });
 
-            ViridityChannel.on("sessionReattached", function(sessionId)
-            {
-                $.cookie("vsessionId", sessionId); // Save session id to cookie in case it changed...
-            });
-        }
+                ViridityChannel.on("sessionReattached", function(sessionId)
+                {
+                    $.cookie("vsessionId", sessionId); // Save session id to cookie in case it changed...
+                });
+            }
 
             ViridityAuto.alreadyAttached = true;
         }

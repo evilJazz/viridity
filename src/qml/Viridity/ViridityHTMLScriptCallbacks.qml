@@ -10,10 +10,10 @@ QtObject {
     id: scriptCallbacks
     property string itemName: name
 
-    function connectAction(actionName, callback)
+    function connectAction(actionName, callback, params)
     {
         Internal.add(actionName, callback);
-        return "DR.a('" + actionName + "', '" + name + "', '" + topLevelRenderer.targetId + "', this)";
+        return "DR.a('" + topLevelRenderer.targetId + "','" + itemName + "','" + actionName + "'," + JSON.stringify(params) + ")";
     }
 
     property Connections dataReceiver: Connections {

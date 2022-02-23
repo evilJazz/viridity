@@ -9,10 +9,19 @@ import "private/ViridityHTMLHelpers.js" as Internal;
 ViridityHTMLInlineJavaScript {
     id: renderer
 
-    script: _dependencyScript()
+    property bool runAutoAttachment: true
+    property variant dependencies: []
 
     removeAfterExecution: true
-    function _dependencyScript()
+
+    onDependenciesChanged: sendDependenciesUpdate()
+
+    Connections {
+        target: currentSession
+        onAttached: renderer.sendDependenciesUpdate()
+    }
+
+    function sendDependenciesUpdate()
     {
         var result = "";
         var relativeDeps = [];
@@ -29,16 +38,14 @@ ViridityHTMLInlineJavaScript {
             }
         }
 
-        result += "DR.requires(" + JSON.stringify(relativeDeps) + ");";
-
-        if (runAutoAttachment)
-            result += 'if (ViridityAuto) { ViridityAuto.autoAttach(); }';
-
-        return result;
+        topLevelRenderer.changeNotificatorDataBridge.sendData({
+            action: "requireDependencies",
+            dependencies: relativeDeps,
+            runAutoAttachment: runAutoAttachment
+        });
     }
 
     ViridityHTMLDocumentConnection {
-
         onAttached:
         {
             if (document.inSessionContext === renderer.inSessionContext)
@@ -51,8 +58,4 @@ ViridityHTMLInlineJavaScript {
                 document.dependencyRegistry.unregister(renderer);
         }
     }
-
-    property bool runAutoAttachment: true
-
-    property variant dependencies: []
 }
