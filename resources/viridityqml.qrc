@@ -22,5 +22,7 @@
         <file alias="private/ViridityHTMLDocumentDependencyRegistry.qml">../src/qml/Viridity/private/ViridityHTMLDocumentDependencyRegistry.qml</file>
         <file alias="private/ViridityDocumentRequestHandler.qml">../src/qml/Viridity/private/ViridityDocumentRequestHandler.qml</file>
         <file alias="private/qmldir">../src/qml/Viridity/private/qmldir</file>
+        <file alias="ViridityHTMLInput.qml">../src/qml/Viridity/ViridityHTMLInput.qml</file>
+        <file alias="ViridityHTMLCheckbox.qml">../src/qml/Viridity/ViridityHTMLCheckbox.qml</file>
     </qresource>
 </RCC>

@@ -6,5 +6,7 @@
         <file alias="DocumentRenderer.js">../src/js/DocumentRenderer.js</file>
         <file alias="jquery.mousewheel.js">../src/js/jquery.mousewheel.js</file>
         <file alias="ViridityAuto.js">../src/js/ViridityAuto.js</file>
+        <file alias="ViridityTextArea.js">../src/js/ViridityTextArea.js</file>
+        <file alias="ViridityInput.js">../src/js/ViridityInput.js</file>
     </qresource>
 </RCC>

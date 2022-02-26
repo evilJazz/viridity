@@ -110,6 +110,8 @@ void FileRequestHandler::publishViridityFiles()
     publishFileGlobally("/DisplayRenderer.js", ":/Client/DisplayRenderer.js", "application/javascript; charset=utf-8");
     publishFileGlobally("/DocumentRenderer.js", ":/Client/DocumentRenderer.js", "application/javascript; charset=utf-8");
     publishFileGlobally("/ViridityAuto.js", ":/Client/ViridityAuto.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/ViridityTextArea.js", ":/Client/ViridityTextArea.js", "application/javascript; charset=utf-8");
+    publishFileGlobally("/ViridityInput.js", ":/Client/ViridityInput.js", "application/javascript; charset=utf-8");
     publishFileGlobally("/jquery.mousewheel.js", ":/Client/jquery.mousewheel.js", "application/javascript; charset=utf-8");
 }
 
