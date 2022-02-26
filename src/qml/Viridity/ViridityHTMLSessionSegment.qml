@@ -13,7 +13,7 @@ ViridityHTMLColumnWithChangeNotificator {
     targetId: targetHTMLDocument != null ? targetHTMLDocument.targetId + "Session" : ""
 
     Connections {
-        target: currentSession
+        target: renderer.inSessionContext ? currentSession : null
         onAttached: renderer.sendFullContentUpdate();
     }
 

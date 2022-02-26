@@ -17,7 +17,7 @@ ViridityHTMLInlineJavaScript {
     onDependenciesChanged: sendDependenciesUpdate()
 
     Connections {
-        target: currentSession
+        target: renderer.inSessionContext ? currentSession : null
         onAttached: renderer.sendDependenciesUpdate()
     }
 
