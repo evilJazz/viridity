@@ -19,7 +19,8 @@ ViridityHTMLColumn {
     property string _styleString: (width > 0 ? "width:" + width + "px;" : "") + (height > 0 ? "height:" + height + "px;": "")
 
     contentMarkerElement: "div"
-    contentMarkerAttributes: ({
+    contentMarkerAttributes: _ViridityHTMLQtQuickDisplay_contentMarkerAttributes
+    property variant _ViridityHTMLQtQuickDisplay_contentMarkerAttributes: ({
         "data-vdisp-targetId": renderer.name,
         "style": renderer._styleString
     })

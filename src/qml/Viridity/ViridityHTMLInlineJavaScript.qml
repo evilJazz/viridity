@@ -8,7 +8,8 @@ ViridityHTMLSegment {
     id: renderer
 
     contentMarkerElement: "script"
-    contentMarkerAttributes: ({ "type": "text/javascript" })
+    contentMarkerAttributes: _ViridityHTMLInlineJavaScript_contentMarkerAttributes
+    property variant _ViridityHTMLInlineJavaScript_contentMarkerAttributes: ({ "type": "text/javascript" })
 
     templateText: script + _removeAfterExecutionString
 

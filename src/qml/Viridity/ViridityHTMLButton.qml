@@ -11,7 +11,8 @@ ViridityHTMLSegment {
     signal clicked()
 
     contentMarkerElement: "button"
-    contentMarkerAttributes: topLevelRenderer ? ({
+    contentMarkerAttributes: _ViridityHTMLButton_contentMarkerAttributes
+    property variant _ViridityHTMLButton_contentMarkerAttributes: topLevelRenderer ? ({
         "onClick": callbacks.connectAction("clicked", button.clicked)
     }) : ({})
 

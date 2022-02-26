@@ -4,6 +4,9 @@ import QtQuick 2.0
 import KCL 1.0
 import Viridity 1.0
 
+import "qrc:/KCL/StringHelpers.js" as StringHelpers;
+import "qrc:/KCL/ObjectHelpers.js" as ObjectHelpers;
+
 NativeTemplateRenderer {
     id: renderer
 
@@ -39,9 +42,30 @@ NativeTemplateRenderer {
         }
 
         for (var key in pattrs)
-            result += " " + key + "=\"" + pattrs[key] + "\"";
+        {
+            var attr = pattrs[key]
+
+            if (attr !== undefined) // ignore attributes that were explicitly unset
+                result += " " + key + "=\"" + ("" + attr).escapeAttribute() + "\"";
+        }
 
         return result;
+    }
+
+    function combinedAttributesFromProperties(propertyNameSuffix)
+    {
+        var props = ObjectUtils.getAllProperties(renderer, true, true).filter(
+            function(element)
+            {
+                return element.name.indexOf(propertyNameSuffix) > -1;
+            }
+        );
+
+        var attrs = {};
+        for (var i = 0; i < props.length; ++i)
+            attrs = Object.assign(attrs, renderer[props[i].name]);
+
+        return attrs;
     }
 
     function replaceMarkerForProperty(propertyName)
@@ -104,24 +128,15 @@ NativeTemplateRenderer {
         }
 
     // Overrideable functions
-    function _ViridityHTMLSegment_getPropertyMarkerAttributes()
-    {
-       return propertyMarkerAttributes;
-    }
 
     function getPropertyMarkerAttributes()
     {
-        return _ViridityHTMLSegment_getPropertyMarkerAttributes();
-    }
-
-    function _ViridityHTMLSegment_getContentMarkerAttributes()
-    {
-        return contentMarkerAttributes;
+        return combinedAttributesFromProperties("propertyMarkerAttributes");
     }
 
     function getContentMarkerAttributes()
     {
-        return _ViridityHTMLSegment_getContentMarkerAttributes();
+        return combinedAttributesFromProperties("contentMarkerAttributes");
     }
 
     function _ViridityHTMLSegment_handleTemplateChanged()
