@@ -60,7 +60,8 @@ var DataBridge = function(viridityChannel, id)
                         {
                             try
                             {
-                                c.pendingResponseCallbacks[responseId](JSON.parse(input));
+                                var response = input !== "undefined" ? JSON.parse(input) : undefined;
+                                c.pendingResponseCallbacks[responseId](response);
                                 processed = true;
                             }
                             catch (e)

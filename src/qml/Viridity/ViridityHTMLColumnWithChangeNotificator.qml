@@ -25,10 +25,16 @@ ViridityHTMLColumn {
             sessionManager: typeof(currentSessionManager) != "undefined" ? currentSessionManager : null
             session: typeof(currentSession) != "undefined" ? currentSession : null
 
+            property variant response: undefined
+
             function onDataReceived(input)
             {
                 dataReceived(input);
-                return true;
+
+                var newResponse = response;
+                response = undefined;
+
+                return newResponse;
             }
         }
 }

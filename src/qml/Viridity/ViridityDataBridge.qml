@@ -174,7 +174,7 @@ QtObject {
                 var response = root.onDataReceived(JSON.parse(input));
 
                 if (typeof(response) == "undefined")
-                    bridge.response = "null";
+                    bridge.response = "undefined";
                 else
                     bridge.response = JSON.stringify(response);
             }
@@ -195,7 +195,7 @@ QtObject {
                 var response = root.onSessionSubscribed(subscribingSessionId);
 
                 if (typeof(response) == "undefined")
-                    bridge.response = "null";
+                    bridge.response = "undefined";
                 else
                     bridge.response = JSON.stringify(response);
             }
