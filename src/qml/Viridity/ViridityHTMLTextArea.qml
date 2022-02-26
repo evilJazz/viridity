@@ -4,6 +4,8 @@ import QtQuick 2.0
 import KCL 1.0
 import Viridity 1.0
 
+import "qrc:/KCL/StringHelpers.js" as StringHelpers;
+
 ViridityHTMLSegment {
     id: textarea
 
@@ -18,6 +20,7 @@ ViridityHTMLSegment {
     templateText: text
 
     property string text
+    property bool escapeText: true
     property string placeholder
     onPlaceholderChanged:
     {
@@ -26,7 +29,7 @@ ViridityHTMLSegment {
 
     function _sendContentUpdate()
     {
-        remote.call("setText", { text: text });
+        remote.call("setText", { text: escapeText ? text.unescapeHtml() : text });
         _sendVisibilityStatus();
     }
 
@@ -36,7 +39,7 @@ ViridityHTMLSegment {
         function changed(params)
         {
             textarea.beginUpdate();
-            textarea.text = params.text;
+            textarea.text = escapeText ? params.text.escapeHtml() : params.text;
             textarea.endUpdate();
         }
     }
