@@ -73,6 +73,11 @@ Window {
                         onClicked: textArea.text = "HELLO WORLD!";
                     }
 
+                    ViridityHTMLLabel {
+                        forElement: checkbox
+                        text: "Some option"
+                    }
+
                     ViridityHTMLCheckbox {
                         id: checkbox
                     }
@@ -121,6 +126,11 @@ Window {
                     ViridityHTMLCheckbox {
                         id: checkbox
                         checked: true
+                    }
+
+                    ViridityHTMLLabel {
+                        forElement: checkbox
+                        text: "Some option"
                     }
 
                     ViridityHTMLSegment {
