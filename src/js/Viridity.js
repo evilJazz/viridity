@@ -498,7 +498,7 @@ var Viridity = function(options)
             var processed = false;
 
             if (v.debugVerbosity > 2)
-                console.log("Received message from server: " + msg);
+                console.log("Received message from server: " + t.targetId + ">" + t.message.convertToString());
 
             if (typeof(t.targetId) !== "undefined" &&
                 t.targetId in v.targetCallbacks)
