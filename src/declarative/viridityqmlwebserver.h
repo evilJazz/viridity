@@ -62,10 +62,10 @@ public:
     Q_INVOKABLE bool close();
 
 #ifdef VIRIDITY_USE_QTQUICK1
-    QDeclarativeComponent *globalLogicComponent() { return globalLogic_.data(); }
+    QDeclarativeComponent *globalLogicComponent() { return globalLogicComponent_.data(); }
     void setGlobalLogicComponent(QDeclarativeComponent *globalLogic);
 
-    QDeclarativeComponent *sessionLogicComponent() { return sessionLogic_.data(); }
+    QDeclarativeComponent *sessionLogicComponent() { return sessionLogicComponent_.data(); }
     void setSessionLogicComponent(QDeclarativeComponent *sessionLogic);
 
     QDeclarativeEngine *engine();
