@@ -4,6 +4,8 @@
 #include "kclplugin.h"
 #include <Viridity/Declarative>
 
+#include <KCL/debug.h>
+
 int main(int argc, char *argv[])
 {
 #if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
@@ -12,6 +14,9 @@ int main(int argc, char *argv[])
     QGuiApplication app(argc, argv);
 
     QQmlApplicationEngine engine;
+
+    forceEnableQtDebugOutput();
+    setDiagnosticOutputEnabled(true);
 
     // Initialize static KCL plugin...
     KCLPlugin *kcl = new KCLPlugin();

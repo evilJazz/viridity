@@ -30,3 +30,5 @@ include(../../viridity-static.pri)
 # Rewrite QML files to proper version...
 viridity_qtquick1: qmlPreprocessFolder($$PWD, @QtQuick1, 1.0)
 viridity_qtquick2: qmlPreprocessFolder($$PWD, @QtQuick2, 2.0)
+
+DEFINES+=DEBUG

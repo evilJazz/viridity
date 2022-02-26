@@ -6,6 +6,7 @@ import Viridity 1.0
 import KCL 1.0
 
 Window {
+    id: mainWindow
     width: 640
     height: 480
     visible: true
@@ -23,33 +24,65 @@ Window {
         }
     }
 
+    property int buttonClickCount: 0
+
+    Text {
+        text: buttonClickCount
+    }
+
     ViridityWebServer {
         id: webServer
 
         bindAddress: "127.0.0.1"
         port: 8089
 
-        ViridityHTMLDocument {
-            id: myReactiveDoc
-            targetId: "myReactiveDoc"
+        enabled: true
 
-            templateSource: Qt.resolvedUrl("test.template.html")
+        globalLogicComponent:
+            ViridityHTMLDocument {
+                id: myReactiveDoc
+                targetId: "myReactiveDoc"
 
-            title: "Viridity Mixed Example"
+                templateSource: Qt.resolvedUrl("test.template.html")
 
-            publishAtUrl: "/index.html"
+                title: "Viridity Mixed Example"
 
-            ViridityHTMLSegment {
-                id: globalClickSegment
-                name: "counter"
-                templateText: "The button was clicked \${buttonClickCount} times overall."
-                property int buttonClickCount: 0
+                publishAtUrl: "/index.html"
+
+                ViridityHTMLSegment {
+                    id: globalClickSegment
+                    name: "counter"
+                    templateText: "The button was clicked \${buttonClickCount} times overall."
+                    property int buttonClickCount: mainWindow.buttonClickCount
+                }
+
+                ViridityHTMLSegment {
+                    name: "sessionSegment" // Specified in sessionLogicComponent
+                }
+
+                ViridityHTMLColumn {
+                    name: "column"
+
+                    ViridityHTMLTextArea {
+                        id: textArea
+                        placeholder: "TEST!"
+                    }
+
+                    ViridityHTMLButton {
+                        title: "Reset text!"
+                        onClicked: textArea.text = "HELLO WORLD!";
+                    }
+
+                    ViridityHTMLCheckbox {
+                        id: checkbox
+                    }
+
+                    ViridityHTMLSegment {
+                        templateText: "\${test}!"
+                        property string test: textArea.text + " " + checkbox.checked
+                    }
+                }
             }
-
-             ViridityHTMLSegment {
-                name: "sessionSegment" // Specified in sessionLogicComponent
-            }
-        }
 
         sessionLogicComponent:
             ViridityHTMLSessionSegment {
@@ -67,7 +100,32 @@ Window {
                     onClicked:
                     {
                         ++clickSegment.buttonClickCount;
-                        ++globalClickSegment.buttonClickCount;
+                        ++mainWindow.buttonClickCount;
+                    }
+                }
+
+                ViridityHTMLColumn {
+                    name: "column"
+
+                    ViridityHTMLInput {
+                        id: textArea
+                        placeholder: "TEST!"
+                        value: "HELLO WORLD! 123"
+                    }
+
+                    ViridityHTMLButton {
+                        title: "Reset text!"
+                        onClicked: textArea.value = "HELLO WORLD!";
+                    }
+
+                    ViridityHTMLCheckbox {
+                        id: checkbox
+                        checked: true
+                    }
+
+                    ViridityHTMLSegment {
+                        templateText: "Hello \${firstname}!"
+                        property string firstname: textArea.value + " " + checkbox.checked
                     }
                 }
             }
