@@ -25,6 +25,21 @@ QtObject {
         return "DR.a('" + topLevelRenderer.targetId + "','" + itemName + "','" + actionName + "'," + JSON.stringify(params) + ")";
     }
 
+    function call(actionName, params, callback)
+    {
+        if (!topLevelRenderer || !topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge"))
+        {
+            console.log(scriptCallbacks + ": No topLevelRenderer set, can't set update to client.");
+            return false;
+        }
+
+        topLevelRenderer.changeNotificatorDataBridge.sendData({
+            name: itemName,
+            action: actionName,
+            params: params
+        }, callback);
+    }
+
     property Connections dataReceiver: Connections {
         target: topLevelRenderer &&
                 topLevelRenderer.hasOwnProperty("changeNotificatorDataBridge") ? topLevelRenderer : null

@@ -35,6 +35,9 @@ var DR = {
 
     dependencies: {},
 
+    components: [],
+    componentInstances: {},
+
     requires: function(depArray)
     {
         for (var i = 0; i < depArray.length; ++i)
@@ -72,8 +75,8 @@ var DR = {
         if (dataBridge)
         {
             dataBridge.sendData({
+                name: itemName,
                 action: actionName,
-                itemName: itemName,
                 params: params
             }, callback);
         }
@@ -84,6 +87,60 @@ var DR = {
     remove: function(itemName)
     {
         $("#" + itemName).remove();
+    },
+
+    registerComponent: function(dataTypeName, classImpl, autoAttach)
+    {
+        DR.components.push({
+            dataTypeName: dataTypeName,
+            ClassImpl: classImpl
+        });
+
+        if (autoAttach)
+            DR.autoAttach(dataTypeName);
+    },
+
+    autoAttach: function(dataTypeName)
+    {
+        for (var i = 0; i < DR.components.length; ++i)
+        {
+            var component = DR.components[i];
+
+            if (dataTypeName && component.dataTypeName !== dataTypeName)
+                continue;
+
+            var dataType = "data-" + component.dataTypeName + "-targetId";
+
+            var elements = $("[" + dataType + "]");
+
+            elements.each(function (index)
+            {
+                var element = $(this);
+
+                var isAlreadyAttached = element.attr("data-vdr-attached") == 1;
+                var targetId = element.attr(dataType);
+
+                if (!isAlreadyAttached && typeof(targetId) != "undefined")
+                {
+                    element.attr("data-vdr-attached", 1);
+
+                    var itemName = element.attr("id"); // name in Viridity terminology
+
+                    var remote = {
+                        dataBridge: DR.dataBridges[targetId],
+                        targetId: targetId,
+                        itemName: itemName,
+                        call: function(action, params, callback)
+                        {
+                            DR.a(remote.dataBridge, remote.itemName, action, params, callback);
+                        }
+                    };
+
+                    var componentInstance = new component.ClassImpl(element, remote, itemName);
+                    DR.componentInstances[itemName] = componentInstance;
+                }
+            });
+        }
     }
 };
 
@@ -231,6 +288,17 @@ var DocumentRenderer = function(viridityChannel, id)
             if (input.action in c.actions)
                 return c.actions[input.action](dataBridge, input);
 
+            if (input.name in DR.componentInstances)
+            {
+                var componentInstance = DR.componentInstances[input.name];
+
+                if ("actions" in componentInstance)
+                {
+                    if (input.action in componentInstance.actions)
+                        return componentInstance.actions[input.action](input.params);
+                }
+            }
+
             return true;
         }
     };
@@ -277,4 +345,5 @@ var DocumentRendererGlobal = {
 if (typeof(ViridityAuto) != "undefined")
 {
     ViridityAuto.on("autoAttach", DocumentRendererGlobal.autoAttach);
+    ViridityAuto.on("autoAttach", DR.autoAttach);
 }
