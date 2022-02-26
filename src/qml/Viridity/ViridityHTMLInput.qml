@@ -57,7 +57,7 @@ ViridityHTMLSegment {
         {
             input.beginUpdate();
             var safeValue = typeof(params.value) == "string" && escapeText ? params.value.escapeHtml() : params.value;
-            input.value = params.value;
+            input.value = safeValue;
             input.endUpdate();
         }
     }
