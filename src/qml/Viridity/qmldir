@@ -17,4 +17,5 @@ ViridityHTMLLabel 1.0 ViridityHTMLLabel.qml
 ViridityHTMLInput 1.0 ViridityHTMLInput.qml
 ViridityHTMLCheckbox 1.0 ViridityHTMLCheckbox.qml
 ViridityHTMLTextArea 1.0 ViridityHTMLTextArea.qml
+ViridityHTMLSelect 1.0 ViridityHTMLSelect.qml
 ViridityHTMLQtQuickDisplay 1.0 ViridityHTMLQtQuickDisplay.qml

@@ -25,5 +25,6 @@
         <file alias="ViridityHTMLInput.qml">../src/qml/Viridity/ViridityHTMLInput.qml</file>
         <file alias="ViridityHTMLCheckbox.qml">../src/qml/Viridity/ViridityHTMLCheckbox.qml</file>
         <file alias="ViridityHTMLLabel.qml">../src/qml/Viridity/ViridityHTMLLabel.qml</file>
+        <file alias="ViridityHTMLSelect.qml">../src/qml/Viridity/ViridityHTMLSelect.qml</file>
     </qresource>
 </RCC>

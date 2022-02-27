@@ -86,6 +86,10 @@ Window {
                         templateText: "\${test}!"
                         property string test: textArea.text + " " + checkbox.checked
                     }
+
+                    ViridityHTMLSelect {
+                        model: ["Test1", "Test2", "Test3"]
+                    }
                 }
             }
 
