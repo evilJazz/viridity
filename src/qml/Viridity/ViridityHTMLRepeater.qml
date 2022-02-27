@@ -27,6 +27,9 @@ ViridityHTMLColumn {
 
     property bool debug: false
 
+    contentMarkerAttributes: _ViridityHTMLRepeater_contentMarkerAttributes
+    property variant _ViridityHTMLRepeater_contentMarkerAttributes: ({ generation: generation })
+
     function updateChildren()
     {
         try
@@ -154,13 +157,6 @@ ViridityHTMLColumn {
     {
         // Override default handling of sending content updates
         // We do differential updates above.
-    }
-
-    function getContentMarkerAttributes()
-    {
-        var attrs = _ViridityHTMLSegment_getContentMarkerAttributes();
-        attrs["generation"] = generation;
-        return attrs;
     }
 
     function _addItem(index, item)
