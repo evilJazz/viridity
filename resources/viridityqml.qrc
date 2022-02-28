@@ -15,9 +15,8 @@
         <file alias="ViridityHTMLInlineJavaScript.qml">../src/qml/Viridity/ViridityHTMLInlineJavaScript.qml</file>
         <file alias="ViridityHTMLTextArea.qml">../src/qml/Viridity/ViridityHTMLTextArea.qml</file>
         <file alias="private/ViridityHTMLHelpers.js">../src/qml/Viridity/private/ViridityHTMLHelpers.js</file>
-        <file alias="ViridityHTMLScriptCallbacks.qml">../src/qml/Viridity/ViridityHTMLScriptCallbacks.qml</file>
+        <file alias="ViridityHTMLRemote.qml">../src/qml/Viridity/ViridityHTMLRemote.qml</file>
         <file alias="private/ViridityHTMLScriptCallbacks.js">../src/qml/Viridity/private/ViridityHTMLScriptCallbacks.js</file>
-        <file alias="ViridityHTMLDependencies.qml">../src/qml/Viridity/ViridityHTMLDependencies.qml</file>
         <file alias="ViridityHTMLDocumentConnection.qml">../src/qml/Viridity/ViridityHTMLDocumentConnection.qml</file>
         <file alias="private/ViridityHTMLDocumentDependencyRegistry.qml">../src/qml/Viridity/private/ViridityHTMLDocumentDependencyRegistry.qml</file>
         <file alias="private/ViridityDocumentRequestHandler.qml">../src/qml/Viridity/private/ViridityDocumentRequestHandler.qml</file>

@@ -25,10 +25,8 @@ ViridityHTMLColumn {
         "style": renderer._styleString
     })
 
-    ViridityHTMLDependencies {
-        dependencies: [
-            "/DisplayRenderer.js"
-        ]
+    ViridityHTMLRemote {
+        dependencies: [ "/DisplayRenderer.js" ]
         runAutoAttachment: true
     }
 

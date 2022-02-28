@@ -13,12 +13,13 @@ ViridityHTMLSegment {
     contentMarkerElement: "button"
     contentMarkerAttributes: _ViridityHTMLButton_contentMarkerAttributes
     property variant _ViridityHTMLButton_contentMarkerAttributes: topLevelRenderer ? ({
-        "onClick": callbacks.connectAction("clicked", button.clicked)
+        "onClick": remote.connectAction("clicked", button.clicked)
     }) : ({})
 
     templateText: '${title}'
 
-    ViridityHTMLScriptCallbacks {
-        id: callbacks
+    ViridityHTMLRemote {
+        id: remote
+        runAutoAttachment: false
     }
 }

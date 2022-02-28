@@ -33,8 +33,11 @@ ViridityHTMLSegment {
         _sendVisibilityStatus();
     }
 
-    ViridityHTMLScriptCallbacks {
+    ViridityHTMLRemote {
         id: remote
+
+        dependencies: [ "/ViridityTextArea.js" ]
+        runAutoAttachment: true
 
         function changed(params)
         {
@@ -42,12 +45,5 @@ ViridityHTMLSegment {
             textarea.text = escapeText ? params.text.escapeHtml() : params.text;
             textarea.endUpdate();
         }
-    }
-
-    ViridityHTMLDependencies {
-        dependencies: [
-            "/ViridityTextArea.js"
-        ]
-        runAutoAttachment: true
     }
 }

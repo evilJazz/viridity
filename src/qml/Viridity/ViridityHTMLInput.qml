@@ -50,8 +50,11 @@ ViridityHTMLSegment {
         _sendVisibilityStatus();
     }
 
-    ViridityHTMLScriptCallbacks {
+    ViridityHTMLRemote {
         id: remote
+
+        dependencies: [ "/ViridityInput.js" ]
+        runAutoAttachment: true
 
         function changed(params)
         {
@@ -60,12 +63,5 @@ ViridityHTMLSegment {
             input.value = safeValue;
             input.endUpdate();
         }
-    }
-
-    ViridityHTMLDependencies {
-        dependencies: [
-            "/ViridityInput.js"
-        ]
-        runAutoAttachment: true
     }
 }

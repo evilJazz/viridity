@@ -37,9 +37,12 @@ ViridityHTMLRepeater {
             templateText: currentModelData
         }
 
-    property ViridityHTMLScriptCallbacks remote:
-        ViridityHTMLScriptCallbacks {
+    property ViridityHTMLRemote remote:
+        ViridityHTMLRemote {
             id: remote
+
+            dependencies: [ "/ViriditySelect.js" ]
+            runAutoAttachment: true
 
             function changed(params)
             {
@@ -47,13 +50,5 @@ ViridityHTMLRepeater {
                 select.selectedIndex = params.index;
                 select.endUpdate();
             }
-        }
-
-    property ViridityHTMLDependencies dependencies:
-        ViridityHTMLDependencies {
-            dependencies: [
-                "/ViriditySelect.js"
-            ]
-            runAutoAttachment: true
         }
 }
