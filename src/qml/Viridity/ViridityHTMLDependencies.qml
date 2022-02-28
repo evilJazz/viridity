@@ -6,20 +6,13 @@ import Viridity 1.0
 
 import "private/ViridityHTMLHelpers.js" as Internal;
 
-ViridityHTMLInlineJavaScript {
-    id: renderer
+QtObject {
+    id: deps
 
     property bool runAutoAttachment: true
     property variant dependencies: []
 
-    removeAfterExecution: true
-
     onDependenciesChanged: sendDependenciesUpdate()
-
-    Connections {
-        target: renderer.inSessionContext ? currentSession : null
-        onAttached: renderer.sendDependenciesUpdate()
-    }
 
     function sendDependenciesUpdate()
     {
@@ -45,17 +38,22 @@ ViridityHTMLInlineJavaScript {
         });
     }
 
-    ViridityHTMLDocumentConnection {
+    property Connections sessionConnections: Connections {
+        target: renderer.inSessionContext ? currentSession : null
+        onAttached: deps.sendDependenciesUpdate()
+    }
+
+    property ViridityHTMLDocumentConnection documentConnection: ViridityHTMLDocumentConnection {
         onAttached:
         {
             if (document.inSessionContext === renderer.inSessionContext)
-                document.dependencyRegistry.register(renderer);
+                document.dependencyRegistry.register(deps);
         }
 
         onDetaching:
         {
             if (document.inSessionContext === renderer.inSessionContext)
-                document.dependencyRegistry.unregister(renderer);
+                document.dependencyRegistry.unregister(deps);
         }
     }
 }

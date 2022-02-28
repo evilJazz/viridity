@@ -11,7 +11,7 @@ function ViriditySelect(element, remote, itemName)
 
     element.change(function()
     {
-         var index = element.children("option:selected").index() - 1;
+         var index = element.children("option:selected").index();
          remote.call("changed", { index: index });
     });
 }

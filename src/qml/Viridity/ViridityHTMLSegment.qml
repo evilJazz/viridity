@@ -9,6 +9,7 @@ import "qrc:/KCL/ObjectHelpers.js" as ObjectHelpers;
 
 NativeTemplateRenderer {
     id: renderer
+    property alias renderer: renderer // to make "renderer" property available in all Components and Sub-Objects
 
     renderDelay: -1 // Disable auto-updating
 
