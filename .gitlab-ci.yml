@@ -5,7 +5,7 @@ stages:
 
 # Build qmlwebviewer in our dockerized build environment...
 .build:
-  image: $CI_REGISTRY/meteorasoftworks/buildenv-ubuntu-qt5:18.04-${ARCH}
+  image: $CI_REGISTRY/meteorasoftworks/buildenv-ubuntu-qt5:24.04-${ARCH}
   stage: build
   variables:
     CCACHE_DIR: $CI_PROJECT_DIR/.ccache
