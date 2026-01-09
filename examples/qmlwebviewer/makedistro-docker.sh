@@ -57,16 +57,16 @@ RUNSH
 chmod +x files/run.sh
 
 cat > Dockerfile << DOCKER
-FROM ubuntu:18.04
+FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y install \
-    fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl1-mesa libxslt1.1 libxi6 libfontconfig1 libglib2.0-0 \
-    libdbus-1-3 libicu60 libasound2 libpulse-mainloop-glib0 libpulse0 libssl1.0.0 ca-certificates
+    fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl-mesa0 libxslt1.1 libxi6 libfontconfig1 libglib2.0-0 \
+    libdbus-1-3 libicu74 libpulse-mainloop-glib0 libpulse0 libssl3t64 ca-certificates
 DOCKER
 
 if [ -z "$BUNDLE_LIBS_PARAM" ]; then
     cat >> Dockerfile << DOCKER
-RUN apt-get -y install qt5-default qml libqt5qml5 libqt5quick5 qtdeclarative5-qtquick2-plugin
+RUN apt-get -y install qtbase5-dev qtchooser qml qml-module-qtsysteminfo qml-module-qtsensors qml-module-qtquick2 qml-module-qtquick-xmllistmodel qml-module-qtquick-window2 qml-module-qtquick-shapes qml-module-qtquick-pdf qml-module-qtquick-particles2 qml-module-qtquick-localstorage qml-module-qtquick-layouts qml-module-qtquick-controls2 qml-module-qtquick-controls qml-module-qtqml-workerscript2 qml-module-qtqml-models2 qml-module-qtqml qml-module-qtpositioning qml-module-qt-labs-location qml-module-qt-labs-folderlistmodel
 DOCKER
 fi
 
