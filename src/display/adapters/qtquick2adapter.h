@@ -29,6 +29,7 @@
 
 #include <QImage>
 
+#include <QElapsedTimer>
 #include <QEvent>
 
 class QQuickItem;
@@ -99,6 +100,9 @@ private:
 
     QPointF lastScenePos_;
     QPoint lastScreenPos_;
+
+    QElapsedTimer runtime_;
+    QElapsedTimer doubleClickTime_;
 
     bool killedAlready_;
 

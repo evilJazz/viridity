@@ -39,6 +39,7 @@
 #include <QInputMethodEvent>
 
 #include <QGuiApplication>
+#include <QStyleHints>
 
 #include <QThread>
 
@@ -152,6 +153,8 @@ void QtQuick2Adapter::init()
     // Initialize the render control and our OpenGL resources.
     context_->makeCurrent(offscreenSurface_);
     renderControl_->initialize(context_);
+
+    runtime_.restart();
 
     // Properly set focus on root item or one of its children that has focus set to true
     if (rootItem_->scopedFocusItem())
@@ -359,27 +362,37 @@ void QtQuick2Adapter::handleMouseEvent(QEvent::Type type, const QPointF &scenePo
     }
     else if (type == QEvent::MouseButtonPress)
     {
+        DPRINTF("QEvent::MouseButtonPress");
         buttonDown_ = true;
     }
     else if (type == QEvent::MouseButtonRelease)
     {
         buttonDown_ = false;
 
+        if (doubleClickTime_.isValid() && doubleClickTime_.elapsed() <= qApp->styleHints()->mouseDoubleClickInterval())
+        {
+            DPRINTF("QEvent::MouseButtonDblClick");
+
+            // pressed -> doubleClicked -> released order is important!
+            // We have to ignore the DblClick command from client, because its order is pressed -> released -> doubleClicked
+            // Purely synthesize the double click event...
+            button = lastButton_;
+            buttons = Qt::NoButton;
+
+            // Send DoubleClick event directly.
+            QMouseEvent *me = new QMouseEvent(QEvent::MouseButtonDblClick, scenePos, button, buttons, modifiers);
+            me->setTimestamp(runtime_.elapsed());
+            postEvent(me, true);
+
+            doubleClickTime_.invalidate();
+        }
+        else
+            doubleClickTime_.restart();
+
+        DPRINTF("QEvent::MouseButtonRelease");
         button = lastButton_;
         // Set buttons to NoButton to make synthesized Click event work.
         buttons = Qt::NoButton;
-    }
-    else if (type == QEvent::MouseButtonDblClick)
-    {
-        // Send DoubleClick event directly.
-        postEvent(new QMouseEvent(QEvent::MouseButtonDblClick, scenePos, button, buttons, modifiers), true);
-
-        // Finally change to MouseButtonRelease. This is required to avoid sticky condition.
-        type = QEvent::MouseButtonRelease;
-        button = Qt::NoButton;
-        buttons = Qt::NoButton;
-
-        buttonDown_ = false;
     }
     else
     {
@@ -390,6 +403,7 @@ void QtQuick2Adapter::handleMouseEvent(QEvent::Type type, const QPointF &scenePo
     lastButton_ = button;
 
     QMouseEvent *me = new QMouseEvent(type, scenePos, button, buttons, modifiers);
+    me->setTimestamp(runtime_.elapsed());
     postEvent(me, true);
 }
 
