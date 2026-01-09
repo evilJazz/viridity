@@ -60,7 +60,7 @@ cat > Dockerfile << DOCKER
 FROM ubuntu:24.04
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get -y install \
-    fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl-mesa0 libxslt1.1 libxi6 libfontconfig1 libglib2.0-0 \
+    fontconfig libjpeg8 xvfb libxrender1 libxcomposite1 libegl-mesa0 libxslt1.1 libxi6 libfontconfig1 \
     libdbus-1-3 libicu74 libpulse-mainloop-glib0 libpulse0 libssl3t64 ca-certificates
 DOCKER
 
