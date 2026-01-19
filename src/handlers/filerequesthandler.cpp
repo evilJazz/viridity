@@ -112,7 +112,9 @@ QByteArray FileRequestHandler::determineMimeType(const QString &fileName)
 {
     QByteArray ext = QFileInfo(fileName).suffix().toLower().toLatin1();
     if (ext == "js")
-        return "application/javascript";
+        return "text/javascript";
+    else if (ext == "json")
+        return "application/json";
     else if (ext == "css")
         return "text/css";
     else if (ext == "jpeg" || ext == "jpg")
@@ -129,24 +131,36 @@ QByteArray FileRequestHandler::determineMimeType(const QString &fileName)
         return "application/octet-stream";
 }
 
+QByteArray FileRequestHandler::sanitizeFileName(QByteArray fileName)
+{
+    fileName.replace("//", "/");
+    fileName.replace("/../", "/");
+    return fileName;
+}
+
 bool FileRequestHandler::doesHandleRequest(QSharedPointer<ViridityHttpServerRequest> request)
 {
     QList<QByteArray> parts = request->url().split('?');
-    return parts.count() > 0 && (fileNames_.contains(parts.at(0)) || globalFileNames_.contains(parts.at(0)));
+
+    if (parts.count() == 0)
+        return false;
+
+    QByteArray fileName = sanitizeFileName(parts.at(0));
+    return fileNames_.contains(fileName) || globalFileNames_.contains(fileName);
 }
 
 void FileRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest> request, QSharedPointer<ViridityHttpServerResponse> response)
 {
     QList<QByteArray> parts = request->url().split('?');
 
-    QString filename = QString::fromUtf8(parts.at(0));
-    QString localFileName = fileNames_.value(filename.toUtf8());
+    QByteArray fileName = sanitizeFileName(parts.at(0));
+    QString localFileName = fileNames_.value(fileName);
     QByteArray contentType = contentTypes_.value(request->url());
 
     if (localFileName.isEmpty())
     {
-        localFileName = globalFileNames_.value(filename.toUtf8());
-        contentType = globalContentTypes_.value(filename.toUtf8());
+        localFileName = globalFileNames_.value(fileName);
+        contentType = globalContentTypes_.value(fileName);
     }
 
     if (!localFileName.isEmpty())
@@ -156,6 +170,7 @@ void FileRequestHandler::handleRequest(QSharedPointer<ViridityHttpServerRequest>
         {
             response->writeHead(ViridityHttpServerResponse::OK);
             response->headers().insert("Content-Type", contentType);
+            response->headers().insert("Content-Length", QByteArray::number(file.size()));
             response->addNoCachingResponseHeaders();
             response->end(file.readAll());
             return;

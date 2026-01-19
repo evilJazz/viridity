@@ -61,6 +61,8 @@ private:
 
     static QHash<QByteArray, QString> globalFileNames_;
     static QHash<QByteArray, QByteArray> globalContentTypes_;
+
+    static QByteArray sanitizeFileName(QByteArray fileName);
 };
 
 #endif // FILEREQUESTHANDLER_H
