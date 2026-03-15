@@ -322,6 +322,27 @@ var ViridityDisplayEvents = {
                 var inputParams = t.params;
                 var frame = inputParams[0];
 
+                if (t.command === "showInputMethod")
+                {
+                    if (dr.debugVerbosity > 0)
+                        console.log(dr.targetId + " -> showInputMethod");
+
+                    if (dr.showInputMethodOnFocus)
+                        dr.showInputMethod();
+
+                    return;
+                }
+                else if (t.command === "hideInputMethod")
+                {
+                    if (dr.debugVerbosity > 0)
+                        console.log(dr.targetId + " -> hideInputMethod");
+
+                    if (dr.showInputMethodOnFocus)
+                        dr.hideInputMethod();
+
+                    return;
+                }
+
                 if (dr.waitingForFullUpdate && t.command !== "fullUpdate")
                     return;
 
@@ -342,6 +363,8 @@ var ViridityDisplayEvents = {
                     {
                         console.log(dr.targetId + " -> PREVIOUS FRAME NOT COMPLETELY RENDERED!!!!! Patches left: " + dr.pendingPatchesCount);
                         dr.pendingPatchesCount = 0;
+                        dr.requestFullUpdate();
+                        return;
                     }
 
                     // This is to stop _determineReadyState() from sending ready() when image loading is quasi-synchronous, ie. base64 encoded sources.
@@ -366,7 +389,7 @@ var ViridityDisplayEvents = {
                     dr.frameCommands.push(frameCmd);
                 }
 
-                if (t.command === "fR")
+                if (t.command === "fR") // uotFill - fill Rectangle
                 {
                     var dstX = parseInt(inputParams[1]);
                     var dstY = parseInt(inputParams[2]);
@@ -378,7 +401,7 @@ var ViridityDisplayEvents = {
                     dr.ctx.fillStyle = "rgba(" + inputParams[5] + "," + inputParams[6] + "," + inputParams[7] + "," + (inputParams[8] / 255) + ")";
                     dr.ctx.fillRect(dstX, dstY, dstWidth, dstHeight);
                 }
-                else if (t.command === "mI")
+                else if (t.command === "mI") // uotMove - move Image
                 {
                     var srcX = parseInt(inputParams[1]);
                     var srcY = parseInt(inputParams[2]);
@@ -391,7 +414,7 @@ var ViridityDisplayEvents = {
                     dr.ctx.clearRect(dstX, dstY, srcWidth, srcHeight);
                     dr.ctx.drawImage(dr.frontCanvas, srcX, srcY, srcWidth, srcHeight, dstX, dstY, srcWidth, srcHeight);
                 }
-                else if (t.command === "dI")
+                else if (t.command === "dI") // uotUpdate - draw Image
                 {
                     ++dr.pendingPatchesCount;
 
@@ -597,22 +620,6 @@ var ViridityDisplayEvents = {
                     if (dr.debugVerbosity > 1) console.log(dr.targetId + " -> Frame end " + frame + " received...");
                     dr.frameEndReceived = true;
                     dr._determineReadyState();
-                }
-                else if (t.command === "showInputMethod")
-                {
-                    if (dr.debugVerbosity > 0)
-                        console.log("showInputMethod");
-
-                    if (dr.showInputMethodOnFocus)
-                        dr.showInputMethod();
-                }
-                else if (t.command === "hideInputMethod")
-                {
-                    if (dr.debugVerbosity > 0)
-                        console.log("hideInputMethod");
-
-                    if (dr.showInputMethodOnFocus)
-                        dr.hideInputMethod();
                 }
             },
 
