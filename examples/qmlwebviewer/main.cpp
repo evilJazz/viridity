@@ -69,6 +69,8 @@ int main(int argc, char *argv[])
     {
         FileRequestHandler::publishFileGlobally("/", ":/index.html");
         FileRequestHandler::publishFileGlobally("/index.html", ":/index.html");
+        FileRequestHandler::publishFileGlobally("/manifest.json", ":/manifest.json");
+        FileRequestHandler::publishFileGlobally("/icon-512.png", ":/icon-512.png");
     }
 
     FileRequestHandler::publishViridityFiles();

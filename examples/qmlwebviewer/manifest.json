@@ -1,0 +1,19 @@
+{
+  "name": "QML Web Viewer",
+  "short_name": "QML Viewer",
+  "start_url": "./",
+  "display": "fullscreen",
+  "display_override": ["standalone", "fullscreen"],
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "./icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  }
+}
