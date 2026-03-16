@@ -40,6 +40,11 @@ int main(int argc, char *argv[])
     a.setOrganizationName("Meteora Softworks");
     a.setApplicationName("QMLWebViewer");
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 2, 0)
+    QLoggingCategory::setFilterRules(QStringLiteral("qt.qml.connections.warning=false"));
+    qputenv("QML_XHR_ALLOW_FILE_READ", "1");
+#endif
+
     QByteArray settingsFileName = qgetenv("QMLWEBVIEWER_SETTINGS");
     if (!settingsFileName.isEmpty())
         SettingsGroup::setGlobalIniFilename(QFile::decodeName(settingsFileName));
